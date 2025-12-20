@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class UserDAO {
 
@@ -55,5 +56,64 @@ public class UserDAO {
             }
         }
         return null;
+    }
+
+    public boolean createUser(User user, String email) {
+        String insertUserSql = "INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, ?)";
+        String insertProfileSql = "INSERT INTO customer_profiles (user_id, email, full_name, phone, address) VALUES (?, ?, ?, '', '')";
+        
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            // 1. Insert into users table
+            int userId = -1;
+            try (PreparedStatement stmt = conn.prepareStatement(insertUserSql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, user.getUsername());
+                stmt.setString(2, PasswordUtil.hashPassword(user.getPassword())); // Hash password before saving
+                stmt.setString(3, user.getRole().toString());
+                stmt.setInt(4, user.getStatus());
+                
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0) {
+                    throw new SQLException("Creating user failed, no rows affected.");
+                }
+
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        userId = generatedKeys.getInt(1);
+                    } else {
+                        throw new SQLException("Creating user failed, no ID obtained.");
+                    }
+                }
+            }
+
+            // 2. Insert into customer_profiles table (assuming default role is CUSTOMER for now)
+            if (user.getRole() == Role.CUSTOMER) {
+                try (PreparedStatement stmt = conn.prepareStatement(insertProfileSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.setString(2, email);
+                    stmt.setString(3, user.getUsername()); // Default full name to username
+                    stmt.executeUpdate();
+                }
+            }
+
+            conn.commit(); // Commit transaction
+            return true;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            return false;
+        } finally {
+            DBUtil.close(conn);
+        }
     }
 }
