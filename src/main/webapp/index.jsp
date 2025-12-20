@@ -1,3 +1,5 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -289,14 +291,35 @@
   <div class="navbar">
     <div class="logo">USM SHOP</div>
     <ul class="nav-menu">
-      <li><a href=" ">Home</a ></li>
-      <li><a href="#">Categories</a ></li>
-      <li><a href="#">About Us</a ></li>
-      <li><a href="#">Admin Login</a ></li>
+      <li><a href="index.jsp">Home</a></li>
+      <li><a href="#">Categories</a></li>
+      <li><a href="#">About Us</a></li>
+      <c:if test="${empty sessionScope.user}">
+          <li><a href="login">Login</a></li>
+      </c:if>
+      <c:if test="${not empty sessionScope.user}">
+          <c:if test="${sessionScope.user.role == 'ADMIN'}">
+              <li><a href="admin/dashboard">Dashboard</a></li>
+          </c:if>
+          <li><a href="profile">Profile</a></li>
+          <li><a href="logout">Logout</a></li>
+      </c:if>
     </ul>
     <div class="nav-icons">
       <span onclick="toggleSearch()">🔍</span>
       <span onclick="showCart()">🛒 <span id="cart-count">0</span></span>
+      
+      <!-- Login/Avatar Section -->
+      <c:if test="${empty sessionScope.user}">
+          <a href="login" style="text-decoration: none; margin-left: 20px;">
+              <button style="padding: 8px 16px; border-radius: 20px; border: none; background: #333; color: white; cursor: pointer; font-weight: 600;">Login</button>
+          </a>
+      </c:if>
+      <c:if test="${not empty sessionScope.user}">
+          <a href="profile" style="text-decoration: none; margin-left: 20px; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #007bff; color: white; border-radius: 50%; font-weight: bold; font-size: 1.2rem;" title="Profile">
+              ${sessionScope.user.username.charAt(0).toString().toUpperCase()}
+          </a>
+      </c:if>
     </div>
   </div>
 </header>
