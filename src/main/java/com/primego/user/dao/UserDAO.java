@@ -10,6 +10,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDAO {
 
@@ -23,18 +25,7 @@ public class UserDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    User user = new User();
-                    user.setId(rs.getInt("id"));
-                    user.setUsername(rs.getString("username"));
-                    user.setPassword(rs.getString("password"));
-                    user.setRole(Role.valueOf(rs.getString("role")));
-                    user.setStatus(rs.getInt("status"));
-                    user.setCreatedAt(rs.getTimestamp("created_at"));
-                    user.setUpdatedAt(rs.getTimestamp("updated_at"));
-                    
-                    System.out.println("[DEBUG] User found: " + user.getUsername());
-                    System.out.println("[DEBUG] Stored Hash: " + user.getPassword());
-                    return user;
+                    return mapResultSetToUser(rs);
                 } else {
                     System.out.println("[DEBUG] No user found with username: " + username);
                 }
@@ -115,5 +106,33 @@ public class UserDAO {
         } finally {
             DBUtil.close(conn);
         }
+    }
+
+    public List<User> findAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users ORDER BY id DESC";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                users.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    private User mapResultSetToUser(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.setId(rs.getInt("id"));
+        user.setUsername(rs.getString("username"));
+        user.setPassword(rs.getString("password"));
+        user.setRole(Role.valueOf(rs.getString("role")));
+        user.setStatus(rs.getInt("status"));
+        user.setCreatedAt(rs.getTimestamp("created_at"));
+        user.setUpdatedAt(rs.getTimestamp("updated_at"));
+        return user;
     }
 }
