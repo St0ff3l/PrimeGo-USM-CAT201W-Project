@@ -30,6 +30,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PrimeGo - Premium B2C E-Commerce</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <style>
     /* ================= 1. 全局基础样式 ================= */
@@ -38,6 +39,7 @@
 
     body {
       /* 背景颜色和动画已移至 common/background.jsp */
+      font-family: 'Poppins', sans-serif;
       color: #333;
       position: relative;
       margin: 0;
