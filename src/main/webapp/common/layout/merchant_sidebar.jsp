@@ -207,6 +207,27 @@
         pointer-events: none;
     }
 
+    /* Destructive action: Logout */
+    .pg-merchant-sidebar .menu-item.menu-logout {
+        color: #d63031;
+    }
+
+    .pg-merchant-sidebar .menu-item.menu-logout .pg-mi {
+        color: #d63031;
+        background: rgba(214, 48, 49, 0.08);
+    }
+
+    .pg-merchant-sidebar .menu-item.menu-logout:hover {
+        background: rgba(214, 48, 49, 0.10);
+        color: #d63031;
+        transform: translateX(4px);
+    }
+
+    .pg-merchant-sidebar .menu-item.menu-logout:hover .pg-mi {
+        background: rgba(214, 48, 49, 0.16);
+        color: #d63031;
+    }
+
     @media (max-width: 1024px) {
         .pg-merchant-sidebar .sidebar-card { align-items: center; padding: 20px 10px; }
         .pg-merchant-sidebar .menu-item span,
@@ -291,7 +312,7 @@
                 <span>Profile</span>
             </a>
 
-            <a class="menu-item" href="${pageContext.request.contextPath}/logout">
+            <a class="menu-item menu-logout" href="${pageContext.request.contextPath}/logout">
                 <span class="pg-mi" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>

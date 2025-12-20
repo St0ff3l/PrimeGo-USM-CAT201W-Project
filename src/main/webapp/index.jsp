@@ -1,5 +1,29 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page import="com.primego.user.model.User" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
+<%
+  // If merchant is logged in, send them directly to merchant dashboard
+  // (No bypass: merchants shouldn't access index.jsp)
+
+  // (some pages/flows may store user in request scope; check both)
+  User __idxUser = (User) session.getAttribute("user");
+  if (__idxUser == null) {
+    Object __reqUser = request.getAttribute("user");
+    if (__reqUser instanceof User) {
+      __idxUser = (User) __reqUser;
+    }
+  }
+
+  if (__idxUser != null && __idxUser.getRole() != null) {
+    String __roleStr = __idxUser.getRole().name();
+    if ("MERCHANT".equals(__roleStr)) {
+      response.sendRedirect(request.getContextPath() + "/merchant/merchant_dashboard.jsp");
+      return;
+    }
+  }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -251,3 +275,6 @@
 </script>
 </body>
 </html>
+
+
+

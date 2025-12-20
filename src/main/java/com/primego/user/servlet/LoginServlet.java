@@ -38,7 +38,7 @@ public class LoginServlet extends HttpServlet {
 
             // Redirect based on role
             if (user.getRole() == Role.MERCHANT) {
-                resp.sendRedirect(req.getContextPath() + "/profile");
+                resp.sendRedirect(req.getContextPath() + "/merchant/merchant_dashboard.jsp");
             } else {
                 // Admin and Customer both go to index.jsp
                 resp.sendRedirect(req.getContextPath() + "/index.jsp");

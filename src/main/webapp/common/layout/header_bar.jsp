@@ -3,7 +3,7 @@
 
 <link id="primego-font-poppins" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-<header class="home-header">
+<header class="home-header ${pageContext.request.requestURI.contains('/merchant/') ? 'pg-header-merchant-minimal' : ''}">
   <div class="navbar">
     <%-- Logo 区域 --%>
     <a href="${pageContext.request.contextPath}/index.jsp" class="brand-link">
@@ -22,6 +22,9 @@
       <c:if test="${not empty sessionScope.user}">
         <c:if test="${sessionScope.user.role == 'ADMIN'}">
           <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard</a></li>
+        </c:if>
+        <c:if test="${sessionScope.user.role == 'MERCHANT'}">
+          <li><a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp">Dashboard</a></li>
         </c:if>
         <li><a href="${pageContext.request.contextPath}/profile">Profile</a></li>
         <li><a href="${pageContext.request.contextPath}/logout">Logout</a></li>
@@ -215,5 +218,34 @@
 
   .nav-avatar:hover {
     transform: scale(1.1) rotate(5deg);
+  }
+
+  /* ================= Merchant minimal header (logo + avatar only) =================
+     Requirement: merchant_dashboard.jsp & product_manager.jsp should show only logo + PrimeGo + right avatar.
+     Approach: add a marker class on merchant routes and hide the rest via CSS.
+  */
+  .home-header.pg-header-merchant-minimal .nav-menu,
+  .home-header.pg-header-merchant-minimal .nav-icons span,
+  .home-header.pg-header-merchant-minimal .nav-login-btn-link {
+    display: none !important;
+  }
+
+  /* Keep avatar visible even when icon spans are hidden */
+  .home-header.pg-header-merchant-minimal .nav-icons {
+    gap: 12px;
+  }
+
+  .home-header.pg-header-merchant-minimal .nav-avatar {
+    margin-left: 0;
+  }
+
+  /* Tighten padding since menu is removed */
+  .home-header.pg-header-merchant-minimal {
+    padding: 12px 28px;
+  }
+
+  /* On minimal header, don't reserve extra width for hidden menu */
+  .home-header.pg-header-merchant-minimal .navbar {
+    justify-content: space-between;
   }
 </style>
