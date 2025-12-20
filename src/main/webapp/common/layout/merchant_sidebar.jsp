@@ -296,17 +296,7 @@
                 <span>Orders</span>
             </a>
 
-            <a class="menu-item ${active == 'wallet' ? 'active-view' : ''}"
-               href="${pageContext.request.contextPath}/merchant/wallet/">
-                <span class="pg-mi" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
-                        <path d="M21 9H17a2 2 0 0 0 0 4h4"></path>
-                        <path d="M17 11h.01"></path>
-                    </svg>
-                </span>
-                <span>Wallet</span>
-            </a>
+            <%-- Wallet moved to header bar (avatar left area) to keep sidebar focused --%>
         </div>
 
         <div class="menu-group">

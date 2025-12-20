@@ -1,9 +1,23 @@
 <%@ page pageEncoding="UTF-8" %> <%-- 关键：防止Emoji和中文乱码 --%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page import="com.primego.user.model.User" %>
+
+<!-- pg-header_bar.jsp v2 (merchant username enabled) -->
+
+<%
+  // Centralized branching flags (avoid repeating fragile EL comparisons)
+  String pgUri = request.getRequestURI();
+  boolean pgIsMerchantRoute = pgUri != null && pgUri.contains("/merchant/");
+
+  User pgUser = (User) session.getAttribute("user");
+  String pgRole = (pgUser != null && pgUser.getRole() != null) ? pgUser.getRole().toString() : "";
+  boolean pgIsMerchantUser = "MERCHANT".equals(pgRole);
+  boolean pgIsAdminUser = "ADMIN".equals(pgRole);
+%>
 
 <link id="primego-font-poppins" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-<header class="home-header ${pageContext.request.requestURI.contains('/merchant/') ? 'pg-header-merchant-minimal' : ''}">
+<header class="home-header <%= pgIsMerchantRoute ? "pg-header-merchant-minimal" : "" %>">
   <div class="navbar">
     <%-- Logo 区域 --%>
     <a href="${pageContext.request.contextPath}/index.jsp" class="brand-link">
@@ -16,16 +30,21 @@
       <li><a href="${pageContext.request.contextPath}/index.jsp">Home</a></li>
       <li><a href="#">Categories</a></li>
       <li><a href="#">About Us</a></li>
+
       <c:if test="${empty sessionScope.user}">
         <li><a href="${pageContext.request.contextPath}/public/login.jsp">Login</a></li>
       </c:if>
+
       <c:if test="${not empty sessionScope.user}">
-        <c:if test="${sessionScope.user.role == 'ADMIN'}">
+        <%-- admin dashboard entry --%>
+        <c:if test="${sessionScope.user.role.toString() == 'ADMIN'}">
           <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard</a></li>
         </c:if>
-        <c:if test="${sessionScope.user.role == 'MERCHANT'}">
+        <%-- merchant dashboard entry --%>
+        <c:if test="${sessionScope.user.role.toString() == 'MERCHANT'}">
           <li><a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp">Dashboard</a></li>
         </c:if>
+
         <li><a href="${pageContext.request.contextPath}/profile">Profile</a></li>
         <li><a href="${pageContext.request.contextPath}/logout">Logout</a></li>
       </c:if>
@@ -33,18 +52,26 @@
 
     <%-- 图标与用户操作区域 --%>
     <div class="nav-icons">
-      <span onclick="toggleSearch()" title="Search">🔍</span>
-      <span onclick="showCart()" title="Cart">🛒 <span id="cart-count">0</span></span>
+      <span class="nav-icon nav-icon-search" onclick="toggleSearch()" title="Search">🔍</span>
+      <span class="nav-icon nav-icon-cart" onclick="showCart()" title="Cart">🛒 <span id="cart-count">0</span></span>
 
-      <%-- 未登录显示登录按钮 --%>
       <c:if test="${empty sessionScope.user}">
         <a href="${pageContext.request.contextPath}/public/login.jsp" class="nav-login-btn-link">
           <button class="nav-login-btn">Login</button>
         </a>
       </c:if>
 
-      <%-- 已登录显示头像 --%>
       <c:if test="${not empty sessionScope.user}">
+        <%-- Merchant-only UI: show on merchant routes AND merchant user (prevents admin/customer weirdness) --%>
+        <%
+          String __pgUsername = (pgUser != null && pgUser.getUsername() != null) ? pgUser.getUsername() : "";
+          boolean __showMerchantTop = pgIsMerchantRoute && pgIsMerchantUser;
+        %>
+        <% if (__showMerchantTop) { %>
+          <a class="pg-merchant-wallet" href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp#wallet" title="Wallet">Wallet</a>
+          <span class="pg-merchant-username" title="<%= __pgUsername %>"><%= __pgUsername %></span>
+        <% } %>
+
         <a href="${pageContext.request.contextPath}/profile" class="nav-avatar" title="Current User: ${sessionScope.user.username}">
             ${sessionScope.user.username.charAt(0).toString().toUpperCase()}
         </a>
@@ -93,6 +120,26 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+  }
+
+  /* Fix: allow the right side to be visible in flex layouts (prevents clipping on some pages) */
+  .home-header .navbar {
+    min-width: 0;
+  }
+
+  .home-header .brand-link {
+    flex: 0 0 auto;
+  }
+
+  .home-header .nav-menu {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .home-header .nav-icons {
+    flex: 0 0 auto;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   /* ================= Logo 样式 ================= */
@@ -155,24 +202,25 @@
   .nav-icons {
     display: flex;
     align-items: center;
+    gap: 16px; /* leave enough space */
   }
 
-  .nav-icons span {
-    margin-left: 20px;
+  /* only style icon spans (search/cart) */
+  .nav-icons .nav-icon {
+    margin-left: 0;
     cursor: pointer;
     font-size: 1.2rem;
     transition: transform 0.3s, color 0.3s;
   }
 
-  .nav-icons span:hover {
+  .nav-icons .nav-icon:hover {
     transform: scale(1.1);
     color: #FF9500;
   }
 
-  #cart-count {
-    font-size: 0.9rem;
-    font-weight: bold;
-    color: #d63031;
+  /* Reset the old broad rule impact (keep for backward compatibility if any other spans exist) */
+  .nav-icons span {
+    margin-left: 0;
   }
 
   /* ================= 登录按钮样式 ================= */
@@ -200,7 +248,7 @@
 
   /* ================= 头像样式 ================= */
   .nav-avatar {
-    margin-left: 20px;
+    margin-left: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -220,32 +268,61 @@
     transform: scale(1.1) rotate(5deg);
   }
 
-  /* ================= Merchant minimal header (logo + avatar only) =================
-     Requirement: merchant_dashboard.jsp & product_manager.jsp should show only logo + PrimeGo + right avatar.
-     Approach: add a marker class on merchant routes and hide the rest via CSS.
-  */
+  /* ================= Merchant minimal header (logo + right user area) ================= */
   .home-header.pg-header-merchant-minimal .nav-menu,
-  .home-header.pg-header-merchant-minimal .nav-icons span,
   .home-header.pg-header-merchant-minimal .nav-login-btn-link {
     display: none !important;
   }
 
-  /* Keep avatar visible even when icon spans are hidden */
-  .home-header.pg-header-merchant-minimal .nav-icons {
-    gap: 12px;
+  /* Hide ONLY search/cart icons in merchant minimal */
+  .home-header.pg-header-merchant-minimal .nav-icons .nav-icon {
+    display: none !important;
   }
 
+  /* Ensure username/wallet/avatar remain visible */
+  .home-header.pg-header-merchant-minimal .pg-merchant-username,
+  .home-header.pg-header-merchant-minimal .pg-merchant-wallet,
   .home-header.pg-header-merchant-minimal .nav-avatar {
+    display: inline-flex !important;
+    align-items: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Spacing in minimal mode */
+  .home-header.pg-header-merchant-minimal .nav-icons {
+    gap: 18px;
+  }
+
+  .home-header .pg-merchant-username {
     margin-left: 0;
+    font-weight: 700;
+    color: #2d3436;
+    font-size: 0.98rem;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
   }
 
-  /* Tighten padding since menu is removed */
-  .home-header.pg-header-merchant-minimal {
-    padding: 12px 28px;
+  /* Merchant wallet button: match index nav link look */
+  .home-header .pg-merchant-wallet {
+    text-decoration: none;
+    color: #444;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    background: transparent;
   }
 
-  /* On minimal header, don't reserve extra width for hidden menu */
-  .home-header.pg-header-merchant-minimal .navbar {
-    justify-content: space-between;
+  .home-header .pg-merchant-wallet:hover {
+    color: #FF9500;
+    background: rgba(0, 0, 0, 0.03);
+    transform: translateY(-2px);
   }
 </style>
+
+
