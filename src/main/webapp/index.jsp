@@ -5,7 +5,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CAT201 E-Commerce Project - Wide Navbar (Slightly Shorter)</title>
+  <title>PrimeGo - Premium B2C E-Commerce</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -82,26 +82,17 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
-
-      /* [修改点]：宽度微调 */
-      /* 之前是 96%，现在改为 92%，左右空隙稍微大一点 */
       width: 92%;
-      /* 最大宽度也稍微收一下，防止在超大屏幕上太长 */
       max-width: 1300px;
-
       border-radius: 50px;
       padding: 12px 40px;
-
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
-
       border: 1px solid rgba(255, 255, 255, 0.9);
-
       box-shadow:
               0 10px 30px rgba(0, 0, 0, 0.1),
               0 4px 6px rgba(0, 0, 0, 0.05);
-
       transition: all 0.3s ease;
     }
 
@@ -114,12 +105,41 @@
       align-items: center;
     }
 
-    .logo {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #d63031;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    /* --- Logo 区域样式修改 --- */
+
+    /* 1. 包裹图片和文字的容器 */
+    .brand-link {
+      display: flex;            /* 让内部元素横向排列 */
+      align-items: center;      /* 垂直居中对齐 */
+      gap: 12px;                /* 图片和文字之间的间距 */
+      text-decoration: none;    /* 去掉链接下划线 */
+      cursor: pointer;
+    }
+
+    /* 2. Logo 图片样式 */
+    .brand-logo-img {
+      height: 40px;             /* 控制图片高度，根据需要微调 */
+      width: auto;              /* 保持图片比例 */
+      object-fit: contain;
+      transition: transform 0.3s ease;
+    }
+
+    /* 3. 文字 "PrimeGo" 样式 (保留了你最初设计的字体风格) */
+    .brand-text {
+      font-size: 1.5rem;        /* 字体大小 */
+      font-weight: 700;         /* 粗体 */
+      color: #d63031;           /* 之前定义的红色 */
+      letter-spacing: 1px;      /* 字间距 */
+      line-height: 1;           /* 防止文字上下空白过多影响对齐 */
+      transition: color 0.3s ease;
+    }
+
+    /* 4. 鼠标悬停时的效果 */
+    .brand-link:hover .brand-logo-img {
+      transform: scale(1.1);    /* 图片稍微放大 */
+    }
+    .brand-link:hover .brand-text {
+      color: #FF9500;           /* 文字变色，增加互动感 */
     }
 
     .nav-menu {
@@ -289,44 +309,50 @@
 
 <header>
   <div class="navbar">
-    <div class="logo">USM SHOP</div>
+
+    <a href="${pageContext.request.contextPath}/index.jsp" class="brand-link">
+      <img src="${pageContext.request.contextPath}/assets/images/logo.png"
+           alt="PrimeGo Logo"
+           class="brand-logo-img">
+
+      <span class="brand-text">PrimeGo</span>
+    </a>
     <ul class="nav-menu">
       <li><a href="index.jsp">Home</a></li>
       <li><a href="#">Categories</a></li>
       <li><a href="#">About Us</a></li>
       <c:if test="${empty sessionScope.user}">
-          <li><a href="login">Login</a></li>
+        <li><a href="login">Login</a></li>
       </c:if>
       <c:if test="${not empty sessionScope.user}">
-          <c:if test="${sessionScope.user.role == 'ADMIN'}">
-              <li><a href="admin/dashboard">Dashboard</a></li>
-          </c:if>
-          <li><a href="profile">Profile</a></li>
-          <li><a href="logout">Logout</a></li>
+        <c:if test="${sessionScope.user.role == 'ADMIN'}">
+          <li><a href="admin/dashboard">Dashboard</a></li>
+        </c:if>
+        <li><a href="profile">Profile</a></li>
+        <li><a href="logout">Logout</a></li>
       </c:if>
     </ul>
     <div class="nav-icons">
       <span onclick="toggleSearch()">🔍</span>
       <span onclick="showCart()">🛒 <span id="cart-count">0</span></span>
-      
-      <!-- Login/Avatar Section -->
+
       <c:if test="${empty sessionScope.user}">
-          <a href="login" style="text-decoration: none; margin-left: 20px;">
-              <button style="padding: 8px 16px; border-radius: 20px; border: none; background: #333; color: white; cursor: pointer; font-weight: 600;">Login</button>
-          </a>
+        <a href="login" style="text-decoration: none; margin-left: 20px;">
+          <button style="padding: 8px 16px; border-radius: 20px; border: none; background: #333; color: white; cursor: pointer; font-weight: 600;">Login</button>
+        </a>
       </c:if>
       <c:if test="${not empty sessionScope.user}">
-          <a href="profile" style="text-decoration: none; margin-left: 20px; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #007bff; color: white; border-radius: 50%; font-weight: bold; font-size: 1.2rem;" title="Profile">
-              ${sessionScope.user.username.charAt(0).toString().toUpperCase()}
-          </a>
+        <a href="profile" style="text-decoration: none; margin-left: 20px; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #007bff; color: white; border-radius: 50%; font-weight: bold; font-size: 1.2rem;" title="Profile">
+            ${sessionScope.user.username.charAt(0).toString().toUpperCase()}
+        </a>
       </c:if>
     </div>
   </div>
 </header>
 
 <section class="hero glass-panel">
-  <h1>Welcome to CAT201<br>Student Marketplace</h1>
-  <p>A platform built with Java & Web Technologies for USM students.</p >
+  <h1>Welcome to PrimeGo<br>Premium Marketplace</h1>
+  <p>Your destination for high-quality first-hand products.</p>
   <button class="btn btn-primary" onclick="window.location.href='#products'">Start Shopping</button>
 </section>
 
@@ -337,9 +363,9 @@
     <div class="product-card glass-panel">
       <div class="product-img-placeholder">💻</div>
       <div class="product-details">
-        <h3 class="product-name">Second-hand Laptop</h3>
-        <p class="product-price">RM 1,250.00</p >
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Good condition, 16GB RAM.</p >
+        <h3 class="product-name">Premium Business Laptop</h3>
+        <p class="product-price">RM 3,250.00</p>
+        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Brand new, 16GB RAM, 512GB SSD.</p>
         <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
       </div>
     </div>
@@ -347,9 +373,9 @@
     <div class="product-card glass-panel">
       <div class="product-img-placeholder">📚</div>
       <div class="product-details">
-        <h3 class="product-name">Java Programming Textbook</h3>
-        <p class="product-price">RM 55.00</p >
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Essential for CAT201.</p >
+        <h3 class="product-name">Java Programming Mastery</h3>
+        <p class="product-price">RM 85.00</p>
+        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Latest Edition. Hardcover.</p>
         <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
       </div>
     </div>
@@ -357,9 +383,9 @@
     <div class="product-card glass-panel">
       <div class="product-img-placeholder">⌚</div>
       <div class="product-details">
-        <h3 class="product-name">Smart Watch Series 5</h3>
-        <p class="product-price">RM 300.00</p >
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Includes charger box.</p >
+        <h3 class="product-name">Smart Watch Ultra</h3>
+        <p class="product-price">RM 800.00</p>
+        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Original packaging with warranty.</p>
         <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
       </div>
     </div>
@@ -367,9 +393,9 @@
     <div class="product-card glass-panel">
       <div class="product-img-placeholder">👟</div>
       <div class="product-details">
-        <h3 class="product-name">Sport Shoes (Size 9)</h3>
-        <p class="product-price">RM 89.00</p >
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Never worn, wrong size.</p >
+        <h3 class="product-name">Running Pro Shoes</h3>
+        <p class="product-price">RM 189.00</p>
+        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">New Season Arrival.</p>
         <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
       </div>
     </div>
@@ -377,8 +403,8 @@
 </div>
 
 <footer>
-  <p>CAT201 Project Group Assignment | Semester 1 2025/2026</p >
-  <p style="font-size: 0.8rem; opacity: 0.7;">Developed using Native HTML, CSS, and JS (No Frameworks).</p >
+  <p>PrimeGo E-Commerce | USM CAT201 Project</p>
+  <p style="font-size: 0.8rem; opacity: 0.7;">Developed using Native HTML, CSS, and JS (No Frameworks).</p>
 </footer>
 
 <script>
@@ -392,14 +418,14 @@
 
   function showCart() {
     if (count === 0) {
-      alert("Your cart is empty. Go buy something!");
+      alert("Your cart is empty. Discover our premium products!");
     } else {
       alert(`You have ${count} items in your cart. Checkout functionality will be implemented with Java.`);
     }
   }
 
   function toggleSearch() {
-    let searchTerm = prompt("What are you looking for?");
+    let searchTerm = prompt("Search PrimeGo products:");
     if (searchTerm) {
       alert("Searching for: " + searchTerm);
     }

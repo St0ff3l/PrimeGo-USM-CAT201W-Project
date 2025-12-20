@@ -2,3 +2,8 @@
 /target/
 /.trae/
 /out/
+/target/PrimeGo-Project-1.0-SNAPSHOT/
+/target/classes/
+/.vscode/
+.vscode/
+.idea/
