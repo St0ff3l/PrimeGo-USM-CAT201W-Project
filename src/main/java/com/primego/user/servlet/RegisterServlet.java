@@ -31,19 +31,19 @@ public class RegisterServlet extends HttpServlet {
         // Server-side validation
         if (!email.equals(confirmEmail)) {
             req.setAttribute("error", "Emails do not match");
-            req.getRequestDispatcher("/signup.jsp").forward(req, resp);
+            req.getRequestDispatcher("/public/signup.jsp").forward(req, resp);
             return;
         }
 
         if (!password.equals(confirmPassword)) {
             req.setAttribute("error", "Passwords do not match");
-            req.getRequestDispatcher("/signup.jsp").forward(req, resp);
+            req.getRequestDispatcher("/public/signup.jsp").forward(req, resp);
             return;
         }
 
         if (userDAO.findByUsername(username) != null) {
             req.setAttribute("error", "Username already exists");
-            req.getRequestDispatcher("/signup.jsp").forward(req, resp);
+            req.getRequestDispatcher("/public/signup.jsp").forward(req, resp);
             return;
         }
 
@@ -53,10 +53,10 @@ public class RegisterServlet extends HttpServlet {
 
         if (success) {
             // Redirect to login page with success message (optional: could pass via session or URL param)
-            resp.sendRedirect(req.getContextPath() + "/login.jsp");
+            resp.sendRedirect(req.getContextPath() + "/public/login.jsp");
         } else {
             req.setAttribute("error", "Registration failed. Please try again.");
-            req.getRequestDispatcher("/signup.jsp").forward(req, resp);
+            req.getRequestDispatcher("/public/signup.jsp").forward(req, resp);
         }
     }
 }

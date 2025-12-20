@@ -18,29 +18,47 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.getRequestDispatcher("/login.jsp").forward(req, resp);
+        req.getRequestDispatcher("/public/login.jsp").forward(req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // 1. 设置请求编码，防止中文乱码
+        req.setCharacterEncoding("UTF-8");
+
         String username = req.getParameter("username");
         String password = req.getParameter("password");
 
         User user = userDAO.validateCredentials(username, password);
 
         if (user != null) {
+            // 2. 登录成功，创建 Session
             HttpSession session = req.getSession();
             session.setAttribute("user", user);
 
-            // Redirect based on role
-            if (user.getRole() == Role.MERCHANT) {
-                resp.sendRedirect(req.getContextPath() + "/profile");
+            // 3. 🔥 核心修改：根据角色分流跳转 🔥
+            // 注意：这里使用的是我们刚刚创建的 JSP 文件路径
+
+            if (user.getRole() == Role.ADMIN) {
+                // 管理员 -> 跳转到 Admin Dashboard
+                System.out.println("Login: Admin detected, redirecting to /admin/admin_dashboard.jsp");
+                resp.sendRedirect(req.getContextPath() + "/admin/admin_dashboard.jsp");
+
+            } else if (user.getRole() == Role.MERCHANT) {
+                // 商家 -> 跳转到 Merchant Dashboard
+                System.out.println("Login: Merchant detected, redirecting to /merchant/merchant_dashboard.jsp");
+                resp.sendRedirect(req.getContextPath() + "/merchant/merchant_dashboard.jsp");
+
             } else {
+                // 普通用户 -> 跳转到首页 (或者之前的 /profile)
+                System.out.println("Login: Customer detected, redirecting to index");
                 resp.sendRedirect(req.getContextPath() + "/index.jsp");
             }
+
         } else {
+            // 4. 登录失败
             req.setAttribute("error", "Invalid username or password");
-            req.getRequestDispatcher("/login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/public/login.jsp").forward(req, resp);
         }
     }
 }
