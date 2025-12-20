@@ -27,6 +27,6 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         }
 
-        req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
+        req.getRequestDispatcher("/admin/admin_dashboard.jsp").forward(req, resp);
     }
 }

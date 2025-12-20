@@ -29,15 +29,15 @@ public class ProfileServlet extends HttpServlet {
         switch (user.getRole()) {
             case CUSTOMER:
                 req.setAttribute("profile", profileDAO.getCustomerProfile(userId));
-                req.getRequestDispatcher("/WEB-INF/views/profile/customer_profile.jsp").forward(req, resp);
+                req.getRequestDispatcher("/customer/user/customer_profile.jsp").forward(req, resp);
                 break;
             case MERCHANT:
                 req.setAttribute("profile", profileDAO.getMerchantProfile(userId));
-                req.getRequestDispatcher("/WEB-INF/views/profile/merchant_profile.jsp").forward(req, resp);
+                req.getRequestDispatcher("/merchant/user/merchant_profile.jsp").forward(req, resp);
                 break;
             case ADMIN:
                 req.setAttribute("profile", profileDAO.getAdminProfile(userId));
-                req.getRequestDispatcher("/WEB-INF/views/profile/admin_profile.jsp").forward(req, resp);
+                req.getRequestDispatcher("/admin/user/admin_profile.jsp").forward(req, resp);
                 break;
         }
     }
