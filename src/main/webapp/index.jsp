@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    /* ================= 1. 全局重置 ================= */
+    /* ================= 1. 全局基础样式 ================= */
     * {
       margin: 0;
       padding: 0;
@@ -18,53 +18,13 @@
     }
 
     body {
-      background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
-      min-height: 100vh;
-      overflow-x: hidden;
-      position: relative;
+      /* 背景颜色和动画已移至 common/background.jsp */
+      /* 这里只保留文字颜色和基本定位 */
       color: #333;
+      position: relative;
     }
 
-    /* ================= 2. 纯 CSS 背景 (实心 3D) ================= */
-    .background-blob {
-      position: fixed;
-      border-radius: 50%;
-      z-index: -1;
-      opacity: 1;
-      filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
-    }
-
-    .blob-red {
-      width: 750px;
-      height: 650px;
-      top: -200px;
-      left: -200px;
-      transform: rotate(-10deg);
-      background: linear-gradient(145deg, #ff5e55, #d92e25);
-      box-shadow: inset 10px 10px 30px rgba(255, 255, 255, 0.5), inset -20px -20px 60px rgba(139, 0, 0, 0.4);
-    }
-
-    .blob-yellow {
-      width: 900px;
-      height: 700px;
-      top: -250px;
-      right: -100px;
-      transform: rotate(30deg);
-      background: linear-gradient(145deg, #ffdb4d, #e6b800);
-      box-shadow: inset 10px 10px 40px rgba(255, 255, 255, 0.7), inset -30px -30px 60px rgba(184, 134, 11, 0.3);
-    }
-
-    .blob-orange {
-      width: 1800px;
-      height: 950px;
-      bottom: -650px;
-      left: -600px;
-      transform: rotate(-10deg);
-      background: linear-gradient(145deg, #ffad33, #e68a00);
-      box-shadow: inset 15px 15px 50px rgba(255, 255, 255, 0.5), inset -40px -40px 80px rgba(160, 82, 45, 0.3);
-    }
-
-    /* ================= 3. 毛玻璃容器样式 ================= */
+    /* ================= 2. 毛玻璃容器样式 (通用) ================= */
     .glass-panel {
       background: rgba(255, 255, 255, 0.7);
       backdrop-filter: blur(20px);
@@ -75,7 +35,7 @@
               inset 0 0 0 1px rgba(255, 255, 255, 0.5);
     }
 
-    /* ================= 4. 导航栏 (稍微短一点的悬浮胶囊) ================= */
+    /* ================= 3. 导航栏样式 ================= */
     header {
       position: fixed;
       top: 15px;
@@ -105,43 +65,39 @@
       align-items: center;
     }
 
-    /* --- Logo 区域样式修改 --- */
-
-    /* 1. 包裹图片和文字的容器 */
+    /* Logo 区域 */
     .brand-link {
-      display: flex;            /* 让内部元素横向排列 */
-      align-items: center;      /* 垂直居中对齐 */
-      gap: 12px;                /* 图片和文字之间的间距 */
-      text-decoration: none;    /* 去掉链接下划线 */
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
       cursor: pointer;
     }
 
-    /* 2. Logo 图片样式 */
     .brand-logo-img {
-      height: 40px;             /* 控制图片高度，根据需要微调 */
-      width: auto;              /* 保持图片比例 */
+      height: 40px;
+      width: auto;
       object-fit: contain;
       transition: transform 0.3s ease;
     }
 
-    /* 3. 文字 "PrimeGo" 样式 (保留了你最初设计的字体风格) */
     .brand-text {
-      font-size: 1.5rem;        /* 字体大小 */
-      font-weight: 700;         /* 粗体 */
-      color: #d63031;           /* 之前定义的红色 */
-      letter-spacing: 1px;      /* 字间距 */
-      line-height: 1;           /* 防止文字上下空白过多影响对齐 */
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #d63031;
+      letter-spacing: 1px;
+      line-height: 1;
       transition: color 0.3s ease;
     }
 
-    /* 4. 鼠标悬停时的效果 */
     .brand-link:hover .brand-logo-img {
-      transform: scale(1.1);    /* 图片稍微放大 */
+      transform: scale(1.1);
     }
     .brand-link:hover .brand-text {
-      color: #FF9500;           /* 文字变色，增加互动感 */
+      color: #FF9500;
     }
 
+    /* 菜单区域 */
     .nav-menu {
       display: flex;
       list-style: none;
@@ -163,6 +119,7 @@
       background: rgba(0,0,0,0.03);
     }
 
+    /* 图标区域 */
     .nav-icons span {
       margin-left: 20px;
       cursor: pointer;
@@ -175,7 +132,7 @@
       color: #FF9500;
     }
 
-    /* ================= 5. Hero 区域 ================= */
+    /* ================= 4. Hero 区域 ================= */
     .hero {
       max-width: 1200px;
       margin: 140px auto 50px;
@@ -217,7 +174,7 @@
       box-shadow: 0 8px 20px rgba(255, 59, 48, 0.6);
     }
 
-    /* ================= 6. 商品网格 ================= */
+    /* ================= 5. 商品网格 ================= */
     .section-container {
       max-width: 1200px;
       margin: 0 auto 50px;
@@ -291,7 +248,7 @@
       color: white;
     }
 
-    /* ================= 7. 页脚 ================= */
+    /* ================= 6. 页脚 ================= */
     footer {
       background: #2d3436;
       color: white;
@@ -303,18 +260,14 @@
 </head>
 <body>
 
-<div class="background-blob blob-red"></div>
-<div class="background-blob blob-yellow"></div>
-<div class="background-blob blob-orange"></div>
+<%@ include file="common/background.jsp" %>
 
 <header>
   <div class="navbar">
-
     <a href="${pageContext.request.contextPath}/index.jsp" class="brand-link">
       <img src="${pageContext.request.contextPath}/assets/images/logo.png"
            alt="PrimeGo Logo"
            class="brand-logo-img">
-
       <span class="brand-text">PrimeGo</span>
     </a>
     <ul class="nav-menu">
