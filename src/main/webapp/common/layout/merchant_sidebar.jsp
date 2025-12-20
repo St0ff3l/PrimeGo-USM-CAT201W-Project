@@ -272,6 +272,17 @@
                 <span>Products</span>
             </a>
 
+            <a class="menu-item ${active == 'publish' ? 'active-view' : ''}"
+               href="${pageContext.request.contextPath}/merchant/product/publish.jsp">
+                <span class="pg-mi" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                    </svg>
+                </span>
+                <span>Publish</span>
+            </a>
+
             <a class="menu-item ${active == 'orders' ? 'active-view' : ''}"
                href="${pageContext.request.contextPath}/merchant/order/manage.jsp">
                 <span class="pg-mi" aria-hidden="true">
