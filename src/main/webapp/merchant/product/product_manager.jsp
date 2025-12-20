@@ -59,6 +59,12 @@
             --card-radius: 16px;
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
             --border-color: #dfe6e9;
+
+            /* Glass tokens (match sidebar 0.55) */
+            --pg-glass-bg-055: rgba(255, 255, 255, 0.55);
+            --pg-glass-border: rgba(255, 255, 255, 0.9);
+            --pg-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+            --pg-glass-blur: 25px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -68,25 +74,8 @@
             color: var(--text-dark);
             min-height: 100vh;
             position: relative;
+            padding-top: 90px;
         }
-
-        /* Navbar */
-        .navbar {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            padding: 15px 40px;
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000;
-            border-bottom: 1px solid rgba(255,255,255,0.5);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        }
-        .logo { font-weight: 800; font-size: 1.5rem; color: var(--secondary); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo span { color: var(--text-dark); }
-        .logo-img { width: 35px; height: 35px; object-fit: contain; }
-
-        .nav-actions { display: flex; align-items: center; gap: 20px; }
-        .nav-btn { border: none; background: transparent; font-weight: 600; color: var(--text-gray); cursor: pointer; font-size: 0.95rem; transition: 0.3s; }
-        .nav-btn:hover { color: var(--primary); }
 
         /* Layout */
         .layout-container {
@@ -98,27 +87,6 @@
             gap: 30px;
             align-items: start;
         }
-
-        /* Sidebar */
-        .sidebar-card {
-            background: white; border-radius: var(--card-radius);
-            padding: 25px 20px; box-shadow: var(--card-shadow);
-            position: sticky; top: 100px; height: calc(100vh - 130px);
-            display: flex; flex-direction: column;
-        }
-        .menu-group-title { font-size: 0.8rem; color: #b2bec3; font-weight: 700; margin-bottom: 10px; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
-        .menu-group-title:first-child { margin-top: 0; }
-
-        .menu-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 15px; margin-bottom: 5px;
-            color: var(--text-dark); text-decoration: none;
-            border-radius: 12px; transition: all 0.3s ease; font-weight: 500; font-size: 0.95rem;
-            cursor: pointer; border: none; background: transparent; width: 100%; text-align: left;
-        }
-        .menu-item:hover { background: #FFF4E6; color: var(--primary); transform: translateX(5px); }
-        .menu-item.active-view { background: linear-gradient(45deg, #FF9500, #FF5E55); color: white; box-shadow: 0 5px 15px rgba(255, 94, 85, 0.3); }
-        .menu-item i { font-size: 1.2rem; }
 
         /* Content Base */
         .main-content { display: flex; flex-direction: column; gap: 25px; }
@@ -135,8 +103,14 @@
 
         /* 1. 顶部标题栏动画 */
         .page-header {
-            background: white; border-radius: var(--card-radius); padding: 25px 30px;
-            box-shadow: var(--card-shadow); display: flex; justify-content: space-between; align-items: center;
+            background: var(--pg-glass-bg-055);
+            backdrop-filter: blur(var(--pg-glass-blur));
+            -webkit-backdrop-filter: blur(var(--pg-glass-blur));
+            border: 1px solid var(--pg-glass-border);
+            box-shadow: var(--pg-glass-shadow);
+            border-radius: var(--card-radius);
+            padding: 25px 30px;
+            display: flex; justify-content: space-between; align-items: center;
 
             /* 新增动画属性 */
             opacity: 0;
@@ -148,8 +122,14 @@
 
         /* 2. 搜索工具栏动画 */
         .toolbar {
-            background: white; padding: 15px 20px; border-radius: var(--card-radius);
-            box-shadow: var(--card-shadow); display: flex; gap: 15px; align-items: center;
+            background: var(--pg-glass-bg-055);
+            backdrop-filter: blur(var(--pg-glass-blur));
+            -webkit-backdrop-filter: blur(var(--pg-glass-blur));
+            border: 1px solid var(--pg-glass-border);
+            box-shadow: var(--pg-glass-shadow);
+            padding: 15px 20px;
+            border-radius: var(--card-radius);
+            display: flex; gap: 15px; align-items: center;
 
             /* 新增动画属性 */
             opacity: 0;
@@ -179,13 +159,15 @@
 
         /* 3. 商品卡片动画 */
         .product-card {
-            background: white;
+            background: var(--pg-glass-bg-055);
+            backdrop-filter: blur(var(--pg-glass-blur));
+            -webkit-backdrop-filter: blur(var(--pg-glass-blur));
+            border: 1px solid var(--pg-glass-border);
+            box-shadow: var(--pg-glass-shadow);
             border-radius: 20px;
-            box-shadow: var(--card-shadow);
             overflow: hidden;
             position: relative;
             cursor: pointer;
-            border: 2px solid transparent;
             display: flex;
             flex-direction: column;
 
@@ -200,11 +182,15 @@
         .product-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            border-color: rgba(255, 149, 0, 0.1);
+            border-color: rgba(255, 149, 0, 0.12);
         }
 
         .card-img-container {
-            height: 180px; background: #f8f9fa; display: flex; align-items: center; justify-content: center;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
             overflow: hidden; position: relative;
         }
         .card-img-container img { width: 100%; height: 100%; object-fit: cover; }
@@ -238,8 +224,6 @@
 
         @media (max-width: 1024px) {
             .layout-container { grid-template-columns: 80px 1fr; }
-            .sidebar-card { align-items: center; }
-            .menu-item span, .menu-group-title { display: none; }
         }
     </style>
 </head>
@@ -247,49 +231,12 @@
 
 <%@ include file="../../common/background_merchant.jsp" %>
 
-<nav class="navbar">
-    <a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp" class="logo">
-        <img src="${pageContext.request.contextPath}/assets/images/logo.png" alt="Logo" class="logo-img">
-        <span>Seller Center</span>
-    </a>
-    <div class="nav-actions">
-        <button class="nav-btn" onclick="location.href='${pageContext.request.contextPath}/index.jsp'">
-            <i class="ri-store-2-line"></i> Back to Shop
-        </button>
-        <div style="width: 1px; height: 20px; background: #ddd;"></div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-weight: 600; font-size: 0.9rem;"><%= user.getUsername() %></span>
-            <div style="width: 35px; height: 35px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                <%= user.getUsername().substring(0, 1).toUpperCase() %>
-            </div>
-        </div>
-    </div>
-</nav>
+<%@ include file="../../common/layout/header_bar.jsp" %>
 
 <div class="layout-container">
 
-    <aside class="sidebar-card">
-        <div class="menu-group-title">Main</div>
-        <a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp" class="menu-item">
-            <i class="ri-dashboard-3-line"></i> <span>Dashboard</span>
-        </a>
-        <div class="menu-group-title">Management</div>
-        <a href="${pageContext.request.contextPath}/merchant/product/product_manager.jsp" class="menu-item active-view">
-            <i class="ri-box-3-line"></i> <span>Product Manager</span>
-        </a>
-        <button class="menu-item" onclick="alert('Order module coming soon!')">
-            <i class="ri-list-check-2"></i> <span>Orders</span>
-        </button>
-        <button class="menu-item" onclick="alert('Wallet module coming soon!')">
-            <i class="ri-wallet-3-line"></i> <span>Finance</span>
-        </button>
-        <div style="margin-top: auto;">
-            <div class="menu-group-title">System</div>
-            <a href="${pageContext.request.contextPath}/logout" class="menu-item" style="color: #FF5E55;">
-                <i class="ri-logout-box-r-line"></i> <span>Log Out</span>
-            </a>
-        </div>
-    </aside>
+    <% request.setAttribute("activeMenu", "products"); %>
+    <%@ include file="../../common/layout/merchant_sidebar.jsp" %>
 
     <main class="main-content">
 
@@ -393,3 +340,6 @@
 
 </body>
 </html>
+
+
+

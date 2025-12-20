@@ -1,6 +1,8 @@
 <%@ page pageEncoding="UTF-8" %> <%-- 关键：防止Emoji和中文乱码 --%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
+<link id="primego-font-poppins" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
 <header class="home-header">
   <div class="navbar">
     <%-- Logo 区域 --%>
@@ -49,6 +51,18 @@
 </header>
 
 <style>
+  /* ================= Header Bar 依赖的通用基础样式 =================
+     说明：这些是 header bar 视觉所需的通用字体/基础 reset。
+     为避免影响页面其它区域，这里只作用于 header bar 组件内部。
+  */
+  .home-header,
+  .home-header * ,
+  .home-header *::before,
+  .home-header *::after {
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+  }
+
   /* ================= 导航栏容器 ================= */
   .home-header {
     position: fixed;

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
@@ -6,21 +6,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PrimeGo - Premium B2C E-Commerce</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <style>
     /* ================= 1. 全局基础样式 ================= */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
+    /* 说明：通用字体/reset 已移至 common/layout/header_bar.jsp（仅作用于 header bar），
+       index.jsp 这里只保留页面自身需要的样式，避免全局覆盖其它页面。 */
 
     body {
       /* 背景颜色和动画已移至 common/background.jsp */
       color: #333;
       position: relative;
+      margin: 0;
     }
 
     /* ================= 2. 毛玻璃容器样式 (通用) ================= */
@@ -34,8 +30,8 @@
               inset 0 0 0 1px rgba(255, 255, 255, 0.5);
     }
 
-    /* 注意：原本的 "3. 导航栏样式" 已被删除。
-       现在样式由 common/layout/header_bar.jsp 自动提供。
+    /* 导航栏（header bar）相关样式不放在 index.jsp：
+       统一由 common/layout/header_bar.jsp 提供，避免多个页面重复定义/冲突。
     */
 
     /* ================= 4. Hero 区域 ================= */
@@ -230,19 +226,19 @@
 </footer>
 
 <script>
-  let count = 0;
+  window.count = 0;
 
   function addToCart() {
-    count++;
-    document.getElementById('cart-count').innerText = count;
+    window.count++;
+    document.getElementById('cart-count').innerText = window.count;
     alert("Success! Item added to your cart.");
   }
 
   function showCart() {
-    if (count === 0) {
+    if (window.count === 0) {
       alert("Your cart is empty. Discover our premium products!");
     } else {
-      alert(`You have ${count} items in your cart. Checkout functionality will be implemented with Java.`);
+      alert("You have " + window.count + " items in your cart. Checkout functionality will be implemented with Java.");
     }
   }
 
