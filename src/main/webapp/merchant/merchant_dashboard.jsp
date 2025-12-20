@@ -26,8 +26,6 @@
 
 <!DOCTYPE html>
 <html lang="en">
-<!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -220,15 +218,15 @@
     <aside class="sidebar-card">
         <div class="menu-group-title">Main</div>
 
-        <button class="menu-item active-view" onclick="switchView('dashboard', this)">
+        <a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp" class="menu-item active-view">
             <i class="ri-dashboard-3-line"></i> <span>Dashboard</span>
-        </button>
+        </a>
 
         <div class="menu-group-title">Management</div>
 
-        <button class="menu-item" onclick="switchView('products', this)">
+        <a href="${pageContext.request.contextPath}/merchant/product/product_manager.jsp" class="menu-item">
             <i class="ri-box-3-line"></i> <span>Product Manager</span>
-        </button>
+        </a>
 
         <button class="menu-item" onclick="alert('Order module coming soon!')">
             <i class="ri-list-check-2"></i> <span>Orders</span>
@@ -247,6 +245,7 @@
     </aside>
 
     <main class="main-content">
+        <!-- Dashboard View - 这个页面只显示dashboard内容 -->
         <div id="view-dashboard" class="view-section active">
             <div class="shop-header-card" style="margin-bottom: 30px;">
                 <div class="shop-profile">
@@ -333,7 +332,7 @@
                                 <p>3 items are low in stock</p>
                             </div>
                         </div>
-                        <a href="#" class="todo-action">Restock</a>
+                        <a href="${pageContext.request.contextPath}/merchant/product/product_manager.jsp" class="todo-action">Restock</a>
                     </div>
 
                     <div class="todo-item">
@@ -360,71 +359,10 @@
                 </div>
             </div>
         </div>
-
-        <div id="view-products" class="view-section">
-            <div class="panel">
-                <div class="panel-header">
-                    <div class="panel-title">My Products</div>
-                    <button onclick="location.href='product/publish.jsp'" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer;">
-                        <i class="ri-add-line"></i> Publish New
-                    </button>
-                </div>
-
-                <table class="custom-table">
-                    <thead>
-                    <tr>
-                        <th>Image</th>
-                        <th>Product Name</th>
-                        <th>Price</th>
-                        <th>Stock</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td><div style="width: 50px; height: 50px; background: #dfe6e9; border-radius: 8px;"></div></td>
-                        <td>
-                            <strong>Wireless Keyboard</strong><br>
-                            <span style="font-size: 0.8rem; color: #b2bec3;">ID: 20392</span>
-                        </td>
-                        <td>RM 159.00</td>
-                        <td>120</td>
-                        <td><span style="background: #e17055; color: white; padding: 3px 10px; border-radius: 10px; font-size: 0.8rem;">Active</span></td>
-                        <td>
-                            <button class="btn-small btn-edit">Edit</button>
-                            <button class="btn-small btn-del">Off</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><div style="width: 50px; height: 50px; background: #dfe6e9; border-radius: 8px;"></div></td>
-                        <td>
-                            <strong>Gaming Mouse</strong><br>
-                            <span style="font-size: 0.8rem; color: #b2bec3;">ID: 20393</span>
-                        </td>
-                        <td>RM 89.00</td>
-                        <td>45</td>
-                        <td><span style="background: #e17055; color: white; padding: 3px 10px; border-radius: 10px; font-size: 0.8rem;">Active</span></td>
-                        <td>
-                            <button class="btn-small btn-edit">Edit</button>
-                            <button class="btn-small btn-del">Off</button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </main>
 </div>
 
 <script>
-    function switchView(viewName, btn) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.getElementById('view-' + viewName).classList.add('active');
-        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active-view'));
-        if (btn) btn.classList.add('active-view');
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('revenueChart').getContext('2d');
         new Chart(ctx, {
@@ -460,4 +398,3 @@
 
 </body>
 </html>
-
