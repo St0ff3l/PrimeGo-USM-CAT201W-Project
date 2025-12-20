@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Inherit basic styles */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -15,9 +18,10 @@
             position: relative;
             overflow-x: hidden;
             color: #333;
+            display: flex;
         }
 
-        /* Admin Dashboard uses RED theme (Same as Admin Profile) */
+        /* Admin Dashboard uses RED theme */
         .background-blob {
             position: fixed;
             border-radius: 50%;
@@ -47,45 +51,179 @@
             box-shadow: none;
         }
 
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.6);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .sidebar h2 {
+            color: #d63031;
+            margin-bottom: 40px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: #555;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: linear-gradient(45deg, #FF3B30, #FF9500);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 59, 48, 0.3);
+        }
+
+        .nav-item span { margin-left: 10px; }
+
+        .sidebar-footer {
+            margin-top: auto;
+        }
+
+        .btn-logout {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            text-align: center;
+            background: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 15px;
+            transition: 0.3s;
+        }
+        .btn-logout:hover { background: #555; }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            flex-grow: 1;
+            padding: 40px;
+            width: calc(100% - 250px);
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-section h1 { 
+            color: #d63031; 
+            font-size: 2.5rem;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 10px 30px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            display: inline-block;
+        }
+
+        /* Tab Content */
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Glass Panel Style */
         .glass-panel {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.6);
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            max-width: 1000px;
-            margin: 50px auto;
+            padding: 25px;
+            margin-bottom: 30px;
         }
 
-        h1 { margin-bottom: 30px; color: #d63031; text-align: center; }
-        
-        .dashboard-grid {
+        /* Metrics Grid */
+        .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
+            margin-bottom: 30px;
         }
 
-        .dashboard-card {
-            background: rgba(255,255,255,0.6);
-            padding: 20px;
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .metric-title { font-size: 0.9rem; color: #666; margin-bottom: 5px; }
+        .metric-value { font-size: 2rem; font-weight: 700; color: #2d3436; }
+        .metric-trend { font-size: 0.8rem; color: #27ae60; font-weight: 600; }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container { position: relative; height: 300px; width: 100%; }
+
+        /* Logs & Tables */
+        .table-container { overflow-x: auto; }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th, .data-table td {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .data-table th { color: #666; font-weight: 600; }
+        .data-table tr:last-child td { border-bottom: none; }
+        
+        .log-level {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .level-INFO { background: #e3f2fd; color: #1976d2; }
+        .level-WARN { background: #fff3e0; color: #f57c00; }
+        .level-ERROR { background: #ffebee; color: #d32f2f; }
+
+        .role-badge {
+            padding: 5px 10px;
             border-radius: 15px;
-            text-align: center;
-            transition: 0.3s;
-            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
         }
-        .dashboard-card:hover {
-            background: rgba(255,255,255,0.9);
-            transform: translateY(-5px);
-        }
-        .dashboard-card h3 { margin-bottom: 10px; color: #333; }
-        .dashboard-card p { color: #666; }
+        .role-ADMIN { background: #ffebee; color: #d32f2f; }
+        .role-MERCHANT { background: #fff8e1; color: #fbc02d; }
+        .role-CUSTOMER { background: #e3f2fd; color: #1976d2; }
 
-        .btn-back {
-            display: block; width: 200px; margin: 30px auto 0; padding: 10px 20px; 
-            background: #333; color: white; text-align: center;
-            text-decoration: none; border-radius: 20px;
-        }
     </style>
 </head>
 <body>
@@ -93,23 +231,220 @@
     <div class="background-blob blob-yellow"></div>
     <div class="background-blob blob-orange"></div>
 
-    <div class="glass-panel">
-        <h1>Admin Dashboard</h1>
-        <div class="dashboard-grid">
-            <div class="dashboard-card">
-                <h3>User Management</h3>
-                <p>View and manage registered users.</p>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>PrimeGo Admin</h2>
+        <div class="nav-item active" onclick="switchTab('dashboard', this)">
+            <span>📊 Dashboard</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('users', this)">
+            <span>👥 User Management</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('settings', this)">
+            <span>⚙️ Settings</span>
+        </div>
+        
+        <div class="sidebar-footer">
+            <a href="${pageContext.request.contextPath}/index.jsp" class="btn-logout" style="margin-bottom: 10px; background: #555;">Back to Home</a>
+            <a href="${pageContext.request.contextPath}/logout" class="btn-logout">Logout</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- Tab 1: Dashboard Overview -->
+        <div id="dashboard" class="tab-content active">
+            <div class="header-section">
+                <h1>Dashboard Overview</h1>
             </div>
-            <div class="dashboard-card">
-                <h3>Product Management</h3>
-                <p>Approve or remove listings.</p>
+
+            <!-- Metrics -->
+            <div class="metrics-grid">
+                <div class="glass-panel metric-card">
+                    <span class="metric-title">Total Users</span>
+                    <span class="metric-value">${totalUsers}</span>
+                    <span class="metric-trend">↑ 12% vs last week</span>
+                </div>
+                <div class="glass-panel metric-card">
+                    <span class="metric-title">Active Sessions</span>
+                    <span class="metric-value">${activeSessions}</span>
+                    <span class="metric-trend">Currently Online</span>
+                </div>
+                <div class="glass-panel metric-card">
+                    <span class="metric-title">Daily Visits</span>
+                    <span class="metric-value">${dailyVisits}</span>
+                    <span class="metric-trend">↑ 5% vs yesterday</span>
+                </div>
+                <div class="glass-panel metric-card">
+                    <span class="metric-title">Total Revenue</span>
+                    <span class="metric-value">${revenue}</span>
+                    <span class="metric-trend">↑ 8% vs last month</span>
+                </div>
             </div>
-            <div class="dashboard-card">
-                <h3>System Reports</h3>
-                <p>View traffic and sales analytics.</p>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="glass-panel">
+                    <h3>Traffic Overview</h3>
+                    <div class="chart-container">
+                        <canvas id="trafficChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-panel">
+                    <h3>User Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="userChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="glass-panel logs-section">
+                <h3>System Logs</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Message</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="log" items="${logs}">
+                                <tr>
+                                    <td><span class="log-level level-${log.level}">${log.level}</span></td>
+                                    <td>${log.message}</td>
+                                    <td>${log.time}</td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <a href="${pageContext.request.contextPath}/index.jsp" class="btn-back">Back to Home</a>
+
+        <!-- Tab 2: User Management -->
+        <div id="users" class="tab-content">
+            <div class="header-section">
+                <h1>User Management</h1>
+            </div>
+            
+            <div class="glass-panel">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="u" items="${userList}">
+                                <tr>
+                                    <td>#${u.id}</td>
+                                    <td>
+                                        <div style="display: flex; align-items: center;">
+                                            <div style="width: 30px; height: 30px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold; color: #555;">
+                                                ${u.username.charAt(0).toString().toUpperCase()}
+                                            </div>
+                                            ${u.username}
+                                        </div>
+                                    </td>
+                                    <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${u.status == 1}"><span style="color: #27ae60;">● Active</span></c:when>
+                                            <c:otherwise><span style="color: #d63031;">● Inactive</span></c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td>${u.createdAt}</td>
+                                    <td>
+                                        <button style="padding: 5px 10px; border: 1px solid #ddd; background: white; border-radius: 5px; cursor: pointer;">Edit</button>
+                                        <button style="padding: 5px 10px; border: 1px solid #ffcccc; background: #fff5f5; color: #d63031; border-radius: 5px; cursor: pointer; margin-left: 5px;">Delete</button>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Settings (Placeholder) -->
+        <div id="settings" class="tab-content">
+            <div class="header-section">
+                <h1>System Settings</h1>
+            </div>
+            <div class="glass-panel">
+                <p>Settings configuration panel coming soon...</p>
+            </div>
+        </div>
+
     </div>
+
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId, navElement) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+
+            // Update sidebar active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            navElement.classList.add('active');
+        }
+
+        // Charts Initialization
+        const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
+        new Chart(ctxTraffic, {
+            type: 'line',
+            data: {
+                labels: [${chartLabels}],
+                datasets: [{
+                    label: 'Visitors',
+                    data: [${chartData}],
+                    borderColor: '#FF3B30',
+                    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        const ctxUser = document.getElementById('userChart').getContext('2d');
+        new Chart(ctxUser, {
+            type: 'doughnut',
+            data: {
+                labels: ['Customers', 'Merchants', 'Admins'],
+                datasets: [{
+                    data: [85, 10, 5],
+                    backgroundColor: ['#FF9500', '#FFCC00', '#FF3B30'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    </script>
 </body>
 </html>

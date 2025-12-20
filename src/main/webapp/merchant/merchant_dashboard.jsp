@@ -56,25 +56,8 @@
             color: var(--text-dark);
             min-height: 100vh;
             position: relative;
+            padding-top: 90px;
         }
-
-        /* Navbar */
-        .navbar {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            padding: 15px 40px;
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000;
-            border-bottom: 1px solid rgba(255,255,255,0.5);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        }
-        .logo { font-weight: 800; font-size: 1.5rem; color: var(--secondary); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo span { color: var(--text-dark); }
-        .logo-img { width: 35px; height: 35px; object-fit: contain; }
-
-        .nav-actions { display: flex; align-items: center; gap: 20px; }
-        .nav-btn { border: none; background: transparent; font-weight: 600; color: var(--text-gray); cursor: pointer; font-size: 0.95rem; transition: 0.3s; }
-        .nav-btn:hover { color: var(--primary); }
 
         /* Layout */
         .layout-container {
@@ -87,27 +70,6 @@
             align-items: start;
         }
 
-        /* Sidebar */
-        .sidebar-card {
-            background: white; border-radius: var(--card-radius);
-            padding: 25px 20px; box-shadow: var(--card-shadow);
-            position: sticky; top: 100px; height: calc(100vh - 130px);
-            display: flex; flex-direction: column;
-        }
-        .menu-group-title { font-size: 0.8rem; color: #b2bec3; font-weight: 700; margin-bottom: 10px; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
-        .menu-group-title:first-child { margin-top: 0; }
-
-        .menu-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 15px; margin-bottom: 5px;
-            color: var(--text-dark); text-decoration: none;
-            border-radius: 12px; transition: all 0.3s ease; font-weight: 500; font-size: 0.95rem;
-            cursor: pointer; border: none; background: transparent; width: 100%; text-align: left;
-        }
-        .menu-item:hover { background: #FFF4E6; color: var(--primary); transform: translateX(5px); }
-        .menu-item.active-view { background: linear-gradient(45deg, #FF9500, #FF5E55); color: white; box-shadow: 0 5px 15px rgba(255, 94, 85, 0.3); }
-        .menu-item i { font-size: 1.2rem; }
-
         /* Content */
         .main-content { display: flex; flex-direction: column; gap: 25px; }
 
@@ -117,8 +79,18 @@
 
         /* Shop Info */
         .shop-header-card {
-            background: white; border-radius: var(--card-radius); padding: 30px;
-            box-shadow: var(--card-shadow); display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow:
+                    0 10px 30px rgba(0, 0, 0, 0.1),
+                    0 4px 6px rgba(0, 0, 0, 0.05);
+            border-radius: var(--card-radius);
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
         .shop-profile { display: flex; align-items: center; gap: 20px; }
         .shop-avatar { width: 80px; height: 80px; border-radius: 50%; background: #ffeaa7; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; }
@@ -149,7 +121,17 @@
         .todo-section {
             display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px;
         }
-        .panel { background: white; border-radius: var(--card-radius); padding: 25px; box-shadow: var(--card-shadow); }
+        .panel {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow:
+                    0 10px 30px rgba(0, 0, 0, 0.1),
+                    0 4px 6px rgba(0, 0, 0, 0.05);
+            border-radius: var(--card-radius);
+            padding: 25px;
+        }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .panel-title { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); }
 
@@ -184,8 +166,6 @@
 
         @media (max-width: 1024px) {
             .layout-container { grid-template-columns: 80px 1fr; }
-            .sidebar-card { align-items: center; }
-            .menu-item span, .menu-group-title, .shop-tags { display: none; }
             .metrics-bar { grid-template-columns: 1fr 1fr; }
             .todo-section { grid-template-columns: 1fr; }
         }
@@ -195,54 +175,12 @@
 
 <%@ include file="../common/background_merchant.jsp" %>
 
-<nav class="navbar">
-    <a href="#" class="logo">
-        <img src="${pageContext.request.contextPath}/assets/images/logo.png" alt="Logo" class="logo-img">
-        <span>Seller Center</span>
-    </a>
-    <div class="nav-actions">
-        <button class="nav-btn" onclick="location.href='${pageContext.request.contextPath}/index.jsp'">
-            <i class="ri-store-2-line"></i> Back to Shop
-        </button>
-        <div style="width: 1px; height: 20px; background: #ddd;"></div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-weight: 600; font-size: 0.9rem;"><%= user.getUsername() %></span>
-            <div style="width: 35px; height: 35px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                <%= user.getUsername().substring(0, 1).toUpperCase() %>
-            </div>
-        </div>
-    </div>
-</nav>
+<%@ include file="../common/layout/header_bar.jsp" %>
 
 <div class="layout-container">
-    <aside class="sidebar-card">
-        <div class="menu-group-title">Main</div>
 
-        <a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp" class="menu-item active-view">
-            <i class="ri-dashboard-3-line"></i> <span>Dashboard</span>
-        </a>
-
-        <div class="menu-group-title">Management</div>
-
-        <a href="${pageContext.request.contextPath}/merchant/product/product_manager.jsp" class="menu-item">
-            <i class="ri-box-3-line"></i> <span>Product Manager</span>
-        </a>
-
-        <button class="menu-item" onclick="alert('Order module coming soon!')">
-            <i class="ri-list-check-2"></i> <span>Orders</span>
-        </button>
-
-        <button class="menu-item" onclick="alert('Wallet module coming soon!')">
-            <i class="ri-wallet-3-line"></i> <span>Finance</span>
-        </button>
-
-        <div style="margin-top: auto;">
-            <div class="menu-group-title">System</div>
-            <a href="${pageContext.request.contextPath}/logout" class="menu-item" style="color: #FF5E55;">
-                <i class="ri-logout-box-r-line"></i> <span>Log Out</span>
-            </a>
-        </div>
-    </aside>
+    <% request.setAttribute("activeMenu", "dashboard"); %>
+    <%@ include file="../common/layout/merchant_sidebar.jsp" %>
 
     <main class="main-content">
         <!-- Dashboard View - 这个页面只显示dashboard内容 -->
@@ -398,3 +336,6 @@
 
 </body>
 </html>
+
+
+

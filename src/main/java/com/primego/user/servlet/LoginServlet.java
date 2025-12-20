@@ -36,22 +36,11 @@ public class LoginServlet extends HttpServlet {
             HttpSession session = req.getSession();
             session.setAttribute("user", user);
 
-            // 3. 🔥 核心修改：根据角色分流跳转 🔥
-            // 注意：这里使用的是我们刚刚创建的 JSP 文件路径
-
-            if (user.getRole() == Role.ADMIN) {
-                // 管理员 -> 跳转到 Admin Dashboard
-                System.out.println("Login: Admin detected, redirecting to /admin/admin_dashboard.jsp");
-                resp.sendRedirect(req.getContextPath() + "/admin/admin_dashboard.jsp");
-
-            } else if (user.getRole() == Role.MERCHANT) {
-                // 商家 -> 跳转到 Merchant Dashboard
-                System.out.println("Login: Merchant detected, redirecting to /merchant/merchant_dashboard.jsp");
-                resp.sendRedirect(req.getContextPath() + "/merchant/merchant_dashboard.jsp");
-
+            // Redirect based on role
+            if (user.getRole() == Role.MERCHANT) {
+                resp.sendRedirect(req.getContextPath() + "/profile");
             } else {
-                // 普通用户 -> 跳转到首页 (或者之前的 /profile)
-                System.out.println("Login: Customer detected, redirecting to index");
+                // Admin and Customer both go to index.jsp
                 resp.sendRedirect(req.getContextPath() + "/index.jsp");
             }
 
