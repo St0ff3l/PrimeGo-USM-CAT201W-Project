@@ -10,7 +10,7 @@
     // System.out.println("Dashboard Check: User=" + user + ", Role=" + (user!=null?user.getRole():"null"));
 
     if (user == null) {
-        response.sendRedirect(request.getContextPath() + "/login.jsp");
+        response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
 
@@ -19,7 +19,7 @@
 
     // 如果不是 MERCHANT 且不是 ADMIN，踢回登录页
     if (!"MERCHANT".equals(roleStr) && !"ADMIN".equals(roleStr)) {
-        response.sendRedirect(request.getContextPath() + "/login.jsp");
+        response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
 %>
@@ -195,7 +195,7 @@
 </head>
 <body>
 
-<%@ include file="../common/background.jsp" %>
+<%@ include file="../common/background_merchant.jsp" %>
 
 <nav class="navbar">
     <a href="#" class="logo">
@@ -460,3 +460,4 @@
 
 </body>
 </html>
+

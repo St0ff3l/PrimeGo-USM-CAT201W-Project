@@ -19,7 +19,6 @@
 
     body {
       /* 背景颜色和动画已移至 common/background.jsp */
-      /* 这里只保留文字颜色和基本定位 */
       color: #333;
       position: relative;
     }
@@ -35,107 +34,14 @@
               inset 0 0 0 1px rgba(255, 255, 255, 0.5);
     }
 
-    /* ================= 3. 导航栏样式 ================= */
-    header {
-      position: fixed;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      width: 92%;
-      max-width: 1300px;
-      border-radius: 50px;
-      padding: 12px 40px;
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      border: 1px solid rgba(255, 255, 255, 0.9);
-      box-shadow:
-              0 10px 30px rgba(0, 0, 0, 0.1),
-              0 4px 6px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-    }
-
-    .navbar {
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    /* Logo 区域 */
-    .brand-link {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .brand-logo-img {
-      height: 40px;
-      width: auto;
-      object-fit: contain;
-      transition: transform 0.3s ease;
-    }
-
-    .brand-text {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #d63031;
-      letter-spacing: 1px;
-      line-height: 1;
-      transition: color 0.3s ease;
-    }
-
-    .brand-link:hover .brand-logo-img {
-      transform: scale(1.1);
-    }
-    .brand-link:hover .brand-text {
-      color: #FF9500;
-    }
-
-    /* 菜单区域 */
-    .nav-menu {
-      display: flex;
-      list-style: none;
-      gap: 40px;
-    }
-
-    .nav-menu a {
-      text-decoration: none;
-      color: #444;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: 0.3s;
-      padding: 8px 16px;
-      border-radius: 20px;
-    }
-
-    .nav-menu a:hover {
-      color: #FF9500;
-      background: rgba(0,0,0,0.03);
-    }
-
-    /* 图标区域 */
-    .nav-icons span {
-      margin-left: 20px;
-      cursor: pointer;
-      font-size: 1.2rem;
-      transition: 0.3s;
-    }
-
-    .nav-icons span:hover {
-      transform: scale(1.1);
-      color: #FF9500;
-    }
+    /* 注意：原本的 "3. 导航栏样式" 已被删除。
+       现在样式由 common/layout/header_bar.jsp 自动提供。
+    */
 
     /* ================= 4. Hero 区域 ================= */
     .hero {
       max-width: 1200px;
-      margin: 140px auto 50px;
+      margin: 140px auto 50px; /* 顶部留白给 fixed 导航栏 */
       padding: 60px 40px;
       text-align: center;
     }
@@ -260,48 +166,11 @@
 </head>
 <body>
 
+<%-- 1. 引入背景 --%>
 <%@ include file="common/background.jsp" %>
 
-<header>
-  <div class="navbar">
-    <a href="${pageContext.request.contextPath}/index.jsp" class="brand-link">
-      <img src="${pageContext.request.contextPath}/assets/images/logo.png"
-           alt="PrimeGo Logo"
-           class="brand-logo-img">
-      <span class="brand-text">PrimeGo</span>
-    </a>
-    <ul class="nav-menu">
-      <li><a href="index.jsp">Home</a></li>
-      <li><a href="#">Categories</a></li>
-      <li><a href="#">About Us</a></li>
-      <c:if test="${empty sessionScope.user}">
-        <li><a href="login">Login</a></li>
-      </c:if>
-      <c:if test="${not empty sessionScope.user}">
-        <c:if test="${sessionScope.user.role == 'ADMIN'}">
-          <li><a href="admin/dashboard">Dashboard</a></li>
-        </c:if>
-        <li><a href="profile">Profile</a></li>
-        <li><a href="logout">Logout</a></li>
-      </c:if>
-    </ul>
-    <div class="nav-icons">
-      <span onclick="toggleSearch()">🔍</span>
-      <span onclick="showCart()">🛒 <span id="cart-count">0</span></span>
-
-      <c:if test="${empty sessionScope.user}">
-        <a href="login" style="text-decoration: none; margin-left: 20px;">
-          <button style="padding: 8px 16px; border-radius: 20px; border: none; background: #333; color: white; cursor: pointer; font-weight: 600;">Login</button>
-        </a>
-      </c:if>
-      <c:if test="${not empty sessionScope.user}">
-        <a href="profile" style="text-decoration: none; margin-left: 20px; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #007bff; color: white; border-radius: 50%; font-weight: bold; font-size: 1.2rem;" title="Profile">
-            ${sessionScope.user.username.charAt(0).toString().toUpperCase()}
-        </a>
-      </c:if>
-    </div>
-  </div>
-</header>
+<%-- 2. 引入独立的导航栏组件 (含样式) --%>
+<%@ include file="common/layout/header_bar.jsp" %>
 
 <section class="hero glass-panel">
   <h1>Welcome to PrimeGo<br>Premium Marketplace</h1>
