@@ -613,8 +613,9 @@
                             <c:if test="${not empty profile}">
                                 <p><strong>Full Name:</strong> ${profile.fullName}</p>
                                 <p><strong>Phone:</strong> ${profile.phone}</p>
-                                <p><strong>Address:</strong><br><span
-                                        style="white-space: pre-line;">${profile.formattedAddress}</span></p>
+                                <p><strong>Address:</strong> ${profile.street}</p>
+                                <p><strong>City:</strong> ${profile.city}</p>
+                                <p><strong>Country:</strong> ${profile.country}</p>
                             </c:if>
                             <c:if test="${empty profile}">
                                 <p>No additional contact details found.</p>
@@ -635,14 +636,49 @@
                     </div>
                 </div>
 
-                <!-- Tab 3: Settings (Placeholder) -->
+                <!-- Tab 3: Settings (Change Password) -->
                 <div id="settings" class="tab-content">
                     <div class="header-section">
                         <h1>Account Settings</h1>
                     </div>
-                    <div class="glass-panel">
-                        <p>Change Password</p>
-                        <p>Notification Preferences</p>
+                    <div class="glass-panel" style="max-width: 500px;">
+                        <h3 style="margin-bottom: 25px; color: #e68a00;">Change Password</h3>
+
+                        <c:if test="${not empty settingsMessage}">
+                            <div
+                                style="padding: 15px; border-radius: 10px; margin-bottom: 20px; 
+                                ${settingsMessageType == 'success' ? 'background: rgba(46, 204, 113, 0.2); color: #27ae60;' : 'background: rgba(231, 76, 60, 0.2); color: #c0392b;'}">
+                                ${settingsMessage}
+                            </div>
+                        </c:if>
+
+                        <form action="${pageContext.request.contextPath}/profile" method="post">
+                            <input type="hidden" name="action" value="changePassword">
+
+                            <div style="margin-bottom: 20px;">
+                                <label
+                                    style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Current
+                                    Password</label>
+                                <input type="password" name="oldPassword" required class="form-input">
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label
+                                    style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">New
+                                    Password</label>
+                                <input type="password" name="newPassword" required class="form-input">
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <label
+                                    style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Confirm
+                                    New Password</label>
+                                <input type="password" name="confirmPassword" required class="form-input">
+                            </div>
+
+                            <button type="submit" class="btn-edit"
+                                style="width: 100%; padding: 12px; margin-top: 5px;">Update Password</button>
+                        </form>
                     </div>
                 </div>
 
