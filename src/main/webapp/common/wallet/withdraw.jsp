@@ -1,150 +1,257 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page import="com.primego.wallet.dao.WalletDAO" %>
+<%@ page import="com.primego.wallet.model.WalletTransaction" %>
 <%@ page import="com.primego.user.model.User" %>
 <%@ page import="java.math.BigDecimal" %>
+<%@ page import="java.util.List" %>
 
 <%
-    // 在页面加载时查询一次真实余额
+    // 1. 检查登录
     User user = (User) session.getAttribute("user");
-    if (user != null) {
-        WalletDAO dao = new WalletDAO();
-        BigDecimal balance = dao.getBalance(user.getId());
-        request.setAttribute("currentBalance", balance);
-    } else {
+    if (user == null) {
+        session.setAttribute("loginMsg", "Please login to view wallet.");
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
+    }
+
+    WalletDAO dao = new WalletDAO();
+    String role = (user.getRole() != null) ? user.getRole().toString() : "";
+
+    // 2. 准备数据
+    if ("ADMIN".equals(role)) {
+        List<WalletTransaction> pendingList = dao.getPendingTransactions();
+        request.setAttribute("pendingList", pendingList);
+    } else {
+        BigDecimal currentBalance = dao.getBalance(user.getId());
+        request.setAttribute("displayBalance", String.format("%.2f", currentBalance));
+        List<WalletTransaction> myTransactions = dao.getUserTransactions(user.getId());
+        request.setAttribute("myTransactions", myTransactions);
     }
 %>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>USM SHOP - Withdraw</title>
+    <meta charset="UTF-8">
+    <title>My Wallet - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- 图标库 -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-
     <style>
-        /* ===== 全局样式 ===== */
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
-        body{ background: linear-gradient(to bottom, #f0f2f5, #e0e5ec); min-height:100vh; overflow-x:hidden; position:relative; color:#333; }
-
-        .glass-panel{
-            background: rgba(255,255,255,0.72);
-            backdrop-filter: blur(22px);
-            border: 1px solid rgba(255,255,255,0.65);
-            border-radius: 24px;
-            box-shadow: 0 10px 35px rgba(0,0,0,0.10), inset 0 0 0 1px rgba(255,255,255,0.5);
-        }
-
-        .page{ max-width:1200px; margin:110px auto 60px; padding:0 20px; }
-        .top-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
-        .back-btn{
-            display:inline-flex; gap:8px; align-items:center; text-decoration:none; font-weight:600; color:#444;
-            padding:10px 16px; border-radius:999px; background: rgba(255,255,255,0.85);
-            border: 1px solid rgba(255,255,255,0.9); transition:.25s;
-        }
-        .back-btn:hover{ transform: translateX(-4px); }
-        .title{ font-size:1.8rem; font-weight:800; color:#2d3436; }
-
-        .board{ padding:34px; display:grid; grid-template-columns: 2fr 1fr; gap:20px; }
-
-        .badge{
-            display:inline-block; padding:10px 14px; border-radius:14px;
-            background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.2);
-            color:#c0392b; font-weight:900; margin-bottom:10px;
-        }
-
-        label{ display:block; margin:10px 0 6px; font-weight:700; color:#555; font-size:.92rem; }
-        input, select{
-            width:100%; padding:12px 14px; border-radius:14px; border: 1px solid rgba(0,0,0,0.12);
-            background: rgba(255,255,255,0.85); outline:none; font-size:1rem;
-        }
-        input:focus, select:focus{ border-color: rgba(231,76,60,0.55); box-shadow: 0 0 0 3px rgba(231,76,60,0.12); }
-
-        .btn-submit{
-            margin-top:16px; width:100%; padding:14px 18px; border:none; border-radius:16px; cursor:pointer;
-            font-weight:900; font-size:1.05rem; color:#fff;
-            background: linear-gradient(135deg,#ff4757,#ff6b81);
-            box-shadow: 0 12px 22px rgba(255,71,87,0.22); transition:.25s;
-        }
-        .btn-submit:hover{ transform: translateY(-3px); }
-
-        .hint{ padding:18px; border-radius:18px; background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.04); color:#666; font-size:.92rem; line-height:1.6; }
-        @media (max-width:900px){ .board{ grid-template-columns: 1fr; } }
+        body { background: linear-gradient(to bottom, #f0f2f5, #e0e5ec); min-height:100vh; color:#333; overflow-x: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 30px; padding: 50px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); max-width: 1000px; margin: 60px auto; position: relative; z-index: 10; }
+        .back-row { margin-bottom: 30px; }
+        .back-btn { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.5); border:1px solid rgba(0,0,0,0.05); text-decoration:none; color:#666; font-size:1.1rem; transition:all .3s ease; }
+        .back-btn:hover { width:130px; border-radius:20px; background:rgba(0,0,0,.05); color:#2d3436; }
+        .back-text { max-width:0; opacity:0; margin-left:0; transition:all .3s ease; font-size:.9rem; font-weight:600; white-space:nowrap; overflow:hidden; }
+        .back-btn:hover .back-text { max-width:100px; opacity:1; margin-left:8px; }
+        .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; }
+        .balance-label { font-size:.9rem; color:#666; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:5px; }
+        .balance-val { font-size:4rem; font-weight:800; color:#2d3436; line-height:1; letter-spacing:-1px; }
+        .role-badge { padding:8px 20px; border-radius:999px; font-size:.85rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.8px; box-shadow:0 8px 18px rgba(0,0,0,0.18); }
+        .badge-cust  { background:linear-gradient(145deg, #ffad33, #e68a00); }
+        .badge-merch { background:linear-gradient(135deg,#ffdb4d,#e6b800); }
+        .badge-admin { background:linear-gradient(135deg,#ff5e55,#d92e25); }
+        .btn-group { display:flex; gap:20px; margin-bottom:30px; }
+        .btn { padding:14px 32px; border-radius:50px; text-decoration:none; font-weight:600; transition:all .3s ease; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:10px; font-size:1rem; }
+        .btn-primary { background:linear-gradient(45deg,#2ecc71,#27ae60); color:#fff; box-shadow:0 10px 20px rgba(39,174,96,0.35); }
+        .btn-secondary { background:#fff; border:2px solid #e74c3c; color:#e74c3c; }
+        .btn-purple { background:linear-gradient(45deg,#6c5ce7,#a29bfe); color:#fff; box-shadow:0 8px 20px rgba(108,92,231,.3); }
+        .txn-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+        .txn-title { font-size:1.6rem; font-weight:700; color:#2d3436; }
+        .txn-tabs { display:flex; padding:8px; border-radius:999px; box-shadow:0 10px 25px rgba(0,0,0,0.08); gap:4px; }
+        .tabs-cust { background:linear-gradient(145deg,#ffad33,#e68a00); }
+        .txn-tab { min-width:120px; padding:10px 18px; border-radius:999px; border:none; background:transparent; font-weight:600; font-size:.95rem; color:#f4f4f4; cursor:pointer; }
+        .txn-tab-active { background:#fff; color:#2d3436; box-shadow:0 6px 18px rgba(0,0,0,0.12); border:2px solid #222; }
+        .txn-list { display:flex; flex-direction:column; gap:18px; }
+        .txn-item { display:flex; justify-content:space-between; align-items:center; padding:22px 30px; border-radius:24px; background:linear-gradient(90deg,#ffffff,#fefaf3); box-shadow:0 10px 30px rgba(0,0,0,0.03); }
+        .txn-left-main { font-size:1rem; font-weight:600; color:#2d3436; margin-bottom:4px; }
+        .txn-left-sub { font-size:.85rem; color:#95a5a6; }
+        .txn-right { display:flex; align-items:center; gap:10px; font-size:1rem; font-weight:700; color:#2d3436; }
+        .txn-amount-minus { color:#e74c3c; }
+        .txn-amount-plus  { color:#27ae60; }
+        .admin-action-btn { padding:8px 14px; border-radius:999px; border:none; color:#fff; font-size:.85rem; font-weight:600; cursor:pointer; text-decoration: none; display: inline-block;}
+        .btn-approve { background: #2ecc71; }
+        .btn-reject { background: #e74c3c; }
     </style>
 </head>
-
 <body>
-<!-- 根据用户角色加载背景 -->
-<jsp:include page="/common/background_customer.jsp" />
 
-<div class="page">
-    <div class="top-bar">
-        <a class="back-btn" href="wallet.jsp">← Back</a>
-        <div class="title">Withdraw</div>
-        <div style="width:80px"></div>
+<c:choose>
+    <c:when test="${sessionScope.user.role == 'MERCHANT'}">
+        <jsp:include page="/common/background_merchant.jsp" />
+    </c:when>
+    <c:when test="${sessionScope.user.role == 'ADMIN'}">
+        <jsp:include page="/common/background_admin.jsp" />
+    </c:when>
+    <c:otherwise>
+        <jsp:include page="/common/background_customer.jsp" />
+    </c:otherwise>
+</c:choose>
+
+<div class="glass-panel">
+    <div class="back-row">
+        <a href="${pageContext.request.contextPath}/index.jsp" class="back-btn" title="Back to Home">
+            <span>←</span><span class="back-text">Back Home</span>
+        </a>
     </div>
 
-    <!-- 错误提示 -->
+    <!-- 消息/错误提示 -->
+    <c:if test="${not empty sessionScope.message}">
+        <div style="background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #c3e6cb; display: flex; align-items: center; gap: 10px;">
+            <i class="ri-checkbox-circle-line"></i><span>${sessionScope.message}</span>
+        </div>
+        <c:remove var="message" scope="session" />
+    </c:if>
     <c:if test="${not empty requestScope.error}">
-        <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
-            <i class="ri-error-warning-line"></i> ${requestScope.error}
+        <div style="background: #f8d7da; color: #721c24; padding: 15px 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #f5c6cb; display: flex; align-items: center; gap: 10px;">
+            <i class="ri-error-warning-line"></i><span>${requestScope.error}</span>
         </div>
     </c:if>
 
-    <div class="board glass-panel">
+    <!-- 头部：余额与角色 -->
+    <div class="header-row">
         <div>
-            <!-- 显示真实余额 -->
-            <div class="badge">Available: RM <span>${currentBalance}</span></div>
-
-            <form action="${pageContext.request.contextPath}/WithdrawServlet" method="post" onsubmit="return validate(event)">
-                <label>Withdraw Amount (RM)</label>
-                <!-- max 属性设为当前余额，防止前端直接输超额 -->
-                <input type="number" name="amount" id="amount" min="10" max="${currentBalance}" step="0.01" placeholder="e.g. 50.00" required>
-
-                <label>Bank</label>
-                <select name="bank" required>
-                    <option>Maybank</option>
-                    <option>CIMB</option>
-                    <option>Public Bank</option>
-                    <option>RHB</option>
-                </select>
-
-                <label>Account Number</label>
-                <input type="text" name="accNum" placeholder="e.g. 1122334455" required>
-
-                <label>Account Holder Name</label>
-                <input type="text" name="accName" placeholder="Full name" required>
-
-                <button class="btn-submit" type="submit">Confirm Withdraw</button>
-            </form>
+            <div class="balance-label">
+                <c:choose>
+                    <c:when test="${sessionScope.user.role == 'ADMIN'}">Audit Dashboard</c:when>
+                    <c:when test="${sessionScope.user.role == 'MERCHANT'}">Shop Total Revenue</c:when>
+                    <c:otherwise>Personal Balance</c:otherwise>
+                </c:choose>
+            </div>
+            <c:choose>
+                <c:when test="${sessionScope.user.role == 'ADMIN'}">
+                    <div style="font-size: 2rem; font-weight: 800; color: #2d3436; margin-top: 10px;">Pending Requests</div>
+                </c:when>
+                <c:otherwise>
+                    <div class="balance-val">RM ${displayBalance}</div>
+                </c:otherwise>
+            </c:choose>
         </div>
-
-        <div class="hint">
-            <b>Note:</b><br>
-            - Minimum withdrawal amount is RM 10.00.<br>
-            - Processing time: 1-3 business days.<br>
-            - Please ensure your bank details are correct.
+        <div>
+            <c:choose>
+                <c:when test="${sessionScope.user.role == 'MERCHANT'}">
+                    <span class="role-badge badge-merch">MERCHANT</span>
+                </c:when>
+                <c:when test="${sessionScope.user.role == 'ADMIN'}">
+                    <span class="role-badge badge-admin">ADMIN</span>
+                </c:when>
+                <c:otherwise>
+                    <span class="role-badge badge-cust">CUSTOMER</span>
+                </c:otherwise>
+            </c:choose>
         </div>
+    </div>
+
+    <!-- 按钮组 (Admin 隐藏) -->
+    <c:if test="${sessionScope.user.role != 'ADMIN'}">
+        <div class="btn-group">
+            <c:choose>
+                <c:when test="${sessionScope.user.role == 'CUSTOMER' || empty sessionScope.user.role}">
+                    <a href="topup.jsp" class="btn btn-primary">＋ Top Up Wallet</a>
+                    <a href="withdraw.jsp" class="btn btn-secondary">↘ Withdraw Funds</a>
+                </c:when>
+                <c:when test="${sessionScope.user.role == 'MERCHANT'}">
+                    <a href="withdraw.jsp" class="btn btn-purple">🏦 Withdraw Revenue</a>
+                    <a href="#" class="btn btn-secondary" onclick="alert('Exporting report...')">📄 Export Report</a>
+                </c:when>
+            </c:choose>
+        </div>
+    </c:if>
+
+    <!-- 交易列表头 -->
+    <div class="txn-header-row">
+        <div class="txn-title">
+            ${sessionScope.user.role == 'ADMIN' ? 'Approval Queue' : 'Transactions'}
+        </div>
+        <c:if test="${sessionScope.user.role != 'ADMIN'}">
+            <div class="txn-tabs tabs-cust">
+                <button class="txn-tab txn-tab-active">All</button>
+            </div>
+        </c:if>
+    </div>
+
+    <div class="txn-list">
+        <!-- ================= ADMIN 视图 ================= -->
+        <c:if test="${sessionScope.user.role == 'ADMIN'}">
+            <c:if test="${empty pendingList}">
+                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No pending requests.</p></div>
+            </c:if>
+            <c:forEach var="txn" items="${pendingList}">
+                <div class="txn-item">
+                    <div>
+                        <div class="txn-left-main">
+                                ${txn.transactionType == 'TOPUP' ? 'Top Up Request' : 'Withdraw Request'}
+                            <span style="font-weight:normal; color:#666; font-size:0.9rem;">(ID: ${txn.id})</span>
+                        </div>
+                        <div class="txn-left-sub">
+                            User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
+                            <c:if test="${txn.transactionType == 'TOPUP' && not empty txn.receiptImage}">
+                                <br>
+                                <a href="${pageContext.request.contextPath}/assets/images/Recharge_Photos/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
+                                    <i class="ri-image-line"></i> View Receipt
+                                </a>
+                            </c:if>
+                        </div>
+                    </div>
+                    <div class="txn-right">
+                        <span style="font-size: 1.2rem; margin-right: 15px;">RM ${txn.amount}</span>
+                        <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="reject">
+                            <button type="submit" class="admin-action-btn btn-reject">Reject</button>
+                        </form>
+                        <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline; margin-left:5px;">
+                            <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="approve">
+                            <button type="submit" class="admin-action-btn btn-approve">Approve</button>
+                        </form>
+                    </div>
+                </div>
+            </c:forEach>
+        </c:if>
+
+        <!-- ================= 普通用户/商家 视图 ================= -->
+        <c:if test="${sessionScope.user.role != 'ADMIN'}">
+            <c:if test="${empty myTransactions}">
+                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No transaction history found.</p></div>
+            </c:if>
+            <c:forEach var="txn" items="${myTransactions}">
+                <div class="txn-item">
+                    <div>
+                        <div class="txn-left-main">
+                            <c:choose>
+                                <c:when test="${txn.transactionType == 'TOPUP'}">Top Up</c:when>
+                                <c:when test="${txn.transactionType == 'WITHDRAW'}">Withdraw</c:when>
+                                <c:when test="${txn.transactionType == 'PURCHASE'}">Payment</c:when>
+                                <c:when test="${txn.transactionType == 'SALES'}">Sales Revenue</c:when>
+                                <c:otherwise>${txn.transactionType}</c:otherwise>
+                            </c:choose>
+                            <span style="font-size:0.8rem; padding:2px 8px; border-radius:10px; margin-left: 5px;
+                                    background:${txn.status == 'APPROVED' ? '#d4edda' : (txn.status == 'PENDING' ? '#fff3cd' : '#f8d7da')};
+                                    color:${txn.status == 'APPROVED' ? '#155724' : (txn.status == 'PENDING' ? '#856404' : '#721c24')};">
+                                    ${txn.status}
+                            </span>
+                        </div>
+                        <div class="txn-left-sub">
+                            <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
+                        </div>
+                    </div>
+                    <div class="txn-right">
+                        <c:choose>
+                            <c:when test="${txn.transactionType == 'TOPUP' || txn.transactionType == 'SALES'}">
+                                <span class="txn-amount-plus">+ RM ${txn.amount}</span>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="txn-amount-minus">- RM ${txn.amount}</span>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                </div>
+            </c:forEach>
+        </c:if>
     </div>
 </div>
 
-<script>
-    function validate(e){
-        // 获取后端传来的余额 (作为字符串转浮点)
-        const balance = parseFloat("${currentBalance}");
-        const amount = parseFloat(document.getElementById('amount').value);
-
-        if(amount > balance){
-            alert("Insufficient balance! You only have RM " + balance.toFixed(2));
-            return false;
-        }
-        return true;
-    }
-</script>
 </body>
 </html>
