@@ -98,7 +98,8 @@ public class ProfileServlet extends HttpServlet {
             }
 
             // 2. Update Profile Details (in customer_profiles table)
-            CustomerProfile profile = new CustomerProfile(user.getId(), fullName, null, phone, address);
+            // Note: passing null for paymentPin as this update doesn't touch it
+            CustomerProfile profile = new CustomerProfile(user.getId(), fullName, null, phone, address, null);
             boolean profileUpdated = profileDAO.updateCustomerProfile(profile);
 
             if (usernameUpdated && profileUpdated) {
@@ -134,6 +135,62 @@ public class ProfileServlet extends HttpServlet {
                 }
             } else {
                 req.setAttribute("message", "New passwords do not match.");
+                req.setAttribute("messageType", "error");
+            }
+        } else if ("updatePin".equals(action)) {
+            String pin1 = req.getParameter("pin1");
+            String pin2 = req.getParameter("pin2");
+            String pin3 = req.getParameter("pin3");
+            String pin4 = req.getParameter("pin4");
+            String pin5 = req.getParameter("pin5");
+            String pin6 = req.getParameter("pin6");
+
+            String newPin = pin1 + pin2 + pin3 + pin4 + pin5 + pin6;
+
+            String confirmPin1 = req.getParameter("confirmPin1");
+            String confirmPin2 = req.getParameter("confirmPin2");
+            String confirmPin3 = req.getParameter("confirmPin3");
+            String confirmPin4 = req.getParameter("confirmPin4");
+            String confirmPin5 = req.getParameter("confirmPin5");
+            String confirmPin6 = req.getParameter("confirmPin6");
+
+            String confirmPin = confirmPin1 + confirmPin2 + confirmPin3 + confirmPin4 + confirmPin5 + confirmPin6;
+
+            if (newPin.length() == 6 && newPin.equals(confirmPin)) {
+                CustomerProfile currentProfile = profileDAO.getCustomerProfile(user.getId());
+                boolean isUpdate = currentProfile != null && currentProfile.getPaymentPin() != null
+                        && !currentProfile.getPaymentPin().isEmpty();
+
+                boolean authorized = true;
+                if (isUpdate) {
+                    // Check old PIN
+                    String oldPin1 = req.getParameter("oldPin1");
+                    String oldPin2 = req.getParameter("oldPin2");
+                    String oldPin3 = req.getParameter("oldPin3");
+                    String oldPin4 = req.getParameter("oldPin4");
+                    String oldPin5 = req.getParameter("oldPin5");
+                    String oldPin6 = req.getParameter("oldPin6");
+                    String oldPin = oldPin1 + oldPin2 + oldPin3 + oldPin4 + oldPin5 + oldPin6;
+
+                    if (!com.primego.common.util.PasswordUtil.checkPassword(oldPin, currentProfile.getPaymentPin())) {
+                        authorized = false;
+                        req.setAttribute("message", "Incorrect current PIN.");
+                        req.setAttribute("messageType", "error");
+                    }
+                }
+
+                if (authorized) {
+                    String hashedPin = com.primego.common.util.PasswordUtil.hashPassword(newPin);
+                    if (profileDAO.updatePaymentPin(user.getId(), hashedPin)) {
+                        req.setAttribute("message", "Payment PIN updated successfully!");
+                        req.setAttribute("messageType", "success");
+                    } else {
+                        req.setAttribute("message", "Failed to update PIN. Database error.");
+                        req.setAttribute("messageType", "error");
+                    }
+                }
+            } else {
+                req.setAttribute("message", "New PINs do not match or are incomplete.");
                 req.setAttribute("messageType", "error");
             }
         }
