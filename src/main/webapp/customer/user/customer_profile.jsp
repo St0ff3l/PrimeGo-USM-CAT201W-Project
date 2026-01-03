@@ -240,7 +240,7 @@
                 /* Order Status Grid */
                 .order-status-grid {
                     display: grid;
-                    grid-template-columns: repeat(4, 1fr);
+                    grid-template-columns: repeat(2, 1fr);
                     gap: 20px;
                     text-align: center;
                 }
@@ -571,11 +571,6 @@
                         <h3 style="margin-bottom: 20px; color: #e68a00;">My Orders</h3>
                         <div class="order-status-grid">
                             <div class="status-item">
-                                <i class="ri-wallet-3-line status-icon"></i>
-                                <span class="status-label">Pending Payment</span>
-                                <!-- <span class="status-count">2</span> -->
-                            </div>
-                            <div class="status-item">
                                 <i class="ri-box-3-line status-icon"></i>
                                 <span class="status-label">To Ship</span>
                                 <!-- <span class="status-count">1</span> -->
@@ -583,10 +578,6 @@
                             <div class="status-item">
                                 <i class="ri-truck-line status-icon"></i>
                                 <span class="status-label">To Receive</span>
-                            </div>
-                            <div class="status-item">
-                                <i class="ri-message-2-line status-icon"></i>
-                                <span class="status-label">To Review</span>
                             </div>
                         </div>
                     </div>
