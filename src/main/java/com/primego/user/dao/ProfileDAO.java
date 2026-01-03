@@ -12,6 +12,8 @@ import java.sql.SQLException;
 
 public class ProfileDAO {
 
+    private AddressDAO addressDAO = new AddressDAO();
+
     public CustomerProfile getCustomerProfile(int userId) {
         String sql = "SELECT * FROM customer_profiles WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -19,12 +21,13 @@ public class ProfileDAO {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
+                    int id = rs.getInt("user_id");
                     return new CustomerProfile(
-                            rs.getInt("user_id"),
+                            id,
                             rs.getString("full_name"),
                             rs.getString("email"),
                             rs.getString("phone"),
-                            rs.getString("address"),
+                            addressDAO.getDefaultAddress(id),
                             rs.getString("payment_pin"));
                 }
             }
@@ -35,13 +38,12 @@ public class ProfileDAO {
     }
 
     public boolean updateCustomerProfile(CustomerProfile profile) {
-        String sql = "UPDATE customer_profiles SET full_name = ?, phone = ?, address = ? WHERE user_id = ?";
+        String sql = "UPDATE customer_profiles SET full_name = ?, phone = ? WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, profile.getFullName());
             stmt.setString(2, profile.getPhone());
-            stmt.setString(3, profile.getAddress());
-            stmt.setInt(4, profile.getUserId());
+            stmt.setInt(3, profile.getUserId());
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
