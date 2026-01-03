@@ -7,15 +7,18 @@ public class CustomerProfile {
     private String phone;
     private String address;
 
+    private String paymentPin;
+
     public CustomerProfile() {
     }
 
-    public CustomerProfile(int userId, String fullName, String email, String phone, String address) {
+    public CustomerProfile(int userId, String fullName, String email, String phone, String address, String paymentPin) {
         this.userId = userId;
         this.fullName = fullName;
         this.email = email;
         this.phone = phone;
         this.address = address;
+        this.paymentPin = paymentPin;
     }
 
     public int getUserId() {
@@ -32,6 +35,14 @@ public class CustomerProfile {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public String getPaymentPin() {
+        return paymentPin;
+    }
+
+    public void setPaymentPin(String paymentPin) {
+        this.paymentPin = paymentPin;
     }
 
     // Helper to get First Name (everything before the last space)

@@ -174,6 +174,73 @@ public class ProductDAO {
         return products;
     }
 
+    public List<ProductDTO> searchProductsWithFilter(String keyword, Integer categoryId, Double minPrice, Double maxPrice) {
+        List<ProductDTO> products = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT p.*, c.Category_Name, " +
+                "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
+                "FROM Product p " +
+                "LEFT JOIN Category c ON p.Category_Id = c.Category_Id " +
+                "WHERE p.Product_Status = 'ON_SALE' ");
+
+        List<Object> params = new ArrayList<>();
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append("AND (p.Product_Name LIKE ? OR p.Product_Description LIKE ?) ");
+            String searchPattern = "%" + keyword.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+
+        if (categoryId != null) {
+            sql.append("AND p.Category_Id = ? ");
+            params.add(categoryId);
+        }
+
+        if (minPrice != null) {
+            sql.append("AND p.Product_Price >= ? ");
+            params.add(minPrice);
+        }
+
+        if (maxPrice != null) {
+            sql.append("AND p.Product_Price <= ? ");
+            params.add(maxPrice);
+        }
+
+        sql.append("ORDER BY p.Product_Created_At DESC");
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    ProductDTO product = new ProductDTO();
+                    product.setProductId(rs.getInt("Product_Id"));
+                    product.setMerchantId(rs.getInt("Merchant_Id"));
+                    product.setCategoryId(rs.getInt("Category_Id"));
+                    product.setProductName(rs.getString("Product_Name"));
+                    product.setProductDescription(rs.getString("Product_Description"));
+                    product.setProductPrice(rs.getBigDecimal("Product_Price"));
+                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
+                    product.setProductStatus(rs.getString("Product_Status"));
+                    product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
+                    product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
+
+                    product.setCategoryName(rs.getString("Category_Name"));
+                    product.setPrimaryImageUrl(rs.getString("Primary_Image"));
+
+                    products.add(product);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return products;
+    }
+
     public ProductDTO getProductById(int productId) {
         ProductDTO product = null;
         String sql = "SELECT p.*, c.Category_Name, u.username as Merchant_Name, " +
@@ -264,23 +331,7 @@ public class ProductDAO {
         return -1; // Failure
     }
 
-    public boolean insertProductImage(ProductImage image) {
-        String sql = "INSERT INTO Product_Image (Product_Id, Image_Url, Image_Is_Primary) VALUES (?, ?, ?)";
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, image.getProductId());
-            pstmt.setString(2, image.getImageUrl());
-            pstmt.setBoolean(3, image.isImageIsPrimary());
-
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
 
     // ==========================================
     // ⭐ 新增：更新方法 (用于 product_edit.jsp)
@@ -319,33 +370,4 @@ public class ProductDAO {
         return false;
     }
 
-    /**
-     * 更新商品主图 (如果存在则更新，不存在则插入)
-     */
-    public void updateProductPrimaryImage(int productId, String imageUrl) {
-        // 1. 尝试更新现有的主图记录
-        String updateSql = "UPDATE Product_Image SET Image_Url = ?, Image_Upload_Time = NOW() " +
-                "WHERE Product_Id = ? AND Image_Is_Primary = 1";
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-
-            pstmt.setString(1, imageUrl);
-            pstmt.setInt(2, productId);
-
-            int rows = pstmt.executeUpdate();
-
-            // 2. 如果没有更新到任何行 (说明之前没有主图)，则执行插入
-            if (rows == 0) {
-                String insertSql = "INSERT INTO Product_Image (Product_Id, Image_Url, Image_Is_Primary) VALUES (?, ?, 1)";
-                try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                    insertStmt.setInt(1, productId);
-                    insertStmt.setString(2, imageUrl);
-                    insertStmt.executeUpdate();
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 }

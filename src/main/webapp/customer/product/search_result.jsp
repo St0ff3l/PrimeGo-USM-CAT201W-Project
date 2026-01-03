@@ -9,25 +9,42 @@
     // 1. Get Parameters
     String categoryIdStr = request.getParameter("categoryId");
     String keyword = request.getParameter("keyword");
+    String minPriceStr = request.getParameter("minPrice");
+    String maxPriceStr = request.getParameter("maxPrice");
 
-    // 2. Fetch Data
-    ProductDAO productDAO = new ProductDAO();
-    List<ProductDTO> productList = new ArrayList<>();
-    String resultTitle = "All Products";
+    Integer categoryId = null;
+    Double minPrice = null;
+    Double maxPrice = null;
 
     if (categoryIdStr != null && !categoryIdStr.isEmpty()) {
         try {
-            int categoryId = Integer.parseInt(categoryIdStr);
-            productList = productDAO.getProductsByCategoryId(categoryId);
-            resultTitle = "Category Results";
-        } catch (NumberFormatException e) {
-            productList = productDAO.getAllProducts();
-        }
-    } else if (keyword != null && !keyword.isEmpty()) {
-        productList = productDAO.searchProducts(keyword);
+            categoryId = Integer.parseInt(categoryIdStr);
+        } catch (NumberFormatException e) {}
+    }
+    if (minPriceStr != null && !minPriceStr.isEmpty()) {
+        try {
+            minPrice = Double.parseDouble(minPriceStr);
+        } catch (NumberFormatException e) {}
+    }
+    if (maxPriceStr != null && !maxPriceStr.isEmpty()) {
+        try {
+            maxPrice = Double.parseDouble(maxPriceStr);
+        } catch (NumberFormatException e) {}
+    }
+
+    // 2. Fetch Data
+    ProductDAO productDAO = new ProductDAO();
+    List<ProductDTO> productList = productDAO.searchProductsWithFilter(keyword, categoryId, minPrice, maxPrice);
+
+    String resultTitle = "All Products";
+    if (keyword != null && !keyword.isEmpty()) {
         resultTitle = "Search Results for \"" + keyword + "\"";
-    } else {
-        productList = productDAO.getAllProducts();
+    } else if (categoryId != null) {
+        resultTitle = "Category Results";
+    }
+
+    if (minPrice != null || maxPrice != null) {
+        resultTitle += " (Filtered)";
     }
 
     // Fetch Categories for Sidebar
@@ -182,10 +199,19 @@
         <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin: 20px 0;">
 
         <span class="filter-title">Price Range</span>
-        <div style="display:flex; gap:5px;">
-            <input type="number" placeholder="Min" style="width:100%; padding:8px; border-radius:10px; border:1px solid #ccc;">
-            <input type="number" placeholder="Max" style="width:100%; padding:8px; border-radius:10px; border:1px solid #ccc;">
-        </div>
+        <form action="search_result.jsp" method="get">
+            <% if(keyword != null && !keyword.isEmpty()) { %>
+            <input type="hidden" name="keyword" value="<%= keyword %>">
+            <% } %>
+            <% if(categoryIdStr != null && !categoryIdStr.isEmpty()) { %>
+            <input type="hidden" name="categoryId" value="<%= categoryIdStr %>">
+            <% } %>
+            <div style="display:flex; gap:5px; margin-bottom: 10px;">
+                <input type="number" name="minPrice" placeholder="Min" value="<%= minPriceStr != null ? minPriceStr : "" %>" style="width:100%; padding:8px; border-radius:10px; border:1px solid #ccc;">
+                <input type="number" name="maxPrice" placeholder="Max" value="<%= maxPriceStr != null ? maxPriceStr : "" %>" style="width:100%; padding:8px; border-radius:10px; border:1px solid #ccc;">
+            </div>
+            <button type="submit" style="width:100%; padding:8px; background:#333; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:600;">Apply</button>
+        </form>
     </aside>
 
     <main>

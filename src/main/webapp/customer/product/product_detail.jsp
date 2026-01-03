@@ -1,7 +1,10 @@
 <%@ page import="com.primego.user.model.User" %>
 <%@ page import="com.primego.product.dao.ProductDAO" %>
 <%@ page import="com.primego.product.model.ProductDTO" %>
+<%@ page import="com.primego.product.dao.ProductImageDAO" %>
+<%@ page import="com.primego.product.model.ProductImage" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
@@ -11,13 +14,19 @@
     String productIdStr = request.getParameter("id");
 
     ProductDTO product = null;
-    String statusDisplay = ""; // 用于前端显示的格式化状态
+    List<ProductImage> imageList = new ArrayList<>(); // 存储所有图片
+    String statusDisplay = "";
 
     if (productIdStr != null && !productIdStr.trim().isEmpty()) {
         try {
             int pid = Integer.parseInt(productIdStr);
             ProductDAO productDAO = new ProductDAO();
             product = productDAO.getProductById(pid);
+
+            // ⭐ 新增：获取该商品的所有图片
+            ProductImageDAO imageDAO = new ProductImageDAO();
+            imageList = imageDAO.getImagesByProductId(pid);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -28,14 +37,13 @@
         return;
     }
 
-    // --- 处理状态显示 (去除下划线，改为易读格式) ---
+    // --- 处理状态显示 ---
     if (product.getProductStatus() != null) {
         if ("ON_SALE".equals(product.getProductStatus())) {
             statusDisplay = "On Sale";
         } else if ("OFF_SALE".equals(product.getProductStatus())) {
-            statusDisplay = "Off Sale"; // 或者 "Sold Out"
+            statusDisplay = "Off Sale";
         } else {
-            // 如果有其他状态，直接把下划线换成空格
             statusDisplay = product.getProductStatus().replace("_", " ");
         }
     }
@@ -101,7 +109,7 @@
             animation: fadeInUp 0.6s ease forwards;
         }
 
-        /* --- 3. Gallery --- */
+        /* --- 3. Gallery (Carousel) Styles --- */
         .gallery-section {
             position: sticky;
             top: 120px;
@@ -119,13 +127,58 @@
             justify-content: center;
             overflow: hidden;
             margin-bottom: 20px;
+            position: relative; /* 为绝对定位的按钮提供参照 */
         }
 
-        .main-image-container img {
+        .carousel-img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            transition: opacity 0.3s ease; /* 淡入淡出效果 */
         }
+
+        /* 左右切换按钮 */
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45px; height: 45px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            z-index: 10;
+            transition: all 0.2s;
+            opacity: 0; /* 默认隐藏，悬停显示 */
+        }
+        .main-image-container:hover .carousel-btn { opacity: 1; }
+        .carousel-btn:hover { background: var(--primary); color: white; }
+        .prev-btn { left: 20px; }
+        .next-btn { right: 20px; }
+
+        /* 底部指示点 */
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .indicator {
+            width: 50px; height: 50px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            overflow: hidden;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.3s;
+        }
+        .indicator img { width: 100%; height: 100%; object-fit: cover; }
+        .indicator.active { border-color: var(--primary); opacity: 1; transform: scale(1.1); }
+
 
         /* --- 4. Info --- */
         .info-section {
@@ -255,8 +308,18 @@
 
         <div class="gallery-section">
             <div class="main-image-container">
-                <img src="<%= (product.getPrimaryImageUrl() != null) ? request.getContextPath() + "/" + product.getPrimaryImageUrl() : "https://via.placeholder.com/600" %>" alt="Product Image">
+                <button type="button" class="carousel-btn prev-btn" onclick="prevImage()">
+                    <i class="ri-arrow-left-s-line"></i>
+                </button>
+
+                <img id="mainImage" src="" alt="Product Image" class="carousel-img">
+
+                <button type="button" class="carousel-btn next-btn" onclick="nextImage()">
+                    <i class="ri-arrow-right-s-line"></i>
+                </button>
             </div>
+
+            <div class="carousel-indicators" id="indicators"></div>
         </div>
 
         <div class="info-section">
@@ -287,21 +350,21 @@
 
             <div class="action-group">
                 <% if (currentUser != null) { %>
-                    <a href="${pageContext.request.contextPath}/cart_action?action=add&productId=<%= product.getProductId() %>" class="btn-action btn-cart">
-                        <i class="ri-shopping-cart-2-line"></i> Add to Cart
-                    </a>
+                <a href="${pageContext.request.contextPath}/cart_action?action=add&productId=<%= product.getProductId() %>" class="btn-action btn-cart">
+                    <i class="ri-shopping-cart-2-line"></i> Add to Cart
+                </a>
 
-                    <a href="${pageContext.request.contextPath}/customer/order/order_confirmation.jsp?productId=<%= product.getProductId() %>" class="btn-action btn-buy">
-                        Buy Now
-                    </a>
+                <a href="${pageContext.request.contextPath}/customer/order/order_confirmation.jsp?productId=<%= product.getProductId() %>" class="btn-action btn-buy">
+                    Buy Now
+                </a>
                 <% } else { %>
-                    <button onclick="showLoginModal()" class="btn-action btn-cart">
-                        <i class="ri-shopping-cart-2-line"></i> Add to Cart
-                    </button>
+                <button onclick="showLoginModal()" class="btn-action btn-cart">
+                    <i class="ri-shopping-cart-2-line"></i> Add to Cart
+                </button>
 
-                    <button onclick="showLoginModal()" class="btn-action btn-buy">
-                        Buy Now
-                    </button>
+                <button onclick="showLoginModal()" class="btn-action btn-buy">
+                    Buy Now
+                </button>
                 <% } %>
             </div>
 
@@ -312,6 +375,65 @@
         </div>
     </div>
 </div>
+
+<script>
+    // ==========================================
+    // 图片轮播逻辑
+    // ==========================================
+    const productImages = [
+        <% for (int i = 0; i < imageList.size(); i++) {
+               ProductImage img = imageList.get(i);
+        %>
+        "<%= request.getContextPath() + "/" + img.getImageUrl() %>"<%= (i < imageList.size() - 1) ? "," : "" %>
+        <% } %>
+    ];
+
+    // 如果没有图片，放一张默认图
+    if (productImages.length === 0) {
+        productImages.push("https://via.placeholder.com/600x600?text=No+Image");
+    }
+
+    let currentIndex = 0;
+    const mainImage = document.getElementById('mainImage');
+    const indicatorsContainer = document.getElementById('indicators');
+
+    function renderGallery() {
+        // 淡出
+        mainImage.style.opacity = 0;
+
+        setTimeout(() => {
+            mainImage.src = productImages[currentIndex];
+            mainImage.style.opacity = 1; // 淡入
+        }, 150);
+
+        // 渲染底部缩略图
+        indicatorsContainer.innerHTML = '';
+        productImages.forEach((src, idx) => {
+            const div = document.createElement('div');
+            // 注意反斜杠 \${} 防止 JSP 报错
+            div.className = `indicator \${idx === currentIndex ? 'active' : ''}`;
+            div.innerHTML = `<img src="\${src}" alt="Thumb">`;
+            div.onclick = () => {
+                currentIndex = idx;
+                renderGallery();
+            };
+            indicatorsContainer.appendChild(div);
+        });
+    }
+
+    function prevImage() {
+        currentIndex = (currentIndex === 0) ? productImages.length - 1 : currentIndex - 1;
+        renderGallery();
+    }
+
+    function nextImage() {
+        currentIndex = (currentIndex === productImages.length - 1) ? 0 : currentIndex + 1;
+        renderGallery();
+    }
+
+    // 初始化
+    renderGallery();
+</script>
 
 </body>
 </html>

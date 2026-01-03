@@ -294,6 +294,41 @@
                 .btn-edit:hover {
                     background: #d35400;
                 }
+
+                /* PIN Input Styles */
+                .pin-container {
+                    display: flex;
+                    gap: 10px;
+                    justify-content: center;
+                    margin: 10px 0;
+                }
+
+                .pin-digit {
+                    width: 45px;
+                    height: 50px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.5);
+                    background: rgba(255, 255, 255, 0.8);
+                    /* Slightly more opaque */
+                    backdrop-filter: blur(10px);
+                    text-align: center;
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    color: #333;
+                    outline: none;
+                    transition: 0.3s;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                    /* Added Shadow */
+                }
+
+                .pin-digit:focus {
+                    background: rgba(255, 255, 255, 1);
+                    box-shadow: 0 0 0 3px rgba(230, 138, 0, 0.2), 0 8px 20px rgba(230, 138, 0, 0.15);
+                    /* Enhanced Focus Shadow */
+                    border-color: #e68a00;
+                    transform: translateY(-2px);
+                    /* Subtle lift on focus */
+                }
             </style>
         </head>
 
@@ -636,49 +671,128 @@
                     </div>
                 </div>
 
-                <!-- Tab 3: Settings (Change Password) -->
+                <!-- Tab 3: Settings (Change Password & Payment PIN) -->
                 <div id="settings" class="tab-content">
                     <div class="header-section">
                         <h1>Account Settings</h1>
                     </div>
-                    <div class="glass-panel" style="max-width: 500px;">
-                        <h3 style="margin-bottom: 25px; color: #e68a00;">Change Password</h3>
 
-                        <c:if test="${not empty settingsMessage}">
-                            <div
-                                style="padding: 15px; border-radius: 10px; margin-bottom: 20px; 
-                                ${settingsMessageType == 'success' ? 'background: rgba(46, 204, 113, 0.2); color: #27ae60;' : 'background: rgba(231, 76, 60, 0.2); color: #c0392b;'}">
-                                ${settingsMessage}
-                            </div>
-                        </c:if>
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px;">
 
-                        <form action="${pageContext.request.contextPath}/profile" method="post">
-                            <input type="hidden" name="action" value="changePassword">
+                        <!-- Change Password Card -->
+                        <div class="glass-panel" style="flex: 1; min-width: 300px; max-width: 500px;">
+                            <h3 style="margin-bottom: 25px; color: #e68a00;">Change Password</h3>
 
-                            <div style="margin-bottom: 20px;">
-                                <label
-                                    style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Current
-                                    Password</label>
-                                <input type="password" name="oldPassword" required class="form-input">
-                            </div>
+                            <c:if test="${not empty settingsMessage && empty param.pinAction}">
+                                <div
+                                    style="padding: 15px; border-radius: 10px; margin-bottom: 20px; 
+                                    ${settingsMessageType == 'success' ? 'background: rgba(46, 204, 113, 0.2); color: #27ae60;' : 'background: rgba(231, 76, 60, 0.2); color: #c0392b;'}">
+                                    ${settingsMessage}
+                                </div>
+                            </c:if>
 
-                            <div style="margin-bottom: 20px;">
-                                <label
-                                    style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">New
-                                    Password</label>
-                                <input type="password" name="newPassword" required class="form-input">
-                            </div>
+                            <form action="${pageContext.request.contextPath}/profile" method="post">
+                                <input type="hidden" name="action" value="changePassword">
 
-                            <div style="margin-bottom: 25px;">
-                                <label
-                                    style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Confirm
-                                    New Password</label>
-                                <input type="password" name="confirmPassword" required class="form-input">
-                            </div>
+                                <div style="margin-bottom: 20px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Current
+                                        Password</label>
+                                    <input type="password" name="oldPassword" required class="form-input">
+                                </div>
 
-                            <button type="submit" class="btn-edit"
-                                style="width: 100%; padding: 12px; margin-top: 5px;">Update Password</button>
-                        </form>
+                                <div style="margin-bottom: 20px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">New
+                                        Password</label>
+                                    <input type="password" name="newPassword" required class="form-input">
+                                </div>
+
+                                <div style="margin-bottom: 25px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Confirm
+                                        New Password</label>
+                                    <input type="password" name="confirmPassword" required class="form-input">
+                                </div>
+
+                                <button type="submit" class="btn-edit"
+                                    style="width: 100%; padding: 12px; margin-top: 5px;">Update Password</button>
+                            </form>
+                        </div>
+
+                        <!-- Payment PIN Card -->
+                        <div class="glass-panel" style="flex: 1; min-width: 380px; max-width: 500px;">
+                            <h3 style="margin-bottom: 25px; color: #e68a00;">
+                                <c:choose>
+                                    <c:when test="${empty profile.paymentPin}">Set Payment PIN</c:when>
+                                    <c:otherwise>Change Payment PIN</c:otherwise>
+                                </c:choose>
+                            </h3>
+
+                            <c:if test="${not empty settingsMessage && not empty param.pinAction}">
+                                <div
+                                    style="padding: 15px; border-radius: 10px; margin-bottom: 20px; 
+                                    ${settingsMessageType == 'success' ? 'background: rgba(46, 204, 113, 0.2); color: #27ae60;' : 'background: rgba(231, 76, 60, 0.2); color: #c0392b;'}">
+                                    ${settingsMessage}
+                                </div>
+                            </c:if>
+
+                            <form action="${pageContext.request.contextPath}/profile?pinAction=true" method="post">
+                                <input type="hidden" name="action" value="updatePin">
+
+                                <!-- Current PIN (Only if PIN exists) -->
+                                <c:if test="${not empty profile.paymentPin}">
+                                    <div style="margin-bottom: 20px;">
+                                        <label
+                                            style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Current
+                                            PIN</label>
+                                        <div class="pin-container">
+                                            <c:forEach begin="1" end="6" var="i">
+                                                <input type="password" name="oldPin${i}" maxlength="1"
+                                                    class="pin-digit old-pin" required
+                                                    oninput="moveToNext(this, 'old-pin')"
+                                                    onkeydown="handleBackspace(event, this, 'old-pin')">
+                                            </c:forEach>
+                                        </div>
+                                    </div>
+                                </c:if>
+
+                                <div style="margin-bottom: 20px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">New
+                                        PIN (6 digits)</label>
+                                    <div class="pin-container">
+                                        <c:forEach begin="1" end="6" var="i">
+                                            <input type="password" name="pin${i}" maxlength="1"
+                                                class="pin-digit new-pin" required oninput="moveToNext(this, 'new-pin')"
+                                                onkeydown="handleBackspace(event, this, 'new-pin')">
+                                        </c:forEach>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom: 25px;">
+                                    <label
+                                        style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 500;">Confirm
+                                        New PIN</label>
+                                    <div class="pin-container">
+                                        <c:forEach begin="1" end="6" var="i">
+                                            <input type="password" name="confirmPin${i}" maxlength="1"
+                                                class="pin-digit confirm-pin" required
+                                                oninput="moveToNext(this, 'confirm-pin')"
+                                                onkeydown="handleBackspace(event, this, 'confirm-pin')">
+                                        </c:forEach>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn-edit"
+                                    style="width: 100%; padding: 12px; margin-top: 5px;">
+                                    <c:choose>
+                                        <c:when test="${empty profile.paymentPin}">Set PIN</c:when>
+                                        <c:otherwise>Update PIN</c:otherwise>
+                                    </c:choose>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
@@ -698,6 +812,24 @@
                         item.classList.remove('active');
                     });
                     navElement.classList.add('active');
+                }
+
+                function moveToNext(input, className) {
+                    if (input.value.length >= 1) {
+                        let next = input.nextElementSibling;
+                        if (next && next.classList.contains(className)) {
+                            next.focus();
+                        }
+                    }
+                }
+
+                function handleBackspace(event, input, className) {
+                    if (event.key === 'Backspace' && input.value.length === 0) {
+                        let prev = input.previousElementSibling;
+                        if (prev && prev.classList.contains(className)) {
+                            prev.focus();
+                        }
+                    }
                 }
             </script>
         </body>

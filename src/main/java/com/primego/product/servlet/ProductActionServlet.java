@@ -1,7 +1,9 @@
 package com.primego.product.servlet;
 
 import com.primego.product.dao.ProductDAO;
+import com.primego.product.dao.ProductImageDAO;
 import com.primego.product.model.Product;
+import com.primego.product.model.ProductImage;
 import com.primego.user.model.User;
 
 import javax.servlet.ServletException;
@@ -12,15 +14,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
-
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.UUID;
 
-// 1. 对应 JSP form 中的 action="product_action"
 @WebServlet("/product_action")
-// 2. 必须加这个注解才能接收图片文件
 @MultipartConfig(
         fileSizeThreshold = 1024 * 1024 * 2, // 2MB
         maxFileSize = 1024 * 1024 * 10,      // 10MB
@@ -28,9 +28,12 @@ import java.util.UUID;
 )
 public class ProductActionServlet extends HttpServlet {
 
+    // 实例化两个 DAO
+    private ProductDAO productDAO = new ProductDAO();
+    private ProductImageDAO imageDAO = new ProductImageDAO();
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 防止中文乱码
         request.setCharacterEncoding("UTF-8");
 
         String action = request.getParameter("action");
@@ -38,9 +41,9 @@ public class ProductActionServlet extends HttpServlet {
         if ("update".equals(action)) {
             handleUpdate(request, response);
         } else if ("delete".equals(action)) {
-            // 你以后可以在这里加删除逻辑
+            handleDelete(request, response);
         } else {
-            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp");
         }
     }
 
@@ -48,20 +51,14 @@ public class ProductActionServlet extends HttpServlet {
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("user");
 
-        // 安全检查：只有商家能操作
         if (user == null || !"MERCHANT".equals(user.getRole().toString())) {
             response.sendRedirect(request.getContextPath() + "/public/login.jsp");
             return;
         }
 
         try {
-            // 1. 获取普通字段
-            String idStr = request.getParameter("productId");
-            if(idStr == null || idStr.isEmpty()) {
-                throw new ServletException("Product ID is missing");
-            }
-            int productId = Integer.parseInt(idStr);
-
+            // 1. 获取并更新基本信息
+            int productId = Integer.parseInt(request.getParameter("productId"));
             String name = request.getParameter("productName");
             int categoryId = Integer.parseInt(request.getParameter("categoryId"));
             BigDecimal price = new BigDecimal(request.getParameter("productPrice"));
@@ -69,10 +66,9 @@ public class ProductActionServlet extends HttpServlet {
             String status = request.getParameter("productStatus");
             String description = request.getParameter("productDescription");
 
-            // 2. 构建 Product 对象
             Product product = new Product();
             product.setProductId(productId);
-            product.setMerchantId(user.getId()); // 关键：用于 DAO 层校验权限
+            product.setMerchantId(user.getId());
             product.setProductName(name);
             product.setCategoryId(categoryId);
             product.setProductPrice(price);
@@ -80,36 +76,85 @@ public class ProductActionServlet extends HttpServlet {
             product.setProductStatus(status);
             product.setProductDescription(description);
 
-            ProductDAO dao = new ProductDAO();
+            boolean updateSuccess = productDAO.updateProduct(product);
 
-            // 3. 更新基本信息
-            boolean success = dao.updateProduct(product);
+            if (updateSuccess) {
+                // ==========================================
+                // 2. 处理图片删除 (接收逗号分隔的 ID 字符串)
+                // ==========================================
+                String deleteIds = request.getParameter("deleteImageIds");
+                if (deleteIds != null && !deleteIds.trim().isEmpty()) {
+                    String[] ids = deleteIds.split(",");
+                    for (String idStr : ids) {
+                        try {
+                            int imgId = Integer.parseInt(idStr);
+                            imageDAO.deleteImageById(imgId);
+                        } catch (NumberFormatException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
 
-            // 4. 处理图片上传 (如果有新文件)
-            Part filePart = request.getPart("primaryImage");
-            if (success && filePart != null && filePart.getSize() > 0) {
-                String fileName = filePart.getSubmittedFileName();
-                // 生成唯一文件名防止覆盖
-                String uniqueName = UUID.randomUUID().toString() + "_" + fileName;
+                // ==========================================
+                // 3. 处理新图片上传 (多图)
+                // ==========================================
+                String uploadDir = getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "products";
+                File uploadDirFile = new File(uploadDir);
+                if (!uploadDirFile.exists()) uploadDirFile.mkdirs();
 
-                // 定义保存路径
-                String uploadDir = getServletContext().getRealPath("/assets/images/products");
-                File dir = new File(uploadDir);
-                if (!dir.exists()) dir.mkdirs();
+                String sourceDir = "/Users/zhangyifei/IdeaProjects/PrimeGo-USM-CAT201W-Project/src/main/webapp/assets/images/products";
+                File sourceDirFile = new File(sourceDir);
+                if (!sourceDirFile.exists()) sourceDirFile.mkdirs();
 
-                // 保存文件到服务器
-                filePart.write(uploadDir + File.separator + uniqueName);
+                Collection<Part> parts = request.getParts();
+                for (Part part : parts) {
+                    if (part.getName().equals("newImages") && part.getSize() > 0 && part.getSubmittedFileName() != null && !part.getSubmittedFileName().isEmpty()) {
 
-                // 更新数据库中的图片路径 (相对路径)
-                String dbImagePath = "assets/images/products/" + uniqueName;
-                dao.updateProductPrimaryImage(productId, dbImagePath);
-            }
+                        String fileName = UUID.randomUUID().toString() + "_" + getFileName(part);
 
-            if (success) {
-                // ⚡️修改：成功后跳转回 product_manager.jsp
+                        // 保存到 Tomcat 运行目录
+                        String filePath = uploadDir + File.separator + fileName;
+                        part.write(filePath);
+
+                        // 保存到本地源码目录
+                        try {
+                            java.nio.file.Files.copy(
+                                    new File(filePath).toPath(),
+                                    new File(sourceDir + File.separator + fileName).toPath(),
+                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                            );
+                        } catch (Exception e) {
+                            System.err.println("Local copy failed: " + e.getMessage());
+                        }
+
+                        // 插入数据库 (新上传的默认为非主图 false)
+                        String dbImageUrl = "assets/images/products/" + fileName;
+                        ProductImage img = new ProductImage(productId, dbImageUrl, false);
+                        imageDAO.insertImage(img);
+                    }
+                }
+
+                // ==========================================
+                // ⭐ 4. 处理图片排序与主图更新 (新增逻辑)
+                // ==========================================
+                String sortOrder = request.getParameter("imageSortOrder"); // 获取前端 "105,102,101"
+                if (sortOrder != null && !sortOrder.trim().isEmpty()) {
+                    String[] ids = sortOrder.split(",");
+                    if (ids.length > 0) {
+                        try {
+                            // 列表中的第一个 ID 就是用户拖拽到第一位的图片
+                            int newPrimaryId = Integer.parseInt(ids[0]);
+
+                            // 调用 DAO 更新：把这个ID设为主图，其他的设为非主图
+                            imageDAO.updatePrimaryImage(productId, newPrimaryId);
+                        } catch (NumberFormatException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
                 response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?msg=updated");
             } else {
-                // ⚡️修改：失败后跳转回 product_manager.jsp
                 response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?error=failed");
             }
 
@@ -117,5 +162,32 @@ public class ProductActionServlet extends HttpServlet {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?error=exception");
         }
+    }
+
+    private void handleDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String idStr = request.getParameter("id");
+        if (idStr != null) {
+            try {
+                int productId = Integer.parseInt(idStr);
+                // 1. 先删图片
+                imageDAO.deleteImagesByProductId(productId);
+                // 2. 再删商品 (需要你在 ProductDAO 加这个方法，或者逻辑删除)
+                // productDAO.deleteProduct(productId);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp");
+    }
+
+    private String getFileName(Part part) {
+        String contentDisp = part.getHeader("content-disposition");
+        String[] tokens = contentDisp.split(";");
+        for (String token : tokens) {
+            if (token.trim().startsWith("filename")) {
+                return token.substring(token.indexOf("=") + 2, token.length() - 1);
+            }
+        }
+        return "";
     }
 }
