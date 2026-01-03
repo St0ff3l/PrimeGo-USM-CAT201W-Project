@@ -3,7 +3,6 @@ package com.primego.product.dao;
 import com.primego.common.util.DBUtil;
 import com.primego.product.model.Product;
 import com.primego.product.model.ProductDTO;
-import com.primego.product.model.ProductImage;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -331,10 +330,8 @@ public class ProductDAO {
         return -1; // Failure
     }
 
-
-
     // ==========================================
-    // ⭐ 新增：更新方法 (用于 product_edit.jsp)
+    // 更新方法 (用于 product_edit.jsp)
     // ==========================================
 
     /**
@@ -368,6 +365,39 @@ public class ProductDAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // ==========================================
+    // ⭐ 新增：库存扣减方法 (用于下订单事务)
+    // ==========================================
+
+    /**
+     * 扣减库存 (事务专用)
+     * 该方法不自己获取/关闭连接，而是使用传入的 Connection，以便参与 OrderDAO 的事务。
+     *
+     * @param conn 已经开启了事务的数据库连接
+     * @param productId 商品ID
+     * @param quantity 需要扣减的数量
+     * @throws SQLException 如果数据库错误或库存不足
+     */
+    public void decreaseStock(Connection conn, int productId, int quantity) throws SQLException {
+        // SQL 逻辑：只有当当前库存 >= 购买数量时才执行更新
+        String sql = "UPDATE Product SET Product_Stock_Quantity = Product_Stock_Quantity - ? " +
+                "WHERE Product_Id = ? AND Product_Stock_Quantity >= ?";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, quantity);
+            pstmt.setInt(2, productId);
+            pstmt.setInt(3, quantity); // 再次传入数量作为判断条件
+
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows == 0) {
+                // 如果没有行被更新，说明库存不足或者商品ID不存在
+                throw new SQLException("库存不足或商品不存在 (Product ID: " + productId + ")");
+            }
+        }
+        // 注意：这里不要关闭 conn，因为事务还没结束
     }
 
 }

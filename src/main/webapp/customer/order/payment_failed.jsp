@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Payment Success - PrimeGo</title>
+    <title>Payment Failed - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -20,9 +20,10 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         }
 
+        /* 红色图标样式 */
         .icon-circle {
             width: 80px; height: 80px;
-            background: #d1fae5; color: #10b981;
+            background: #fee2e2; color: #ef4444; /* 红色背景和图标 */
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 40px; margin: 0 auto 20px;
@@ -33,10 +34,11 @@
 
         .btn { display: block; width: 100%; padding: 15px; border-radius: 15px; text-decoration: none; font-weight: 600; margin-bottom: 10px; transition: 0.2s; }
 
+        /* 红色按钮渐变 */
         .btn-primary {
-            background: linear-gradient(45deg, #10b981, #34d399);
+            background: linear-gradient(45deg, #ef4444, #f87171);
             color: white;
-            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
         }
         .btn-primary:hover { transform: translateY(-2px); }
 
@@ -49,12 +51,11 @@
 <%@ include file="../../common/background.jsp" %>
 
 <div class="card">
-    <div class="icon-circle">✓</div>
-    <h1>Payment Successful!</h1>
-    <p>Your order has been placed. The seller will contact you shortly.</p>
+    <div class="icon-circle">✕</div> <h1>Payment Failed</h1>
+    <p>Something went wrong with your order processing. Please try again.</p>
 
-    <a href="<%= request.getContextPath() %>/index.jsp" class="btn btn-primary">Continue Shopping</a>
-    <a href="#" class="btn btn-outline">View Order</a>
+    <a href="<%= request.getContextPath() %>/customer/order/order_confirmation.jsp" class="btn btn-primary">Try Again</a>
+    <a href="<%= request.getContextPath() %>/index.jsp" class="btn btn-outline">Back to Home</a>
 </div>
 
 </body>
