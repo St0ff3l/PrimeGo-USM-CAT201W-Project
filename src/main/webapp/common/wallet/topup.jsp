@@ -124,8 +124,8 @@
             <div class="qr-desc">Use Touch'n Go / DuitNow</div>
 
             <div class="qr-img-placeholder">
-                <!-- 替换为你的真实图片路径 -->
-                <img src="${pageContext.request.contextPath}/assets/images/image.jpg" class="qr-img-real" alt="DuitNow QR">
+                <!-- 修复了图片路径：使用 QR code.jpg -->
+                <img src="${pageContext.request.contextPath}/assets/images/QR code.jpg" class="qr-img-real" alt="DuitNow QR">
             </div>
 
             <div class="bank-info">
@@ -191,7 +191,6 @@
             alert("Please enter amount and upload receipt.");
             return false;
         }
-        // 验证通过，返回 true 允许提交到 Servlet
         return true;
     }
 </script>
