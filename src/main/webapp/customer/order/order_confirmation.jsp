@@ -71,11 +71,10 @@
         <div class="card">
             <h2>Delivery Method</h2>
             <div class="delivery-opt">
-                <div class="opt-box selected" onclick="selectOpt(this, 0)">🤝 Meet-up</div>
-                <div class="opt-box" onclick="selectOpt(this, 15)">🚚 Shipping</div>
+                <div class="opt-box selected" onclick="selectOpt(this, 15)">🚚 Shipping</div>
             </div>
 
-            <div id="shippingForm" style="display:none;">
+            <div id="shippingForm">
                 <div class="input-group"><input type="text" class="input-field" placeholder="Full Name"></div>
                 <div class="input-group"><input type="text" class="input-field" placeholder="Address"></div>
             </div>
@@ -96,7 +95,7 @@
 
 <script>
     let basePrice = 3250.00; // Example price
-    let shipCost = 0;
+    let shipCost = 15; // 默认改为15，因为只剩下Shipping选项
 
     document.addEventListener("DOMContentLoaded", () => {
         // Initial Render
@@ -110,6 +109,7 @@
         el.classList.add('selected');
 
         shipCost = cost;
+        // 这里的逻辑保留，但实际上只会走到 cost > 0 的情况
         document.getElementById('shippingForm').style.display = cost > 0 ? 'block' : 'none';
         updateSummary();
     }
