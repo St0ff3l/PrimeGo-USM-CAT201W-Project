@@ -346,6 +346,10 @@
                 <div class="nav-item" onclick="switchTab('orders', this)">
                     <i class="ri-shopping-bag-3-line"></i><span>My Orders</span>
                 </div>
+                <div class="nav-item"
+                    onclick="window.location.href='${pageContext.request.contextPath}/common/wallet/wallet.jsp'">
+                    <i class="ri-wallet-line"></i><span>Wallet</span>
+                </div>
                 <div class="nav-item" onclick="switchTab('settings', this)">
                     <i class="ri-settings-3-line"></i><span>Settings</span>
                 </div>
