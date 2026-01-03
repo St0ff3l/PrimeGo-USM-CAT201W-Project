@@ -1,4 +1,7 @@
 <%@ page import="com.primego.user.model.User" %>
+<%@ page import="com.primego.product.dao.CategoryDAO" %>
+<%@ page import="com.primego.product.model.Category" %>
+<%@ page import="java.util.List" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
     // ==========================================
@@ -15,6 +18,10 @@
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
+
+    // Load Categories
+    CategoryDAO categoryDAO = new CategoryDAO();
+    List<Category> categories = categoryDAO.findAll();
 %>
 
 <!DOCTYPE html>
@@ -221,11 +228,11 @@
 
                     <div class="form-group">
                         <label class="form-label" for="category">Category <span>*</span></label>
-                        <select id="category" name="category" class="form-select">
-                            <option value="electronics">Electronics</option>
-                            <option value="fashion">Fashion</option>
-                            <option value="home">Home & Living</option>
-                            <option value="books">Books</option>
+                        <select id="category" name="categoryId" class="form-select" required>
+                            <option value="" disabled selected>Select a category</option>
+                            <% for (Category c : categories) { %>
+                                <option value="<%= c.getCategoryId() %>"><%= c.getCategoryName() %></option>
+                            <% } %>
                         </select>
                     </div>
 

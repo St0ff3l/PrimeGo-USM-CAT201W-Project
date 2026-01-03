@@ -1,6 +1,9 @@
 <%@ page pageEncoding="UTF-8" %> <%-- 关键：防止Emoji和中文乱码 --%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ page import="com.primego.user.model.User" %>
+<%@ page import="com.primego.product.dao.CategoryDAO" %>
+<%@ page import="com.primego.product.model.Category" %>
+<%@ page import="java.util.List" %>
 
 <!-- pg-header_bar.jsp v2 (merchant username enabled) -->
 
@@ -13,6 +16,10 @@
   String pgRole = (pgUser != null && pgUser.getRole() != null) ? pgUser.getRole().toString() : "";
   boolean pgIsMerchantUser = "MERCHANT".equals(pgRole);
   boolean pgIsAdminUser = "ADMIN".equals(pgRole);
+
+  // Fetch Categories for Dropdown
+  CategoryDAO __pgCategoryDAO = new CategoryDAO();
+  List<Category> __pgCategories = __pgCategoryDAO.findAll();
 %>
 
 <link id="primego-font-poppins" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -28,7 +35,20 @@
     <%-- 菜单区域 --%>
     <ul class="nav-menu">
       <li><a href="${pageContext.request.contextPath}/index.jsp">Home</a></li>
-      <li><a href="#">Categories</a></li>
+      
+      <li class="nav-item-dropdown">
+        <a href="#" class="dropdown-trigger">Categories ▾</a>
+        <ul class="dropdown-menu">
+          <% if (__pgCategories != null && !__pgCategories.isEmpty()) { %>
+            <% for(Category c : __pgCategories) { %>
+              <li><a href="${pageContext.request.contextPath}/customer/product/search_result.jsp?categoryId=<%=c.getCategoryId()%>"><%=c.getCategoryName()%></a></li>
+            <% } %>
+          <% } else { %>
+            <li><a href="#">No Categories</a></li>
+          <% } %>
+        </ul>
+      </li>
+      
       <li><a href="#">About Us</a></li>
 
       <c:if test="${empty sessionScope.user}">
@@ -68,8 +88,8 @@
           boolean __showMerchantTop = pgIsMerchantRoute && pgIsMerchantUser;
         %>
         <% if (__showMerchantTop) { %>
-          <a class="pg-merchant-wallet" href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp#wallet" title="Wallet">Wallet</a>
-          <span class="pg-merchant-username" title="<%= __pgUsername %>"><%= __pgUsername %></span>
+        <a class="pg-merchant-wallet" href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp#wallet" title="Wallet">Wallet</a>
+        <span class="pg-merchant-username" title="<%= __pgUsername %>"><%= __pgUsername %></span>
         <% } %>
 
         <a href="${pageContext.request.contextPath}/profile" class="nav-avatar" title="Current User: ${sessionScope.user.username}">
@@ -323,6 +343,59 @@
     background: rgba(0, 0, 0, 0.03);
     transform: translateY(-2px);
   }
+
+  /* ================= Dropdown Styles ================= */
+  .nav-item-dropdown {
+    position: relative;
+  }
+  
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 10px 0;
+    min-width: 200px;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 1001;
+    list-style: none;
+    margin-top: 10px;
+    animation: fadeInDown 0.3s ease;
+  }
+  
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .nav-item-dropdown:hover .dropdown-menu {
+    display: flex;
+  }
+  
+  .dropdown-menu li {
+    width: 100%;
+  }
+  
+  .dropdown-menu a {
+    display: block;
+    padding: 10px 20px;
+    white-space: nowrap;
+    color: #444;
+    font-weight: 500;
+    transition: all 0.2s;
+    border-radius: 0;
+  }
+  
+  .dropdown-menu a:hover {
+    background: rgba(255, 149, 0, 0.1);
+    color: #FF9500;
+    padding-left: 25px; /* Slide effect */
+  }
 </style>
-
-

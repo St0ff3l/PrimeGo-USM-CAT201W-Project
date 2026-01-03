@@ -1,5 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ page import="com.primego.user.model.User" %>
+<%@ page import="com.primego.product.dao.ProductDAO" %>
+<%@ page import="com.primego.product.model.ProductDTO" %>
+<%@ page import="java.util.List" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%
@@ -22,6 +25,10 @@
       return;
     }
   }
+
+  // Fetch Products
+  ProductDAO productDAO = new ProductDAO();
+  List<ProductDTO> productList = productDAO.getAllProducts();
 %>
 
 <!DOCTYPE html>
@@ -119,8 +126,8 @@
 
     .product-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 30px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 25px;
     }
 
     .product-card {
@@ -134,8 +141,25 @@
       transform: translateY(-10px);
     }
 
+    .product-img-container {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f5f6fa;
+    }
+
+    .product-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
     .product-img-placeholder {
-      height: 200px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
       background-color: rgba(245, 246, 250, 0.6);
       display: flex;
       align-items: center;
@@ -144,23 +168,23 @@
     }
 
     .product-details {
-      padding: 20px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
       flex-grow: 1;
     }
 
     .product-name {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
-      margin-bottom: 10px;
+      margin-bottom: 2px;
     }
 
     .product-price {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: #FF3B30;
       font-weight: 700;
-      margin-bottom: 15px;
+      margin-bottom: 5px;
     }
 
     .btn-add {
@@ -204,45 +228,42 @@
   <h2 class="section-title">Featured Products</h2>
 
   <div class="product-grid">
+    <%
+      if (productList == null || productList.isEmpty()) {
+    %>
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+        <h3>No products available at the moment.</h3>
+        <p>Please check back later!</p>
+      </div>
+    <%
+      } else {
+        for (ProductDTO p : productList) {
+    %>
     <div class="product-card glass-panel">
-      <div class="product-img-placeholder">💻</div>
+      <% if (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) { %>
+        <div class="product-img-container">
+          <img src="<%= request.getContextPath() + "/" + p.getPrimaryImageUrl() %>" 
+               alt="<%= p.getProductName() %>">
+        </div>
+      <% } else { %>
+        <div class="product-img-placeholder">📦</div>
+      <% } %>
+      
       <div class="product-details">
-        <h3 class="product-name">Premium Business Laptop</h3>
-        <p class="product-price">RM 3,250.00</p>
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Brand new, 16GB RAM, 512GB SSD.</p>
+        <h3 class="product-name"><%= p.getProductName() %></h3>
+        <p class="product-price">RM <%= String.format("%.2f", p.getProductPrice()) %></p>
+        <p style="font-size: 0.85rem; color:#666; margin-bottom:8px; line-height: 1.3;">
+            <%= (p.getProductDescription() != null && p.getProductDescription().length() > 50) 
+                ? p.getProductDescription().substring(0, 50) + "..." 
+                : (p.getProductDescription() != null ? p.getProductDescription() : "") %>
+        </p>
         <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
       </div>
     </div>
-
-    <div class="product-card glass-panel">
-      <div class="product-img-placeholder">📚</div>
-      <div class="product-details">
-        <h3 class="product-name">Java Programming Mastery</h3>
-        <p class="product-price">RM 85.00</p>
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Latest Edition. Hardcover.</p>
-        <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
-      </div>
-    </div>
-
-    <div class="product-card glass-panel">
-      <div class="product-img-placeholder">⌚</div>
-      <div class="product-details">
-        <h3 class="product-name">Smart Watch Ultra</h3>
-        <p class="product-price">RM 800.00</p>
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">Original packaging with warranty.</p>
-        <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
-      </div>
-    </div>
-
-    <div class="product-card glass-panel">
-      <div class="product-img-placeholder">👟</div>
-      <div class="product-details">
-        <h3 class="product-name">Running Pro Shoes</h3>
-        <p class="product-price">RM 189.00</p>
-        <p style="font-size: 0.9rem; color:#666; margin-bottom:10px;">New Season Arrival.</p>
-        <button class="btn btn-add" onclick="addToCart()">Add to Cart</button>
-      </div>
-    </div>
+    <%
+        }
+      }
+    %>
   </div>
 </div>
 

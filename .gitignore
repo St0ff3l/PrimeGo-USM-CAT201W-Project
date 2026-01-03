@@ -7,3 +7,4 @@
 /.vscode/
 .vscode/
 .idea/
+/src/main/java/com/primego/common/util/DBUtil.java

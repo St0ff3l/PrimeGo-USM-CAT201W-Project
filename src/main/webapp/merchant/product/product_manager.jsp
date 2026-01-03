@@ -1,5 +1,6 @@
 <%@ page import="com.primego.user.model.User" %>
-<%@ page import="java.util.ArrayList" %>
+<%@ page import="com.primego.product.dao.ProductDAO" %>
+<%@ page import="com.primego.product.model.ProductDTO" %>
 <%@ page import="java.util.List" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
@@ -21,17 +22,10 @@
     }
 
     // ==========================================
-    // 2. 模拟数据
+    // 2. 获取真实数据
     // ==========================================
-    class ProductMock {
-        int id; String title; double price; String img; String category; String status; int stock;
-        public ProductMock(int id, String t, double p, String c, String s, int st) { this.id=id; title=t; price=p; category=c; status=s; stock=st; }
-    }
-    List<ProductMock> productList = new ArrayList<>();
-    productList.add(new ProductMock(1, "iPhone 15 Pro Max", 1199.00, "Electronics", "active", 12));
-    productList.add(new ProductMock(2, "Java Programming", 45.50, "Books", "active", 5));
-    productList.add(new ProductMock(3, "Sony Headphones", 89.90, "Electronics", "inactive", 0));
-    productList.add(new ProductMock(4, "Vintage Camera", 350.00, "Electronics", "active", 1));
+    ProductDAO productDAO = new ProductDAO();
+    List<ProductDTO> productList = productDAO.getProductsByMerchantId(user.getId());
 %>
 
 <!DOCTYPE html>
@@ -276,34 +270,35 @@
             } else {
                 // 🔥 调整：商品卡片从 0.2s 开始入场，接在搜索栏后面
                 int index = 0;
-                for (ProductMock p : productList) {
-                    String statusClass = "active".equals(p.status) ? "status-active" : "status-inactive";
+                for (ProductDTO p : productList) {
+                    String statusClass = "ON_SALE".equals(p.getProductStatus()) ? "status-active" : "status-inactive";
+                    String statusText = "ON_SALE".equals(p.getProductStatus()) ? "Active" : "Inactive";
 
                     // 初始延迟 0.2s + 每个卡片递增 0.1s
                     String delayStyle = String.format("animation-delay: %.1fs;", 0.2 + (index * 0.1));
             %>
             <div class="product-card"
                  style="<%= delayStyle %>"
-                 onclick="window.location.href='publish.jsp?id=<%= p.id %>'">
+                 onclick="window.location.href='publish.jsp?id=<%= p.getProductId() %>'">
 
                 <span class="status-badge <%= statusClass %>">
-                    <%= p.status.substring(0, 1).toUpperCase() + p.status.substring(1) %>
+                    <%= statusText %>
                 </span>
 
                 <div class="card-img-container">
-                    <img src="<%= (p.img != null && !p.img.isEmpty()) ? p.img : "../../assets/images/default_product.png" %>"
+                    <img src="<%= (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) ? request.getContextPath() + "/" + p.getPrimaryImageUrl() : "../../assets/images/default_product.png" %>"
                          onerror="this.src='https://via.placeholder.com/300?text=No+Image'"
-                         alt="<%= p.title %>">
+                         alt="<%= p.getProductName() %>">
                 </div>
 
                 <div class="card-info">
-                    <div class="card-category"><%= p.category %></div>
-                    <h3 class="card-title"><%= p.title %></h3>
+                    <div class="card-category"><%= p.getCategoryName() != null ? p.getCategoryName() : "Uncategorized" %></div>
+                    <h3 class="card-title"><%= p.getProductName() %></h3>
 
                     <div class="card-footer">
-                        <span class="card-price">RM <%= String.format("%.2f", p.price) %></span>
+                        <span class="card-price">RM <%= String.format("%.2f", p.getProductPrice()) %></span>
                         <div class="card-actions" onclick="event.stopPropagation()">
-                            <button class="btn-edit" onclick="window.location.href='publish.jsp?id=<%= p.id %>'" title="Edit">
+                            <button class="btn-edit" onclick="window.location.href='publish.jsp?id=<%= p.getProductId() %>'" title="Edit">
                                 <i class="ri-edit-line"></i>
                             </button>
                         </div>
