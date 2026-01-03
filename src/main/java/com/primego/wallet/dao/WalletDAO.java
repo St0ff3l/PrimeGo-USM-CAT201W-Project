@@ -156,4 +156,36 @@ public class WalletDAO {
             return false;
         }
     }
+
+    // ==========================================
+    // ⭐ 【新增】获取某个用户的所有交易记录 (修复 500 错误)
+    // ==========================================
+    public List<WalletTransaction> getUserTransactions(int userId) {
+        List<WalletTransaction> list = new ArrayList<>();
+        String sql = "SELECT * FROM wallet_transactions WHERE user_id = ? ORDER BY created_at DESC";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            if (connection == null) return list;
+
+            statement.setInt(1, userId);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    WalletTransaction t = new WalletTransaction();
+                    t.setId(rs.getInt("id"));
+                    t.setUserId(rs.getInt("user_id"));
+                    t.setAmount(rs.getBigDecimal("amount"));
+                    t.setTransactionType(rs.getString("transaction_type"));
+                    t.setStatus(rs.getString("status"));
+                    t.setReceiptImage(rs.getString("receipt_image"));
+                    t.setCreatedAt(rs.getTimestamp("created_at"));
+                    list.add(t);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }

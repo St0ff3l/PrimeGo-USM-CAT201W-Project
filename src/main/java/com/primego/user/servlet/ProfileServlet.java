@@ -32,6 +32,8 @@ public class ProfileServlet extends HttpServlet {
         switch (user.getRole()) {
             case CUSTOMER:
                 req.setAttribute("profile", profileDAO.getCustomerProfile(userId));
+                // Fetch addresses for the new Addresses tab
+                req.setAttribute("addresses", new com.primego.user.dao.AddressDAO().getAddressesByUserId(userId));
                 req.getRequestDispatcher("/customer/user/customer_profile.jsp").forward(req, resp);
                 break;
             case MERCHANT:
@@ -69,24 +71,6 @@ public class ProfileServlet extends HttpServlet {
             String phoneNumber = req.getParameter("phoneNumber");
             String phone = (phoneAreaCode + " " + phoneNumber).trim();
 
-            // Address
-            String street = req.getParameter("street");
-            String unit = req.getParameter("unit");
-            String city = req.getParameter("city");
-            String country = req.getParameter("country");
-            String state = req.getParameter("state");
-            String zip = req.getParameter("zip");
-
-            // Combine address with delimiter ||
-            // Format: Street||Unit||City||State||Zip||Country
-            String address = String.join("||",
-                    street != null ? street : "",
-                    unit != null ? unit : "",
-                    city != null ? city : "",
-                    state != null ? state : "",
-                    zip != null ? zip : "",
-                    country != null ? country : "");
-
             // 1. Update Username (in users table)
             boolean usernameUpdated = true;
             if (newUsername != null && !newUsername.trim().isEmpty() && !newUsername.equals(user.getUsername())) {
@@ -98,8 +82,18 @@ public class ProfileServlet extends HttpServlet {
             }
 
             // 2. Update Profile Details (in customer_profiles table)
-            // Note: passing null for paymentPin as this update doesn't touch it
-            CustomerProfile profile = new CustomerProfile(user.getId(), fullName, null, phone, address, null);
+            // Note: Address is now managed exclusively via AddressServlet. We pass null for
+            // defaultAddress here.
+            // PaymentPin is managed via updatePin action, so we pass null here too.
+            // Email is not updated here, pass null or empty string.
+            CustomerProfile profile = new CustomerProfile(
+                    user.getId(),
+                    fullName,
+                    "", // Email ignored in update
+                    phone,
+                    null,
+                    null);
+
             boolean profileUpdated = profileDAO.updateCustomerProfile(profile);
 
             if (usernameUpdated && profileUpdated) {

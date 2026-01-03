@@ -5,19 +5,19 @@ public class CustomerProfile {
     private String fullName;
     private String email;
     private String phone;
-    private String address;
-
+    private UserAddress defaultAddress;
     private String paymentPin;
 
     public CustomerProfile() {
     }
 
-    public CustomerProfile(int userId, String fullName, String email, String phone, String address, String paymentPin) {
+    public CustomerProfile(int userId, String fullName, String email, String phone, UserAddress defaultAddress,
+            String paymentPin) {
         this.userId = userId;
         this.fullName = fullName;
         this.email = email;
         this.phone = phone;
-        this.address = address;
+        this.defaultAddress = defaultAddress;
         this.paymentPin = paymentPin;
     }
 
@@ -43,6 +43,14 @@ public class CustomerProfile {
 
     public void setPaymentPin(String paymentPin) {
         this.paymentPin = paymentPin;
+    }
+
+    public UserAddress getDefaultAddress() {
+        return defaultAddress;
+    }
+
+    public void setDefaultAddress(UserAddress defaultAddress) {
+        this.defaultAddress = defaultAddress;
     }
 
     // Helper to get First Name (everything before the last space)
@@ -81,8 +89,7 @@ public class CustomerProfile {
         this.phone = phone;
     }
 
-    // Helper to get Area Code (assuming format "+AreaCode PhoneNumber" or just
-    // "PhoneNumber")
+    // Helper to get Area Code
     public String getPhoneAreaCode() {
         if (phone == null || !phone.contains(" "))
             return "";
@@ -97,72 +104,45 @@ public class CustomerProfile {
         return phone.substring(phone.indexOf(" ") + 1);
     }
 
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    // Address Format: Street||Unit||City||State||Zip||Country
-    private String[] getAddressParts() {
-        if (address == null)
-            return new String[] { "", "", "", "", "", "" };
-        String[] parts = address.split("\\|\\|");
-        if (parts.length < 6) {
-            // Pad with empty strings if incomplete
-            String[] padded = new String[6];
-            System.arraycopy(parts, 0, padded, 0, parts.length);
-            for (int i = parts.length; i < 6; i++)
-                padded[i] = "";
-            return padded;
-        }
-        return parts;
-    }
+    // DELEGATION METHODS FOR BACKWARD COMPATIBILITY
+    // Accessing fields from defaultAddress
 
     public String getStreet() {
-        return getAddressParts()[0];
+        return defaultAddress != null ? (defaultAddress.getDetail() != null ? defaultAddress.getDetail() : "") : "";
     }
 
     public String getUnit() {
-        return getAddressParts()[1];
+        // District can be used as generic "extra" or just return empty if mapped
+        // differently.
+        // Creating mapping: Detail -> Street, District -> Unit (optional mapping)
+        return defaultAddress != null ? (defaultAddress.getDistrict() != null ? defaultAddress.getDistrict() : "") : "";
     }
 
     public String getCity() {
-        return getAddressParts()[2];
+        return defaultAddress != null ? (defaultAddress.getCity() != null ? defaultAddress.getCity() : "") : "";
     }
 
     public String getState() {
-        return getAddressParts()[3];
+        // Mapping Province -> State
+        return defaultAddress != null ? (defaultAddress.getProvince() != null ? defaultAddress.getProvince() : "") : "";
     }
 
     public String getZip() {
-        return getAddressParts()[4];
+        return ""; // Zip is not explicitly in new schema user_addresses (only
+                   // province/city/district/detail).
+                   // If requested schema didn't have zip, we return empty or need to add it.
+                   // Based on user request: `province`, `city`, `district`, `detail`. No zip
+                   // column.
     }
 
     public String getCountry() {
-        return getAddressParts()[5];
+        return "Malaysia"; // Default or not in schema. Schema has no country column.
     }
 
     // Helper for display
     public String getFormattedAddress() {
-        if (address == null || address.isEmpty())
+        if (defaultAddress == null)
             return "No address set";
-        String[] parts = getAddressParts();
-        StringBuilder sb = new StringBuilder();
-        if (!parts[0].isEmpty())
-            sb.append(parts[0]);
-        if (!parts[1].isEmpty())
-            sb.append(", ").append(parts[1]);
-        if (!parts[2].isEmpty())
-            sb.append("\n").append(parts[2]);
-        if (!parts[3].isEmpty())
-            sb.append(", ").append(parts[3]);
-        if (!parts[4].isEmpty())
-            sb.append(" ").append(parts[4]);
-        if (!parts[5].isEmpty())
-            sb.append("\n").append(parts[5]);
-        return sb.toString();
+        return defaultAddress.getFullAddress();
     }
 }

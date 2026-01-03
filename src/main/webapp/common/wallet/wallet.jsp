@@ -18,8 +18,7 @@
 
     WalletDAO dao = new WalletDAO();
 
-    // 【关键修复】获取用户角色并转为 String
-    // 你的 User.getRole() 返回的是 Enum，所以必须加 .toString()
+    // 获取用户角色并转为 String (防止 null)
     String role = (user.getRole() != null) ? user.getRole().toString() : "";
 
     // 2. 准备数据
@@ -31,6 +30,10 @@
         // --- 普通用户模式：查余额 ---
         BigDecimal currentBalance = dao.getBalance(user.getId());
         request.setAttribute("displayBalance", String.format("%.2f", currentBalance));
+
+        // --- 普通用户模式：查自己的交易记录 ---
+        List<WalletTransaction> myTransactions = dao.getUserTransactions(user.getId());
+        request.setAttribute("myTransactions", myTransactions);
     }
 %>
 
@@ -212,7 +215,7 @@
         </div>
     </div>
 
-    <!-- 按钮组：Admin 登录时可以隐藏这些按钮 -->
+    <!-- 按钮组：Admin 登录时隐藏 -->
     <c:if test="${sessionScope.user.role != 'ADMIN'}">
         <div class="btn-group">
             <c:choose>
@@ -257,9 +260,11 @@
                         </div>
                         <div class="txn-left-sub">
                             User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
+
+                            <!-- 【修改点】点击查看凭证 -> 指向 Recharge_Photos -->
                             <c:if test="${txn.transactionType == 'TOPUP' && not empty txn.receiptImage}">
                                 <br>
-                                <a href="${pageContext.request.contextPath}/assets/uploads/receipts/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
+                                <a href="${pageContext.request.contextPath}/assets/images/Recharge_Photos/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
                                     <i class="ri-image-line"></i> View Receipt
                                 </a>
                             </c:if>
@@ -286,9 +291,37 @@
 
         <!-- 情况2: 普通用户登录 -->
         <c:if test="${sessionScope.user.role != 'ADMIN'}">
-            <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;">
-                <p>No transaction history found.</p>
-            </div>
+
+            <c:if test="${empty myTransactions}">
+                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;">
+                    <p>No transaction history found.</p>
+                </div>
+            </c:if>
+
+            <c:forEach var="txn" items="${myTransactions}">
+                <div class="txn-item">
+                    <div>
+                        <div class="txn-left-main">
+                                ${txn.transactionType == 'TOPUP' ? 'Top Up' : 'Withdraw'}
+                            <!-- 状态标签 -->
+                            <span style="font-size:0.8rem; padding:2px 8px; border-radius:10px; margin-left: 5px;
+                                    background:${txn.status == 'APPROVED' ? '#d4edda' : (txn.status == 'PENDING' ? '#fff3cd' : '#f8d7da')};
+                                    color:${txn.status == 'APPROVED' ? '#155724' : (txn.status == 'PENDING' ? '#856404' : '#721c24')};">
+                                    ${txn.status}
+                            </span>
+                        </div>
+                        <div class="txn-left-sub">
+                            <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
+                        </div>
+                    </div>
+                    <div class="txn-right">
+                        <span class="${txn.transactionType == 'TOPUP' ? 'txn-amount-plus' : 'txn-amount-minus'}">
+                            ${txn.transactionType == 'TOPUP' ? '+' : '-'} RM ${txn.amount}
+                        </span>
+                    </div>
+                </div>
+            </c:forEach>
+
         </c:if>
     </div>
 

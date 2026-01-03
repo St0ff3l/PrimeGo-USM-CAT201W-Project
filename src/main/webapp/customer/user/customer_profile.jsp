@@ -346,6 +346,9 @@
                 <div class="nav-item" onclick="switchTab('orders', this)">
                     <i class="ri-shopping-bag-3-line"></i><span>My Orders</span>
                 </div>
+                <div class="nav-item" onclick="switchTab('addresses', this)">
+                    <i class="ri-map-pin-line"></i><span>Addresses</span>
+                </div>
                 <div class="nav-item"
                     onclick="window.location.href='${pageContext.request.contextPath}/common/wallet/wallet.jsp'">
                     <i class="ri-wallet-line"></i><span>Wallet</span>
@@ -528,64 +531,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- Row 3: Address Line 1 -->
-                                    <div>
-                                        <label
-                                            style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 500;">Address
-                                            (Street, P.O. box) *</label>
-                                        <input type="text" name="street" value="${profile.street}" required
-                                            class="form-input">
-                                    </div>
-
-                                    <!-- Row 4: Address Line 2 -->
-                                    <div>
-                                        <label
-                                            style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 500;">Address
-                                            line 2 (Apartment, suite, unit)</label>
-                                        <input type="text" name="unit" value="${profile.unit}" class="form-input">
-                                    </div>
-
-                                    <!-- Row 5: City -->
-                                    <div>
-                                        <label
-                                            style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 500;">City
-                                            *</label>
-                                        <input type="text" name="city" value="${profile.city}" required
-                                            class="form-input">
-                                    </div>
-
-                                    <!-- Row 6: Country -->
-                                    <div>
-                                        <label
-                                            style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 500;">Country/Region
-                                            *</label>
-                                        <select name="country" class="form-input">
-                                            <option value="United States" ${profile.country=='United States'
-                                                ? 'selected' : '' }>United States</option>
-                                            <option value="Malaysia" ${profile.country=='Malaysia' ? 'selected' : '' }>
-                                                Malaysia</option>
-                                            <option value="China" ${profile.country=='China' ? 'selected' : '' }>China
-                                            </option>
-                                            <option value="Singapore" ${profile.country=='Singapore' ? 'selected' : ''
-                                                }>Singapore</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Row 7: State & Zip -->
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                        <div>
-                                            <label
-                                                style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 500;">State/Province</label>
-                                            <input type="text" name="state" value="${profile.state}" class="form-input">
-                                        </div>
-                                        <div>
-                                            <label
-                                                style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 500;">Postal/Zip
-                                                code</label>
-                                            <input type="text" name="zip" value="${profile.zip}"
-                                                placeholder="e.g. 12345" class="form-input">
-                                        </div>
-                                    </div>
+                                    <!-- Note: Address fields removed and managed in separate tab -->
 
                                     <!-- Note: Username is hidden/readonly or removed from here as per new request focusing on address details, 
                                          but if you want to keep Username editing, add it back or assume it's not part of this specific address update request. 
@@ -652,9 +598,8 @@
                             <c:if test="${not empty profile}">
                                 <p><strong>Full Name:</strong> ${profile.fullName}</p>
                                 <p><strong>Phone:</strong> ${profile.phone}</p>
-                                <p><strong>Address:</strong> ${profile.street}</p>
-                                <p><strong>City:</strong> ${profile.city}</p>
-                                <p><strong>Country:</strong> ${profile.country}</p>
+                                <p><strong>Address:</strong> ${profile.formattedAddress}</p>
+                                <p>(Manage your addresses in the "Addresses" tab)</p>
                             </c:if>
                             <c:if test="${empty profile}">
                                 <p>No additional contact details found.</p>
@@ -663,7 +608,185 @@
                     </div>
                 </div>
 
-                <!-- Tab 2: My Orders (Full List) -->
+                <!-- Tab 2b: Addresses -->
+                <div id="addresses" class="tab-content">
+                    <div class="header-section">
+                        <h1>My Addresses</h1>
+                        <button class="btn-edit" onclick="openAddressModal('add')"
+                            style="margin: 0; padding: 10px 20px;">
+                            <i class="ri-add-line"></i> Add New Address
+                        </button>
+                    </div>
+
+                    <c:if test="${not empty sessionScope.message}">
+                        <div
+                            style="padding: 15px; border-radius: 10px; margin-bottom: 20px;
+                            ${sessionScope.messageType == 'success' ? 'background: #d4edda; color: #155724;' : 'background: #f8d7da; color: #721c24;'}">
+                            ${sessionScope.message}
+                        </div>
+                        <c:remove var="message" scope="session" />
+                        <c:remove var="messageType" scope="session" />
+                    </c:if>
+
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                        <c:if test="${empty addresses}">
+                            <div class="glass-panel" style="text-align: center; color: #666; grid-column: 1 / -1;">
+                                No addresses saved yet.
+                            </div>
+                        </c:if>
+                        <c:forEach var="addr" items="${addresses}">
+                            <div class="glass-panel"
+                                style="position: relative; border: ${addr.defaultAddress ? '2px solid #e68a00' : '1px solid rgba(255,255,255,0.6)'};">
+                                <c:if test="${addr.defaultAddress}">
+                                    <span
+                                        style="position: absolute; top: 15px; right: 15px; background: #e68a00; color: white; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: bold;">Default</span>
+                                </c:if>
+
+                                <h3 style="margin-bottom: 5px;">${addr.recipientName}</h3>
+                                <p style="color: #666; font-size: 0.9rem; margin-bottom: 10px;">${addr.phone}</p>
+                                <p style="margin-bottom: 15px;">
+                                    ${addr.detail}<br>
+                                    ${not empty addr.district ? addr.district : ''} ${not empty addr.district ? ',' :
+                                    ''} ${addr.city}<br>
+                                    ${addr.province}
+                                </p>
+
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button class="btn-edit-addr" data-id="${addr.id}" data-name="${addr.recipientName}"
+                                        data-phone="${addr.phone}" data-province="${addr.province}"
+                                        data-city="${addr.city}" data-district="${addr.district}"
+                                        data-detail="${addr.detail}" data-default="${addr.defaultAddress}"
+                                        onclick="openAddressModal('update', this)"
+                                        style="background: transparent; border: 1px solid #ccc; padding: 5px 15px; border-radius: 15px; cursor: pointer;">Edit</button>
+
+                                    <form action="${pageContext.request.contextPath}/user/address" method="post"
+                                        style="display:inline;">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="addressId" value="${addr.id}">
+                                        <button type="submit" onclick="return confirm('Are you sure?')"
+                                            style="background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b; padding: 5px 15px; border-radius: 15px; cursor: pointer;">Delete</button>
+                                    </form>
+
+                                    <c:if test="${!addr.defaultAddress}">
+                                        <form action="${pageContext.request.contextPath}/user/address" method="post"
+                                            style="display:inline;">
+                                            <input type="hidden" name="action" value="setDefault">
+                                            <input type="hidden" name="addressId" value="${addr.id}">
+                                            <button type="submit"
+                                                style="background: transparent; border: 1px solid #e68a00; color: #e68a00; padding: 5px 15px; border-radius: 15px; cursor: pointer;">Set
+                                                Default</button>
+                                        </form>
+                                    </c:if>
+                                </div>
+                            </div>
+                        </c:forEach>
+                    </div>
+
+                    <!-- Add/Edit Address Modal -->
+                    <div class="modal-overlay" id="addressModal">
+                        <div class="modal-dialog">
+                            <div class="modal-header">
+                                <h3 id="addrModalTitle">Add Address</h3>
+                                <button class="btn-close" onclick="closeAddressModal()">&times;</button>
+                            </div>
+                            <form action="${pageContext.request.contextPath}/user/address" method="post" id="addrForm">
+                                <input type="hidden" name="action" id="addrAction" value="add">
+                                <input type="hidden" name="addressId" id="addrId" value="">
+
+                                <div style="display: flex; flex-direction: column; gap: 15px;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div>
+                                            <label
+                                                style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px;">Receiver
+                                                Name</label>
+                                            <input type="text" name="recipientName" id="addrName" required
+                                                class="form-input">
+                                        </div>
+                                        <div>
+                                            <label
+                                                style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px;">Phone</label>
+                                            <input type="text" name="phone" id="addrPhone" required class="form-input">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px;">Province/State</label>
+                                        <input type="text" name="province" id="addrProvince" class="form-input">
+                                    </div>
+
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div>
+                                            <label
+                                                style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px;">City</label>
+                                            <input type="text" name="city" id="addrCity" class="form-input">
+                                        </div>
+                                        <div>
+                                            <label
+                                                style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px;">District
+                                                (Optional)</label>
+                                            <input type="text" name="district" id="addrDistrict" class="form-input">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            style="display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px;">Detailed
+                                            Address</label>
+                                        <textarea name="detail" id="addrDetail" rows="3" required class="form-input"
+                                            style="border-radius: 15px;"></textarea>
+                                    </div>
+
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" name="isDefault" id="addrDefault" value="true">
+                                        <label for="addrDefault" style="font-size: 0.9rem; color: #555;">Set as Default
+                                            Address</label>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 25px; display: flex; gap: 10px; justify-content: flex-end;">
+                                    <button type="submit" class="btn-edit"
+                                        style="margin-top: 0; padding: 10px 25px;">Save Address</button>
+                                    <button type="button" class="btn-edit" onclick="closeAddressModal()"
+                                        style="margin-top: 0; padding: 10px 25px; background: #999;">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <script>
+                        function openAddressModal(mode, btn) {
+                            var modal = document.getElementById('addressModal');
+                            var title = document.getElementById('addrModalTitle');
+                            var action = document.getElementById('addrAction');
+                            var idField = document.getElementById('addrId');
+
+                            if (mode === 'update' && btn) {
+                                title.innerText = 'Update Address';
+                                action.value = 'update';
+                                idField.value = btn.getAttribute('data-id');
+                                document.getElementById('addrName').value = btn.getAttribute('data-name');
+                                document.getElementById('addrPhone').value = btn.getAttribute('data-phone');
+                                document.getElementById('addrProvince').value = btn.getAttribute('data-province');
+                                document.getElementById('addrCity').value = btn.getAttribute('data-city');
+                                document.getElementById('addrDistrict').value = btn.getAttribute('data-district');
+                                document.getElementById('addrDetail').value = btn.getAttribute('data-detail');
+                                document.getElementById('addrDefault').checked = btn.getAttribute('data-default') === 'true';
+                            } else {
+                                title.innerText = 'Add Address';
+                                action.value = 'add';
+                                idField.value = '';
+                                document.getElementById('addrForm').reset();
+                            }
+                            modal.classList.add('active');
+                        }
+
+                        function closeAddressModal() {
+                            document.getElementById('addressModal').classList.remove('active');
+                        }
+                    </script>
+                </div>
                 <div id="orders" class="tab-content">
                     <div class="header-section">
                         <h1>Order History</h1>
@@ -803,21 +926,23 @@
             </div>
 
             <script>
-                function switchTab(tabId, navElement) {
-                    // Hide all tabs
-                    document.querySelectorAll('.tab-content').forEach(tab => {
-                        tab.classList.remove('active');
-                    });
-                    // Show selected tab
+                function switchTab(tabId, element) {
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                     document.getElementById(tabId).classList.add('active');
 
-                    // Update sidebar active state
-                    document.querySelectorAll('.nav-item').forEach(item => {
-                        item.classList.remove('active');
-                    });
-                    navElement.classList.add('active');
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    if (element) element.classList.add('active');
                 }
 
+                // Auto switch tab logic based on URL param
+                window.onload = function () {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const tab = urlParams.get('tab');
+                    if (tab) {
+                        const navItem = document.querySelector(".nav-item[onclick*='" + tab + "']");
+                        if (navItem) switchTab(tab, navItem);
+                    }
+                };
                 function moveToNext(input, className) {
                     if (input.value.length >= 1) {
                         let next = input.nextElementSibling;
