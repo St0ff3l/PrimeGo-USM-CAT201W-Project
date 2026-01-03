@@ -9,18 +9,17 @@
     // 1. Get Parameters
     String categoryIdStr = request.getParameter("categoryId");
     String keyword = request.getParameter("keyword");
-    
+
     // 2. Fetch Data
     ProductDAO productDAO = new ProductDAO();
     List<ProductDTO> productList = new ArrayList<>();
     String resultTitle = "All Products";
-    
+
     if (categoryIdStr != null && !categoryIdStr.isEmpty()) {
         try {
             int categoryId = Integer.parseInt(categoryIdStr);
             productList = productDAO.getProductsByCategoryId(categoryId);
-            // Ideally fetch category name here, but for now we can infer or just say "Category Results"
-            resultTitle = "Category Results"; 
+            resultTitle = "Category Results";
         } catch (NumberFormatException e) {
             productList = productDAO.getAllProducts();
         }
@@ -45,8 +44,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { color: #333; position: relative; }
 
-        /* Header styles are handled by header_bar.jsp */
-
         /* 搜索栏区域 */
         .search-bar-container { margin: 140px auto 30px; text-align: center; max-width: 800px; padding: 0 20px; }
         .search-input { width: 70%; padding: 15px 25px; border-radius: 30px; border: none; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); outline: none; font-size: 1rem; }
@@ -61,26 +58,28 @@
         .filter-option:hover { color: #FF3B30; padding-left: 5px; }
         .filter-option.active { color: #FF3B30; font-weight: 600; }
 
-        /* 商品网格 (Match index.jsp style) */
+        /* 商品网格 */
         .product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 25px;
         }
 
+        /* 修改：确保 a 标签作为卡片容器时的样式 */
         .product-card {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.6);
             border-radius: 20px;
             overflow: hidden;
-            transition: transform 0.3s;
+            transition: transform 0.3s, box-shadow 0.3s;
             display: flex;
             flex-direction: column;
-            text-decoration: none;
-            color: inherit;
+            text-decoration: none; /* 移除超链接下划线 */
+            color: inherit;       /* 继承文字颜色 */
+            height: 100%;
         }
-        
+
         .product-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
@@ -113,7 +112,7 @@
         }
 
         .product-details {
-            padding: 10px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             flex-grow: 1;
@@ -122,7 +121,7 @@
         .product-name {
             font-size: 1rem;
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -132,9 +131,9 @@
             font-size: 1.1rem;
             color: #FF3B30;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
-        
+
         .btn-add-cart {
             margin-top: auto;
             background-color: transparent;
@@ -172,12 +171,12 @@
     <aside class="sidebar">
         <span class="filter-title">Categories</span>
         <a href="search_result.jsp" class="filter-option <%= (categoryIdStr == null) ? "active" : "" %>">All Categories</a>
-        <% for(Category c : categories) { 
-             boolean isActive = categoryIdStr != null && categoryIdStr.equals(String.valueOf(c.getCategoryId()));
+        <% for(Category c : categories) {
+            boolean isActive = categoryIdStr != null && categoryIdStr.equals(String.valueOf(c.getCategoryId()));
         %>
-            <a href="search_result.jsp?categoryId=<%= c.getCategoryId() %>" class="filter-option <%= isActive ? "active" : "" %>">
-                <%= c.getCategoryName() %>
-            </a>
+        <a href="search_result.jsp?categoryId=<%= c.getCategoryId() %>" class="filter-option <%= isActive ? "active" : "" %>">
+            <%= c.getCategoryName() %>
+        </a>
         <% } %>
 
         <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin: 20px 0;">
@@ -191,40 +190,44 @@
 
     <main>
         <h3 style="margin-bottom:20px; color:#555;"><%= resultTitle %></h3>
-        
+
         <div class="product-grid">
             <% if (productList == null || productList.isEmpty()) { %>
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
-                    <h3>No products found.</h3>
-                    <p>Try adjusting your search or category.</p>
-                </div>
-            <% } else { 
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+                <h3>No products found.</h3>
+                <p>Try adjusting your search or category.</p>
+            </div>
+            <% } else {
                 for (ProductDTO p : productList) {
             %>
-            <div class="product-card">
+            <%-- 修改点：将整个 card 包装在指向 product_detail.jsp 的 a 标签中 --%>
+            <a href="product_detail.jsp?id=<%= p.getProductId() %>" class="product-card">
                 <% if (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) { %>
-                    <div class="product-img-container">
-                        <img src="<%= request.getContextPath() + "/" + p.getPrimaryImageUrl() %>" 
-                             alt="<%= p.getProductName() %>">
-                    </div>
+                <div class="product-img-container">
+                    <img src="<%= request.getContextPath() + "/" + p.getPrimaryImageUrl() %>"
+                         alt="<%= p.getProductName() %>">
+                </div>
                 <% } else { %>
-                    <div class="product-img-placeholder">�</div>
+                <div class="product-img-placeholder">📦</div>
                 <% } %>
-                
+
                 <div class="product-details">
                     <h4 class="product-name"><%= p.getProductName() %></h4>
                     <p class="product-price">RM <%= String.format("%.2f", p.getProductPrice()) %></p>
                     <p style="font-size: 0.85rem; color:#666; margin-bottom:8px; line-height: 1.3;">
-                        <%= (p.getProductDescription() != null && p.getProductDescription().length() > 50) 
-                            ? p.getProductDescription().substring(0, 50) + "..." 
-                            : (p.getProductDescription() != null ? p.getProductDescription() : "") %>
+                        <%= (p.getProductDescription() != null && p.getProductDescription().length() > 50)
+                                ? p.getProductDescription().substring(0, 50) + "..."
+                                : (p.getProductDescription() != null ? p.getProductDescription() : "") %>
                     </p>
-                    <a href="${pageContext.request.contextPath}/cart_action?action=add&productId=<%= p.getProductId() %>" class="btn-add-cart">Add to Cart</a>
+                    <%-- 注意：为了防止点击按钮也触发卡片的跳转，可以加上 stopPropagation --%>
+                    <div onclick="event.preventDefault(); window.location.href='${pageContext.request.contextPath}/cart_action?action=add&productId=<%= p.getProductId() %>';" class="btn-add-cart">
+                        Add to Cart
+                    </div>
                 </div>
-            </div>
-            <% 
+            </a>
+            <%
+                    }
                 }
-            } 
             %>
         </div>
     </main>

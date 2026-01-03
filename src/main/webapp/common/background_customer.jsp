@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+‘<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%--
   文件名: common/background_customer.jsp
   描述: 买家/客户专用背景组件 (橙色主题)

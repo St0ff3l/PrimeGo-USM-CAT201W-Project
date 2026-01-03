@@ -5,10 +5,8 @@
 <%@ page import="com.primego.product.model.Category" %>
 <%@ page import="java.util.List" %>
 
-<!-- pg-header_bar.jsp v2 (merchant username enabled) -->
-
 <%
-  // Centralized branching flags (avoid repeating fragile EL comparisons)
+  // Centralized branching flags
   String pgUri = request.getRequestURI();
   boolean pgIsMerchantRoute = pgUri != null && pgUri.contains("/merchant/");
 
@@ -23,6 +21,7 @@
 %>
 
 <link id="primego-font-poppins" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.bootcdn.net/ajax/libs/remixicon/3.5.0/remixicon.css" rel="stylesheet">
 
 <header class="home-header <%= pgIsMerchantRoute ? "pg-header-merchant-minimal" : "" %>">
   <div class="navbar">
@@ -35,20 +34,20 @@
     <%-- 菜单区域 --%>
     <ul class="nav-menu">
       <li><a href="${pageContext.request.contextPath}/index.jsp">Home</a></li>
-      
+
       <li class="nav-item-dropdown">
         <a href="#" class="dropdown-trigger">Categories ▾</a>
         <ul class="dropdown-menu">
           <% if (__pgCategories != null && !__pgCategories.isEmpty()) { %>
-            <% for(Category c : __pgCategories) { %>
-              <li><a href="${pageContext.request.contextPath}/customer/product/search_result.jsp?categoryId=<%=c.getCategoryId()%>"><%=c.getCategoryName()%></a></li>
-            <% } %>
+          <% for(Category c : __pgCategories) { %>
+          <li><a href="${pageContext.request.contextPath}/customer/product/search_result.jsp?categoryId=<%=c.getCategoryId()%>"><%=c.getCategoryName()%></a></li>
+          <% } %>
           <% } else { %>
-            <li><a href="#">No Categories</a></li>
+          <li><a href="#">No Categories</a></li>
           <% } %>
         </ul>
       </li>
-      
+
       <li><a href="#">About Us</a></li>
 
       <c:if test="${empty sessionScope.user}">
@@ -75,11 +74,17 @@
       <div class="search-container">
         <form action="${pageContext.request.contextPath}/customer/product/search_result.jsp" method="get" class="search-form">
           <input type="text" name="keyword" class="search-input-header" placeholder="Search...">
-          <button type="submit" class="search-btn-header">🔍</button>
+          <button type="submit" class="search-btn-header"><i class="ri-search-line"></i></button>
         </form>
       </div>
-      <span class="nav-icon nav-icon-search" onclick="toggleSearch()" title="Search">🔍</span>
-      <span class="nav-icon nav-icon-cart" onclick="window.location.href='${pageContext.request.contextPath}/customer/order/cart.jsp'" title="Cart">🛒 <span id="cart-count">0</span></span>
+
+      <span class="nav-icon nav-icon-search" onclick="toggleSearch()" title="Search">
+        <i class="ri-search-line"></i>
+      </span>
+
+      <span class="nav-icon nav-icon-cart" onclick="window.location.href='${pageContext.request.contextPath}/customer/order/cart.jsp'" title="Cart">
+        <i class="ri-shopping-cart-fill"></i> <span id="cart-count">0</span>
+      </span>
 
       <c:if test="${empty sessionScope.user}">
         <a href="${pageContext.request.contextPath}/public/login.jsp" class="nav-login-btn-link">
@@ -88,7 +93,6 @@
       </c:if>
 
       <c:if test="${not empty sessionScope.user}">
-        <%-- Merchant-only UI: show on merchant routes AND merchant user (prevents admin/customer weirdness) --%>
         <%
           String __pgUsername = (pgUser != null && pgUser.getUsername() != null) ? pgUser.getUsername() : "";
           boolean __showMerchantTop = pgIsMerchantRoute && pgIsMerchantUser;
@@ -107,16 +111,34 @@
 </header>
 
 <style>
-  /* ================= Header Bar 依赖的通用基础样式 =================
-     说明：这些是 header bar 视觉所需的通用字体/基础 reset。
-     为避免影响页面其它区域，这里只作用于 header bar 组件内部。
-  */
+  /* ================= 基础样式重置 ================= */
   .home-header,
   .home-header * ,
   .home-header *::before,
   .home-header *::after {
     box-sizing: border-box;
+    /* ⚠️ 注意：删除了这里的 font-family，防止覆盖图标字体 */
+  }
+
+  /* 仅针对文本内容设置字体 */
+  .home-header,
+  .home-header a,
+  .home-header input,
+  .home-header button,
+  .home-header span:not(.nav-icon) {
     font-family: 'Poppins', sans-serif;
+  }
+
+  /* ⚠️ 强制图标使用 RemixIcon 字体 */
+  .home-header i[class^="ri-"],
+  .home-header i[class*=" ri-"] {
+    font-family: 'remixicon' !important;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1;
+    vertical-align: middle;
+    display: inline-block;
   }
 
   /* ================= 导航栏容器 ================= */
@@ -130,7 +152,6 @@
     max-width: 1300px;
     border-radius: 50px;
     padding: 12px 40px;
-    /* 优化的毛玻璃背景 */
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
@@ -146,27 +167,12 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
-  }
-
-  /* Fix: allow the right side to be visible in flex layouts (prevents clipping on some pages) */
-  .home-header .navbar {
     min-width: 0;
   }
 
-  .home-header .brand-link {
-    flex: 0 0 auto;
-  }
-
-  .home-header .nav-menu {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .home-header .nav-icons {
-    flex: 0 0 auto;
-    min-width: 0;
-    white-space: nowrap;
-  }
+  .home-header .brand-link { flex: 0 0 auto; }
+  .home-header .nav-menu { flex: 1 1 auto; min-width: 0; }
+  .home-header .nav-icons { flex: 0 0 auto; min-width: 0; white-space: nowrap; }
 
   /* ================= Logo 样式 ================= */
   .brand-link {
@@ -193,12 +199,8 @@
     transition: color 0.3s ease;
   }
 
-  .brand-link:hover .brand-logo-img {
-    transform: scale(1.1);
-  }
-  .brand-link:hover .brand-text {
-    color: #FF9500;
-  }
+  .brand-link:hover .brand-logo-img { transform: scale(1.1); }
+  .brand-link:hover .brand-text { color: #FF9500; }
 
   /* ================= 菜单链接样式 ================= */
   .nav-menu {
@@ -228,15 +230,19 @@
   .nav-icons {
     display: flex;
     align-items: center;
-    gap: 16px; /* leave enough space */
+    gap: 16px;
   }
 
-  /* only style icon spans (search/cart) */
   .nav-icons .nav-icon {
     margin-left: 0;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.5rem; /* 图标大小 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: transform 0.3s, color 0.3s;
+    color: #333;
+    gap: 5px;
   }
 
   .nav-icons .nav-icon:hover {
@@ -244,10 +250,7 @@
     color: #FF9500;
   }
 
-  /* Reset the old broad rule impact (keep for backward compatibility if any other spans exist) */
-  .nav-icons span {
-    margin-left: 0;
-  }
+  .nav-icons span { margin-left: 0; }
 
   /* ================= 登录按钮样式 ================= */
   .nav-login-btn-link {
@@ -294,18 +297,16 @@
     transform: scale(1.1) rotate(5deg);
   }
 
-  /* ================= Merchant minimal header (logo + right user area) ================= */
+  /* ================= Merchant minimal header ================= */
   .home-header.pg-header-merchant-minimal .nav-menu,
   .home-header.pg-header-merchant-minimal .nav-login-btn-link {
     display: none !important;
   }
 
-  /* Hide ONLY search/cart icons in merchant minimal */
   .home-header.pg-header-merchant-minimal .nav-icons .nav-icon {
     display: none !important;
   }
 
-  /* Ensure username/wallet/avatar remain visible */
   .home-header.pg-header-merchant-minimal .pg-merchant-username,
   .home-header.pg-header-merchant-minimal .pg-merchant-wallet,
   .home-header.pg-header-merchant-minimal .nav-avatar {
@@ -315,10 +316,7 @@
     visibility: visible !important;
   }
 
-  /* Spacing in minimal mode */
-  .home-header.pg-header-merchant-minimal .nav-icons {
-    gap: 18px;
-  }
+  .home-header.pg-header-merchant-minimal .nav-icons { gap: 18px; }
 
   .home-header .pg-merchant-username {
     margin-left: 0;
@@ -332,7 +330,6 @@
     line-height: 1;
   }
 
-  /* Merchant wallet button: match index nav link look */
   .home-header .pg-merchant-wallet {
     text-decoration: none;
     color: #444;
@@ -351,10 +348,8 @@
   }
 
   /* ================= Dropdown Styles ================= */
-  .nav-item-dropdown {
-    position: relative;
-  }
-  
+  .nav-item-dropdown { position: relative; }
+
   .dropdown-menu {
     display: none;
     position: absolute;
@@ -375,20 +370,15 @@
     margin-top: 10px;
     animation: fadeInDown 0.3s ease;
   }
-  
+
   @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .nav-item-dropdown:hover .dropdown-menu {
-    display: flex;
-  }
-  
-  .dropdown-menu li {
-    width: 100%;
-  }
-  
+  .nav-item-dropdown:hover .dropdown-menu { display: flex; }
+  .dropdown-menu li { width: 100%; }
+
   .dropdown-menu a {
     display: block;
     padding: 10px 20px;
@@ -398,11 +388,11 @@
     transition: all 0.2s;
     border-radius: 0;
   }
-  
+
   .dropdown-menu a:hover {
     background: rgba(255, 149, 0, 0.1);
     color: #FF9500;
-    padding-left: 25px; /* Slide effect */
+    padding-left: 25px;
   }
 
   /* ================= Search Overlay Styles ================= */
@@ -417,18 +407,14 @@
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     margin-top: 10px;
   }
-  
+
   .search-container.active {
     display: block;
     animation: fadeInDown 0.3s ease;
   }
-  
-  .search-form {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  
+
+  .search-form { display: flex; align-items: center; gap: 5px; }
+
   .search-input-header {
     padding: 8px 12px;
     border: 1px solid #ddd;
@@ -437,12 +423,21 @@
     font-size: 0.9rem;
     width: 200px;
   }
-  
+
   .search-btn-header {
     background: none;
     border: none;
     cursor: pointer;
     font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+    transition: color 0.3s;
+  }
+
+  .search-btn-header:hover {
+    color: #FF9500;
   }
 </style>
 
@@ -454,13 +449,12 @@
       document.querySelector('.search-input-header').focus();
     }
   }
-  
-  // Close search when clicking outside
+
   document.addEventListener('click', function(event) {
     const searchContainer = document.querySelector('.search-container');
     const searchIcon = document.querySelector('.nav-icon-search');
-    
-    if (!searchContainer.contains(event.target) && !searchIcon.contains(event.target)) {
+
+    if (searchContainer && searchIcon && !searchContainer.contains(event.target) && !searchIcon.contains(event.target)) {
       searchContainer.classList.remove('active');
     }
   });
