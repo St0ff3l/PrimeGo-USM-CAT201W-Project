@@ -10,10 +10,13 @@
 <%
     // Check if we are buying a single product directly or checking out the cart
     String productIdStr = request.getParameter("productId");
+    // 定义一个布尔变量方便下面判断
+    boolean isBuyNow = (productIdStr != null && !productIdStr.isEmpty());
+
     List<CartItem> orderItems = new ArrayList<>();
     BigDecimal subTotal = BigDecimal.ZERO;
-    
-    if (productIdStr != null && !productIdStr.isEmpty()) {
+
+    if (isBuyNow) {
         // Buy Now mode
         try {
             int productId = Integer.parseInt(productIdStr);
@@ -35,7 +38,7 @@
             subTotal = cart.getTotalPrice();
         }
     }
-    
+
     // If no items, redirect back
     if (orderItems.isEmpty()) {
         response.sendRedirect(request.getContextPath() + "/index.jsp");
@@ -63,7 +66,7 @@
         /* 商品展示 */
         .order-item { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }
         .order-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        
+
         .item-img { width: 80px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 2rem; overflow: hidden; }
         .item-img img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -89,58 +92,77 @@
 <%@ include file="../../common/background.jsp" %>
 <%@ include file="../../common/layout/header_bar.jsp" %>
 
-<div class="container">
-    <div class="left-col">
-        <div class="card">
-            <h2>Order Items (<%= orderItems.size() %>)</h2>
-            <% for(CartItem item : orderItems) { %>
-            <div class="order-item">
-                <div class="item-img">
-                    <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
+<form action="<%= request.getContextPath() %>/placeOrder" method="post" id="orderForm">
+
+    <input type="hidden" name="isBuyNow" value="<%= isBuyNow %>">
+    <% if (isBuyNow) { %>
+    <input type="hidden" name="productId" value="<%= productIdStr %>">
+    <input type="hidden" name="quantity" id="hiddenQuantity" value="1">
+    <% } %>
+
+    <div class="container">
+        <div class="left-col">
+            <div class="card">
+                <h2>Order Items (<%= orderItems.size() %>)</h2>
+                <% for(CartItem item : orderItems) { %>
+                <div class="order-item">
+                    <div class="item-img">
+                        <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
                         <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
-                    <% } else { %>
+                        <% } else { %>
                         📦
-                    <% } %>
-                </div>
-                <div>
-                    <h4><%= item.getProduct().getProductName() %></h4>
-                    <div style="display: flex; align-items: center; gap: 10px; margin: 5px 0;">
-                        <span style="color:#666; font-size: 0.9rem;">Quantity:</span>
-                        <input type="number" min="1" value="<%= item.getQuantity() %>" 
-                               style="width: 60px; padding: 5px; border-radius: 5px; border: 1px solid #ccc;"
-                               onchange="updateQuantity(this, <%= item.getProduct().getProductPrice() %>)">
+                        <% } %>
                     </div>
-                    <p style="color:#FF3B30; font-weight:700;" class="item-total-price" data-unit-price="<%= item.getProduct().getProductPrice() %>">RM <%= String.format("%.2f", item.getTotalPrice()) %></p>
+                    <div>
+                        <h4><%= item.getProduct().getProductName() %></h4>
+                        <div style="display: flex; align-items: center; gap: 10px; margin: 5px 0;">
+                            <span style="color:#666; font-size: 0.9rem;">Quantity:</span>
+                            <input type="number" min="1" value="<%= item.getQuantity() %>"
+                                   style="width: 60px; padding: 5px; border-radius: 5px; border: 1px solid #ccc;"
+                                   onchange="updateQuantity(this, <%= item.getProduct().getProductPrice() %>)">
+                        </div>
+                        <p style="color:#FF3B30; font-weight:700;" class="item-total-price" data-unit-price="<%= item.getProduct().getProductPrice() %>">RM <%= String.format("%.2f", item.getTotalPrice()) %></p>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+
+            <div class="card">
+                <h2>Delivery Method</h2>
+                <div class="delivery-opt">
+                    <div class="opt-box selected" onclick="selectOpt(this, 15)">🚚 Shipping</div>
+                </div>
+
+                <div id="shippingForm">
+                    <div class="input-group">
+                        <input type="text" name="fullName" class="input-field" placeholder="Full Name" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" name="address" class="input-field" placeholder="Address" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" name="phone" class="input-field" placeholder="Phone Number" required>
+                    </div>
                 </div>
             </div>
-            <% } %>
         </div>
 
-        <div class="card">
-            <h2>Delivery Method</h2>
-            <div class="delivery-opt">
-                <div class="opt-box selected" onclick="selectOpt(this, 15)">🚚 Shipping</div>
-            </div>
+        <div class="right-col">
+            <div class="card">
+                <h2>Summary</h2>
+                <div class="summary-row"><span>Subtotal</span><span id="subTotal">RM <%= String.format("%.2f", subTotal) %></span></div>
+                <div class="summary-row"><span>Delivery</span><span id="shipFee">RM 15.00</span></div>
+                <div class="total-row"><span>Total</span><span id="totalDisplay" style="color:#FF3B30;">RM <%= String.format("%.2f", subTotal.add(new BigDecimal("15.00"))) %></span></div>
 
-            <div id="shippingForm">
-                <div class="input-group"><input type="text" class="input-field" placeholder="Full Name"></div>
-                <div class="input-group"><input type="text" class="input-field" placeholder="Address"></div>
-                <div class="input-group"><input type="text" class="input-field" placeholder="Phone Number"></div>
+                <button type="submit" class="btn-pay">Pay Now</button>
+
+                <% if(request.getAttribute("errorMessage") != null) { %>
+                <p style="color:red; text-align:center; margin-top:10px;"><%= request.getAttribute("errorMessage") %></p>
+                <% } %>
             </div>
         </div>
     </div>
-
-    <div class="right-col">
-        <div class="card">
-            <h2>Summary</h2>
-            <div class="summary-row"><span>Subtotal</span><span id="subTotal">RM <%= String.format("%.2f", subTotal) %></span></div>
-            <div class="summary-row"><span>Delivery</span><span id="shipFee">RM 15.00</span></div>
-            <div class="total-row"><span>Total</span><span id="totalDisplay" style="color:#FF3B30;">RM <%= String.format("%.2f", subTotal.add(new BigDecimal("15.00"))) %></span></div>
-
-            <button class="btn-pay" onclick="window.location.href='payment_success.jsp'">Pay Now</button>
-        </div>
-    </div>
-</div>
+</form>
 
 <script>
     let basePrice = <%= subTotal %>;
@@ -152,20 +174,26 @@
             quantity = 1;
             input.value = 1;
         }
-        
+
+        // ⭐ 如果是 Buy Now 模式，同步数量到隐藏域
+        let hiddenQty = document.getElementById("hiddenQuantity");
+        if (hiddenQty) {
+            hiddenQty.value = quantity;
+        }
+
         // Update item total price display
         let itemContainer = input.closest('.order-item');
         let priceDisplay = itemContainer.querySelector('.item-total-price');
         let itemTotal = unitPrice * quantity;
         priceDisplay.innerText = "RM " + itemTotal.toFixed(2);
-        
+
         // Recalculate subtotal
         let newSubTotal = 0;
         document.querySelectorAll('.item-total-price').forEach(el => {
             let priceText = el.innerText.replace('RM ', '');
             newSubTotal += parseFloat(priceText);
         });
-        
+
         basePrice = newSubTotal;
         document.getElementById('subTotal').innerText = "RM " + basePrice.toFixed(2);
         updateSummary();
