@@ -10,6 +10,7 @@ public class OrderItem {
     private BigDecimal price;
     private int quantity;
     private BigDecimal subtotal;
+    private String productImageUrl;
 
     // Getters and Setters
     public int getOrderItemId() { return orderItemId; }
@@ -26,4 +27,6 @@ public class OrderItem {
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public String getProductImageUrl() { return productImageUrl; }
+    public void setProductImageUrl(String productImageUrl) { this.productImageUrl = productImageUrl; }
 }

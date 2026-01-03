@@ -1,5 +1,6 @@
 package com.primego.user.servlet;
 
+import com.primego.order.dao.OrderDAO;
 import com.primego.user.dao.ProfileDAO;
 import com.primego.user.dao.UserDAO;
 import com.primego.user.model.CustomerProfile;
@@ -17,6 +18,7 @@ import java.io.IOException;
 public class ProfileServlet extends HttpServlet {
     private ProfileDAO profileDAO = new ProfileDAO();
     private UserDAO userDAO = new UserDAO();
+    private OrderDAO orderDAO = new OrderDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -34,6 +36,10 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("profile", profileDAO.getCustomerProfile(userId));
                 // Fetch addresses for the new Addresses tab
                 req.setAttribute("addresses", new com.primego.user.dao.AddressDAO().getAddressesByUserId(userId));
+
+                // 获取历史订单并存入 request
+                req.setAttribute("orderList", orderDAO.getOrdersByUserId(userId));
+
                 req.getRequestDispatcher("/customer/user/customer_profile.jsp").forward(req, resp);
                 break;
             case MERCHANT:
@@ -82,10 +88,6 @@ public class ProfileServlet extends HttpServlet {
             }
 
             // 2. Update Profile Details (in customer_profiles table)
-            // Note: Address is now managed exclusively via AddressServlet. We pass null for
-            // defaultAddress here.
-            // PaymentPin is managed via updatePin action, so we pass null here too.
-            // Email is not updated here, pass null or empty string.
             CustomerProfile profile = new CustomerProfile(
                     user.getId(),
                     fullName,
@@ -187,6 +189,22 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("message", "New PINs do not match or are incomplete.");
                 req.setAttribute("messageType", "error");
             }
+        }
+        // ⭐⭐⭐ 新增：处理确认收货请求 ⭐⭐⭐
+        else if ("confirmReceipt".equals(action)) {
+            String orderIdStr = req.getParameter("orderId");
+            if (orderIdStr != null) {
+                try {
+                    int orderId = Integer.parseInt(orderIdStr);
+                    // 调用 DAO 更新状态为 COMPLETED
+                    orderDAO.updateOrderStatus(orderId, "COMPLETED");
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+            // 使用重定向返回，并带上 tab=orders 参数，确保页面刷新后停留在订单页
+            resp.sendRedirect(req.getContextPath() + "/profile?tab=orders");
+            return; // 结束执行，防止下面的 doGet 被调用
         }
 
         doGet(req, resp); // Reload page
