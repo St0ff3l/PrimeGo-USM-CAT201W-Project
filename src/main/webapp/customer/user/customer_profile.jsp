@@ -794,6 +794,14 @@
                                               'background: #e2e3e5; color: #383d41;'}">
                                                 ${order.orderStatus}
                                         </span>
+
+                                        <%-- ⭐ 新增：显示快递单号 --%>
+                                    <c:if test="${not empty order.trackingNumber}">
+                                        <div style="margin-top: 8px; font-size: 0.85rem; color: #555;">
+                                            <i class="ri-truck-line" style="vertical-align: middle;"></i>
+                                            Tracking: <strong>${order.trackingNumber}</strong>
+                                        </div>
+                                    </c:if>
                                 </div>
                             </div>
 
