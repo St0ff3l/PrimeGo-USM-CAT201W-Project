@@ -51,10 +51,9 @@ public class WalletDAO {
     }
 
     // ==========================================
-    // ⭐ 核心修复 1：余额计算公式 (加入 SALES 和 PURCHASE)
+    // ⭐ 核心修复 1：余额计算 (包含 SALES 和 PURCHASE)
     // ==========================================
     public BigDecimal getBalance(int userId) {
-        // 余额 = (充值 + 销售收入) - (提现 + 购物支出)
         String sql = "SELECT " +
                 "(SUM(CASE WHEN transaction_type IN ('TOPUP', 'SALES') THEN amount ELSE 0 END) - " +
                 " SUM(CASE WHEN transaction_type IN ('WITHDRAW', 'PURCHASE') THEN amount ELSE 0 END)) as balance " +
@@ -76,7 +75,7 @@ public class WalletDAO {
         return BigDecimal.ZERO;
     }
 
-    // 辅助方法：给事务内部使用
+    // 辅助方法：事务内部使用
     public BigDecimal getBalance(Connection conn, int userId) throws SQLException {
         String sql = "SELECT " +
                 "(SUM(CASE WHEN transaction_type IN ('TOPUP', 'SALES') THEN amount ELSE 0 END) - " +
@@ -96,17 +95,16 @@ public class WalletDAO {
     }
 
     // ==========================================
-    // ⭐ 核心修复 2：支付订单 (扣用户钱 + 加商家钱)
+    // ⭐ 核心修复 2：支付订单 (正确标记为 PURCHASE 并给商家加钱)
     // ==========================================
-    // 注意：调用此方法的地方需要传入 merchantId
     public void payOrder(Connection conn, int userId, int merchantId, BigDecimal orderAmount) throws SQLException {
-        // 1. 检查用户余额
+        // 1. 检查余额
         BigDecimal currentBalance = getBalance(conn, userId);
         if (currentBalance.compareTo(orderAmount) < 0) {
             throw new SQLException("Insufficient wallet balance. Current: " + currentBalance + ", Required: " + orderAmount);
         }
 
-        // 2. 插入用户扣款记录 (PURCHASE)
+        // 2. 用户扣款 -> 记为 PURCHASE (之前可能写错了成 WITHDRAW)
         String sqlDebit = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'PURCHASE', 'APPROVED')";
         try (PreparedStatement pstmt = conn.prepareStatement(sqlDebit)) {
             pstmt.setInt(1, userId);
@@ -115,7 +113,7 @@ public class WalletDAO {
             if (rows == 0) throw new SQLException("Failed to deduct user balance.");
         }
 
-        // 3. 【新增】插入商家收入记录 (SALES)
+        // 3. 商家入账 -> 记为 SALES
         String sqlCredit = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'SALES', 'APPROVED')";
         try (PreparedStatement pstmt = conn.prepareStatement(sqlCredit)) {
             pstmt.setInt(1, merchantId);
@@ -125,11 +123,8 @@ public class WalletDAO {
         }
     }
 
-    // 为了兼容旧代码的重载方法（如果没有传 merchantId，就默认只扣款，不加钱）
-    // 建议尽快修改调用处，使用上面的方法
+    // 兼容旧代码的方法重载 (默认商家ID=2，请根据实际情况修改)
     public void payOrder(Connection conn, int userId, BigDecimal orderAmount) throws SQLException {
-        // 默认 merchantId = 2 (或者是你的管理员/默认商家ID)
-        // 你可以把这里的 2 改成你数据库里真实的商家 ID
         payOrder(conn, userId, 2, orderAmount);
     }
 
@@ -178,9 +173,7 @@ public class WalletDAO {
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-
             if (connection == null) return list;
-
             statement.setInt(1, userId);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {

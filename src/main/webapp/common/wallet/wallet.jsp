@@ -8,7 +8,6 @@
 <%@ page import="java.util.List" %>
 
 <%
-    // 1. 检查登录
     User user = (User) session.getAttribute("user");
     if (user == null) {
         session.setAttribute("loginMsg", "Please login to view wallet.");
@@ -17,21 +16,14 @@
     }
 
     WalletDAO dao = new WalletDAO();
-
-    // 获取用户角色并转为 String (防止 null)
     String role = (user.getRole() != null) ? user.getRole().toString() : "";
 
-    // 2. 准备数据
     if ("ADMIN".equals(role)) {
-        // --- Admin 模式：查待审核列表 ---
         List<WalletTransaction> pendingList = dao.getPendingTransactions();
         request.setAttribute("pendingList", pendingList);
     } else {
-        // --- 普通用户模式：查余额 ---
         BigDecimal currentBalance = dao.getBalance(user.getId());
         request.setAttribute("displayBalance", String.format("%.2f", currentBalance));
-
-        // --- 普通用户模式：查自己的交易记录 ---
         List<WalletTransaction> myTransactions = dao.getUserTransactions(user.getId());
         request.setAttribute("myTransactions", myTransactions);
     }
@@ -44,90 +36,33 @@
     <title>My Wallet - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
-
-        body {
-            background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
-            min-height:100vh;
-            color:#333;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 30px;
-            padding: 50px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
-            max-width: 1000px;
-            margin: 60px auto;
-            position: relative;
-            z-index: 10;
-        }
-
+        body { background: linear-gradient(to bottom, #f0f2f5, #e0e5ec); min-height:100vh; color:#333; overflow-x: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 30px; padding: 50px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); max-width: 1000px; margin: 60px auto; position: relative; z-index: 10; }
         .back-row { margin-bottom: 30px; }
-        .back-btn {
-            display:inline-flex; align-items:center; justify-content:center;
-            width:40px; height:40px; border-radius:50%;
-            background:rgba(255,255,255,0.5);
-            border:1px solid rgba(0,0,0,0.05);
-            text-decoration:none; color:#666; font-size:1.1rem;
-            transition:all .3s cubic-bezier(.25,.8,.25,1);
-            overflow:hidden; white-space:nowrap;
-        }
-        .back-text { max-width:0; opacity:0; margin-left:0; transition:all .3s ease; font-size:.9rem; font-weight:600; }
+        .back-btn { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.5); border:1px solid rgba(0,0,0,0.05); text-decoration:none; color:#666; font-size:1.1rem; transition:all .3s ease; }
         .back-btn:hover { width:130px; border-radius:20px; background:rgba(0,0,0,.05); color:#2d3436; }
+        .back-text { max-width:0; opacity:0; margin-left:0; transition:all .3s ease; font-size:.9rem; font-weight:600; white-space:nowrap; overflow:hidden; }
         .back-btn:hover .back-text { max-width:100px; opacity:1; margin-left:8px; }
-
         .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; }
         .balance-label { font-size:.9rem; color:#666; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:5px; }
         .balance-val { font-size:4rem; font-weight:800; color:#2d3436; line-height:1; letter-spacing:-1px; }
-
-        /* 角色徽章 */
-        .role-badge {
-            padding:8px 20px;
-            border-radius:999px;
-            font-size:.85rem;
-            font-weight:700;
-            color:#fff;
-            text-transform:uppercase;
-            letter-spacing:.8px;
-            box-shadow:0 8px 18px rgba(0,0,0,0.18);
-        }
+        .role-badge { padding:8px 20px; border-radius:999px; font-size:.85rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.8px; box-shadow:0 8px 18px rgba(0,0,0,0.18); }
         .badge-cust  { background:linear-gradient(145deg, #ffad33, #e68a00); }
         .badge-merch { background:linear-gradient(135deg,#ffdb4d,#e6b800); }
         .badge-admin { background:linear-gradient(135deg,#ff5e55,#d92e25); }
-
         .btn-group { display:flex; gap:20px; margin-bottom:30px; }
-        .btn {
-            padding:14px 32px; border-radius:50px; text-decoration:none; font-weight:600;
-            transition:all .3s ease; border:none; cursor:pointer;
-            display:inline-flex; align-items:center; gap:10px; font-size:1rem;
-        }
-        .btn-primary {
-            background:linear-gradient(45deg,#2ecc71,#27ae60);
-            color:#fff;
-            box-shadow:0 10px 20px rgba(39,174,96,0.35);
-        }
-        .btn-primary:hover { transform:translateY(-3px); box-shadow:0 15px 30px rgba(108,92,231,.4); }
+        .btn { padding:14px 32px; border-radius:50px; text-decoration:none; font-weight:600; transition:all .3s ease; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:10px; font-size:1rem; }
+        .btn-primary { background:linear-gradient(45deg,#2ecc71,#27ae60); color:#fff; box-shadow:0 10px 20px rgba(39,174,96,0.35); }
         .btn-secondary { background:#fff; border:2px solid #e74c3c; color:#e74c3c; }
-        .btn-secondary:hover { background:#e74c3c; color:#fff; }
         .btn-purple { background:linear-gradient(45deg,#6c5ce7,#a29bfe); color:#fff; box-shadow:0 8px 20px rgba(108,92,231,.3); }
-
-        /* Transactions 样式 */
         .txn-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
         .txn-title { font-size:1.6rem; font-weight:700; color:#2d3436; }
         .txn-tabs { display:flex; padding:8px; border-radius:999px; box-shadow:0 10px 25px rgba(0,0,0,0.08); gap:4px; }
         .tabs-cust { background:linear-gradient(145deg,#ffad33,#e68a00); }
-        .tabs-merch { background:linear-gradient(145deg,#ffdb4d,#e6b800); }
-        .tabs-admin { background:linear-gradient(145deg,#ff5e55,#d92e25); }
-        .txn-tab { min-width:120px; padding:10px 18px; border-radius:999px; border:none; background:transparent; font-weight:600; font-size:.95rem; color:#f4f4f4; cursor:pointer; transition:all .25s ease; }
+        .txn-tab { min-width:120px; padding:10px 18px; border-radius:999px; border:none; background:transparent; font-weight:600; font-size:.95rem; color:#f4f4f4; cursor:pointer; }
         .txn-tab-active { background:#fff; color:#2d3436; box-shadow:0 6px 18px rgba(0,0,0,0.12); border:2px solid #222; }
-
         .txn-list { display:flex; flex-direction:column; gap:18px; }
         .txn-item { display:flex; justify-content:space-between; align-items:center; padding:22px 30px; border-radius:24px; background:linear-gradient(90deg,#ffffff,#fefaf3); box-shadow:0 10px 30px rgba(0,0,0,0.03); }
         .txn-left-main { font-size:1rem; font-weight:600; color:#2d3436; margin-bottom:4px; }
@@ -155,26 +90,21 @@
 </c:choose>
 
 <div class="glass-panel">
-
     <div class="back-row">
         <a href="${pageContext.request.contextPath}/index.jsp" class="back-btn" title="Back to Home">
             <span>←</span><span class="back-text">Back Home</span>
         </a>
     </div>
 
-    <!-- 消息提示区域 -->
     <c:if test="${not empty sessionScope.message}">
         <div style="background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #c3e6cb; display: flex; align-items: center; gap: 10px;">
-            <i class="ri-checkbox-circle-line" style="font-size: 1.2rem;"></i>
-            <span>${sessionScope.message}</span>
+            <i class="ri-checkbox-circle-line"></i><span>${sessionScope.message}</span>
         </div>
         <c:remove var="message" scope="session" />
     </c:if>
-
     <c:if test="${not empty requestScope.error}">
         <div style="background: #f8d7da; color: #721c24; padding: 15px 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #f5c6cb; display: flex; align-items: center; gap: 10px;">
-            <i class="ri-error-warning-line" style="font-size: 1.2rem;"></i>
-            <span>${requestScope.error}</span>
+            <i class="ri-error-warning-line"></i><span>${requestScope.error}</span>
         </div>
     </c:if>
 
@@ -187,19 +117,15 @@
                     <c:otherwise>Personal Balance</c:otherwise>
                 </c:choose>
             </div>
-
             <c:choose>
                 <c:when test="${sessionScope.user.role == 'ADMIN'}">
-                    <!-- Admin 不显示余额，显示副标题 -->
                     <div style="font-size: 2rem; font-weight: 800; color: #2d3436; margin-top: 10px;">Pending Requests</div>
                 </c:when>
                 <c:otherwise>
-                    <!-- 普通用户显示余额 -->
                     <div class="balance-val">RM ${displayBalance}</div>
                 </c:otherwise>
             </c:choose>
         </div>
-
         <div>
             <c:choose>
                 <c:when test="${sessionScope.user.role == 'MERCHANT'}">
@@ -215,7 +141,6 @@
         </div>
     </div>
 
-    <!-- 按钮组：Admin 登录时隐藏 -->
     <c:if test="${sessionScope.user.role != 'ADMIN'}">
         <div class="btn-group">
             <c:choose>
@@ -231,7 +156,6 @@
         </div>
     </c:if>
 
-    <!-- 交易/审核列表 -->
     <div class="txn-header-row">
         <div class="txn-title">
             ${sessionScope.user.role == 'ADMIN' ? 'Approval Queue' : 'Transactions'}
@@ -244,12 +168,10 @@
     </div>
 
     <div class="txn-list">
-        <!-- 情况1: Admin 登录 -->
+        <!-- ADMIN 视图 -->
         <c:if test="${sessionScope.user.role == 'ADMIN'}">
             <c:if test="${empty pendingList}">
-                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;">
-                    <p>No pending requests. All clear!</p>
-                </div>
+                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No pending requests.</p></div>
             </c:if>
             <c:forEach var="txn" items="${pendingList}">
                 <div class="txn-item">
@@ -260,8 +182,6 @@
                         </div>
                         <div class="txn-left-sub">
                             User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
-
-                            <!-- 【修改点】点击查看凭证 -> 指向 Recharge_Photos -->
                             <c:if test="${txn.transactionType == 'TOPUP' && not empty txn.receiptImage}">
                                 <br>
                                 <a href="${pageContext.request.contextPath}/assets/images/Recharge_Photos/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
@@ -272,16 +192,12 @@
                     </div>
                     <div class="txn-right">
                         <span style="font-size: 1.2rem; margin-right: 15px;">RM ${txn.amount}</span>
-
                         <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline;">
-                            <input type="hidden" name="id" value="${txn.id}">
-                            <input type="hidden" name="action" value="reject">
+                            <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="reject">
                             <button type="submit" class="admin-action-btn btn-reject">Reject</button>
                         </form>
-
                         <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline; margin-left:5px;">
-                            <input type="hidden" name="id" value="${txn.id}">
-                            <input type="hidden" name="action" value="approve">
+                            <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="approve">
                             <button type="submit" class="admin-action-btn btn-approve">Approve</button>
                         </form>
                     </div>
@@ -289,21 +205,22 @@
             </c:forEach>
         </c:if>
 
-        <!-- 情况2: 普通用户登录 -->
+        <!-- 普通用户/商家 视图 -->
         <c:if test="${sessionScope.user.role != 'ADMIN'}">
-
             <c:if test="${empty myTransactions}">
-                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;">
-                    <p>No transaction history found.</p>
-                </div>
+                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No transaction history found.</p></div>
             </c:if>
-
             <c:forEach var="txn" items="${myTransactions}">
                 <div class="txn-item">
                     <div>
                         <div class="txn-left-main">
-                                ${txn.transactionType == 'TOPUP' ? 'Top Up' : 'Withdraw'}
-                            <!-- 状态标签 -->
+                            <c:choose>
+                                <c:when test="${txn.transactionType == 'TOPUP'}">Top Up</c:when>
+                                <c:when test="${txn.transactionType == 'WITHDRAW'}">Withdraw</c:when>
+                                <c:when test="${txn.transactionType == 'PURCHASE'}">Payment (Shopping)</c:when>
+                                <c:when test="${txn.transactionType == 'SALES'}">Sales Revenue</c:when>
+                                <c:otherwise>${txn.transactionType}</c:otherwise>
+                            </c:choose>
                             <span style="font-size:0.8rem; padding:2px 8px; border-radius:10px; margin-left: 5px;
                                     background:${txn.status == 'APPROVED' ? '#d4edda' : (txn.status == 'PENDING' ? '#fff3cd' : '#f8d7da')};
                                     color:${txn.status == 'APPROVED' ? '#155724' : (txn.status == 'PENDING' ? '#856404' : '#721c24')};">
@@ -315,17 +232,19 @@
                         </div>
                     </div>
                     <div class="txn-right">
-                        <span class="${txn.transactionType == 'TOPUP' ? 'txn-amount-plus' : 'txn-amount-minus'}">
-                            ${txn.transactionType == 'TOPUP' ? '+' : '-'} RM ${txn.amount}
-                        </span>
+                        <c:choose>
+                            <c:when test="${txn.transactionType == 'TOPUP' || txn.transactionType == 'SALES'}">
+                                <span class="txn-amount-plus">+ RM ${txn.amount}</span>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="txn-amount-minus">- RM ${txn.amount}</span>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
                 </div>
             </c:forEach>
-
         </c:if>
     </div>
-
 </div>
-
 </body>
 </html>
