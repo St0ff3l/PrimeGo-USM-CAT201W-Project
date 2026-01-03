@@ -32,11 +32,7 @@ public class CartServlet extends HttpServlet {
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("user");
 
-        // If user is logged in, use DB cart. If not, use Session cart.
-        // For simplicity in this hybrid approach, we'll sync session cart to DB if user logs in later (not implemented here)
-        // or just force login for cart operations if desired.
-        // Here we will support both:
-        
+        // 初始化购物车
         Cart cart = (Cart) session.getAttribute("cart");
         if (cart == null) {
             if (user != null) {
@@ -52,38 +48,57 @@ public class CartServlet extends HttpServlet {
             if (productIdStr != null) {
                 int productId = Integer.parseInt(productIdStr);
                 ProductDTO product = productDAO.getProductById(productId);
+
                 if (product != null) {
-                    CartItem item = new CartItem(product, 1); // Default quantity 1
-                    cart.addItem(item);
-                    
-                    if (user != null) {
-                        int cartId = cartDAO.getOrCreateCartId(user.getId());
-                        cartDAO.addItemToCart(cartId, productId, 1);
+                    // ⭐ 1. 获取当前购物车中该商品的数量
+                    int currentQty = 0;
+                    for (CartItem item : cart.getItems()) {
+                        if (item.getProduct().getProductId() == productId) {
+                            currentQty = item.getQuantity();
+                            break;
+                        }
+                    }
+
+                    // ⭐ 2. 检查库存：如果 (当前数量 + 1) > 库存，则不添加
+                    if (currentQty + 1 <= product.getProductStockQuantity()) {
+                        CartItem item = new CartItem(product, 1);
+                        cart.addItem(item);
+
+                        if (user != null) {
+                            int cartId = cartDAO.getOrCreateCartId(user.getId());
+                            cartDAO.addItemToCart(cartId, productId, 1);
+                        }
+                    } else {
+                        // 可选：设置一个错误消息 session attribute 提示库存不足
+                        session.setAttribute("cartError", "Cannot add more items. Stock limit reached for " + product.getProductName());
                     }
                 }
             }
-            // Redirect to cart page to show the added item
             response.sendRedirect(request.getContextPath() + "/customer/order/cart.jsp");
 
         } else if ("update".equals(action)) {
             String productIdStr = request.getParameter("productId");
             String quantityStr = request.getParameter("quantity");
+
             if (productIdStr != null && quantityStr != null) {
                 try {
                     int productId = Integer.parseInt(productIdStr);
                     int quantity = Integer.parseInt(quantityStr);
+
+                    // ⭐ 3. 获取商品库存信息进行校验
+                    ProductDTO product = productDAO.getProductById(productId);
+                    int stock = (product != null) ? product.getProductStockQuantity() : 0;
+
                     if (quantity > 0) {
+                        // 如果请求数量大于库存，则强制设为最大库存
+                        if (quantity > stock) {
+                            quantity = stock;
+                            session.setAttribute("cartError", "Quantity adjusted to maximum stock for " + product.getProductName());
+                        }
+
                         cart.updateQuantity(productId, quantity);
                         if (user != null) {
                             int cartId = cartDAO.getOrCreateCartId(user.getId());
-                            // We need a method to set exact quantity, addItemToCart adds to existing.
-                            // Let's check CartDAO.
-                            // CartDAO has updateItemQuantity(cartId, productId, quantity) which sets exact quantity.
-                            // But it's private. I should make it public or add a public wrapper.
-                            // Wait, let me check CartDAO again.
-                            // It has addItemToCart which calls updateItemQuantity.
-                            // I should probably expose updateItemQuantity or add a setItemQuantity method.
-                            // For now, let's assume I'll add setItemQuantity to CartDAO.
                             cartDAO.updateItemQuantityPublic(cartId, productId, quantity);
                         }
                     }
@@ -94,11 +109,12 @@ public class CartServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/customer/order/cart.jsp");
 
         } else if ("remove".equals(action)) {
+            // ... (保持不变)
             String productIdStr = request.getParameter("productId");
             if (productIdStr != null) {
                 int productId = Integer.parseInt(productIdStr);
                 cart.removeItem(productId);
-                
+
                 if (user != null) {
                     int cartId = cartDAO.getOrCreateCartId(user.getId());
                     cartDAO.removeItemFromCart(cartId, productId);
@@ -107,6 +123,7 @@ public class CartServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/customer/order/cart.jsp");
 
         } else if ("clear".equals(action)) {
+            // ... (保持不变)
             cart.clear();
             if (user != null) {
                 int cartId = cartDAO.getOrCreateCartId(user.getId());
@@ -114,7 +131,7 @@ public class CartServlet extends HttpServlet {
             }
             response.sendRedirect(request.getContextPath() + "/customer/order/cart.jsp");
         } else {
-            // Just view cart, maybe refresh from DB if logged in
+            // ... (保持不变)
             if (user != null) {
                 cart = cartDAO.getCartByUserId(user.getId());
                 session.setAttribute("cart", cart);

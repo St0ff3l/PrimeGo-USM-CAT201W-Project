@@ -9,7 +9,7 @@
     // 1. Try to get cart from session
     Cart cart = (Cart) session.getAttribute("cart");
     User user = (User) session.getAttribute("user");
-    
+
     // 2. If session cart is empty/null but user is logged in, try to fetch from DB
     if (user != null) {
         CartDAO cartDAO = new CartDAO();
@@ -20,7 +20,7 @@
         cart = new Cart();
         session.setAttribute("cart", cart);
     }
-    
+
     List<CartItem> items = cart.getItems();
     BigDecimal total = cart.getTotalPrice();
 %>
@@ -88,7 +88,7 @@
             box-shadow: 0 4px 15px rgba(255, 59, 48, 0.4);
             text-decoration: none;
         }
-        
+
         .empty-cart { text-align: center; padding: 50px; color: #666; }
     </style>
 </head>
@@ -102,21 +102,22 @@
 
     <div class="cart-list" id="cartList">
         <% if (items.isEmpty()) { %>
-            <div class="empty-cart">
-                <h3>Your cart is empty</h3>
-                <p>Go find some treasures!</p>
-                <a href="${pageContext.request.contextPath}/index.jsp" class="btn-checkout" style="text-decoration:none; display:inline-block; margin-top:20px;">Start Shopping</a>
-            </div>
-        <% } else { 
+        <div class="empty-cart">
+            <h3>Your cart is empty</h3>
+            <p>Go find some treasures!</p>
+            <a href="${pageContext.request.contextPath}/index.jsp" class="btn-checkout" style="text-decoration:none; display:inline-block; margin-top:20px;">Start Shopping</a>
+        </div>
+        <% } else {
             for (CartItem item : items) {
         %>
         <div class="cart-item">
-            <input type="checkbox" class="item-checkbox" checked onchange="updateTotal()">
+            <input type="checkbox" class="item-checkbox" value="<%= item.getProduct().getProductId() %>" checked onchange="updateTotal()">
+
             <div class="item-img">
                 <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
-                    <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
+                <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
                 <% } else { %>
-                    �
+
                 <% } %>
             </div>
             <div class="item-info">
@@ -124,11 +125,11 @@
                     <div class="item-title"><%= item.getProduct().getProductName() %></div>
                 </a>
                 <div class="item-meta" style="display:flex; align-items:center; gap:10px; margin-top:5px;">
-                    Quantity: 
+                    Quantity:
                     <form action="${pageContext.request.contextPath}/cart_action" method="post" style="margin:0;">
                         <input type="hidden" name="action" value="update">
                         <input type="hidden" name="productId" value="<%= item.getProduct().getProductId() %>">
-                        <input type="number" name="quantity" min="1" value="<%= item.getQuantity() %>" 
+                        <input type="number" name="quantity" min="1" value="<%= item.getQuantity() %>"
                                style="width:60px; padding:5px; border-radius:5px; border:1px solid #ccc;"
                                onchange="this.form.submit()">
                     </form>
@@ -137,17 +138,20 @@
             </div>
             <a href="${pageContext.request.contextPath}/cart_action?action=remove&productId=<%= item.getProduct().getProductId() %>" class="btn-delete" onclick="return confirm('Remove this item?')">×</a>
         </div>
-        <% 
+        <%
+                }
             }
-        } 
         %>
     </div>
 </div>
 
 <div class="checkout-bar">
     <div class="total-info">Total: <span id="totalPrice">RM <%= String.format("%.2f", total) %></span></div>
-    <a href="${pageContext.request.contextPath}/customer/order/order_confirmation.jsp" class="btn-checkout">Checkout</a>
+    <button type="button" class="btn-checkout" onclick="proceedToCheckout()">Checkout</button>
 </div>
+
+<form id="checkoutForm" action="${pageContext.request.contextPath}/customer/order/order_confirmation.jsp" method="post" style="display:none;">
+</form>
 
 <script>
     function updateTotal() {
@@ -160,6 +164,31 @@
             }
         });
         document.getElementById('totalPrice').innerText = "RM " + total.toFixed(2);
+    }
+
+    // ⭐ 修改点 4: 新增提交逻辑
+    function proceedToCheckout() {
+        const form = document.getElementById('checkoutForm');
+        form.innerHTML = ''; // 清空旧数据
+
+        // 获取所有被勾选的复选框
+        const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+
+        if (checkboxes.length === 0) {
+            alert('Please select at least one item to checkout.');
+            return;
+        }
+
+        // 为每个选中的商品创建一个隐藏的 input
+        checkboxes.forEach(cb => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selectedProductIds'; // 关键参数名
+            input.value = cb.value;
+            form.appendChild(input);
+        });
+
+        form.submit(); // 提交到 order_confirmation.jsp
     }
 </script>
 

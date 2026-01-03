@@ -8,11 +8,23 @@ public class ProductDTO extends Product {
     private String primaryImageUrl;
     private String merchantName; // 新增：用于存储关联查询到的卖家用户名
 
+    // ⭐ 新增：库存数量字段，对应数据库的 Product_Stock_Quantity
+    private int productStockQuantity;
+
     public ProductDTO() {
         super();
     }
 
-    // 新增 MerchantName 的 Getter 和 Setter
+    // ⭐ 新增：库存字段的 Getter 和 Setter
+    public int getProductStockQuantity() {
+        return productStockQuantity;
+    }
+
+    public void setProductStockQuantity(int productStockQuantity) {
+        this.productStockQuantity = productStockQuantity;
+    }
+
+    // 原有的 Getter 和 Setter
     public String getMerchantName() {
         return merchantName;
     }
