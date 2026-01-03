@@ -134,6 +134,26 @@
             font-weight: 700;
             margin-bottom: 5px;
         }
+        
+        .btn-add-cart {
+            margin-top: auto;
+            background-color: transparent;
+            border: 2px solid #333;
+            color: #333;
+            width: 100%;
+            padding: 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+        .btn-add-cart:hover {
+            background-color: #333;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -181,7 +201,7 @@
             <% } else { 
                 for (ProductDTO p : productList) {
             %>
-            <a href="#" class="product-card">
+            <div class="product-card">
                 <% if (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) { %>
                     <div class="product-img-container">
                         <img src="<%= request.getContextPath() + "/" + p.getPrimaryImageUrl() %>" 
@@ -199,8 +219,9 @@
                             ? p.getProductDescription().substring(0, 50) + "..." 
                             : (p.getProductDescription() != null ? p.getProductDescription() : "") %>
                     </p>
+                    <a href="${pageContext.request.contextPath}/cart_action?action=add&productId=<%= p.getProductId() %>" class="btn-add-cart">Add to Cart</a>
                 </div>
-            </a>
+            </div>
             <% 
                 }
             } 

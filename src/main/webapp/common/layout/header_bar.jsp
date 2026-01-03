@@ -72,8 +72,14 @@
 
     <%-- 图标与用户操作区域 --%>
     <div class="nav-icons">
+      <div class="search-container">
+        <form action="${pageContext.request.contextPath}/customer/product/search_result.jsp" method="get" class="search-form">
+          <input type="text" name="keyword" class="search-input-header" placeholder="Search...">
+          <button type="submit" class="search-btn-header">🔍</button>
+        </form>
+      </div>
       <span class="nav-icon nav-icon-search" onclick="toggleSearch()" title="Search">🔍</span>
-      <span class="nav-icon nav-icon-cart" onclick="showCart()" title="Cart">🛒 <span id="cart-count">0</span></span>
+      <span class="nav-icon nav-icon-cart" onclick="window.location.href='${pageContext.request.contextPath}/customer/order/cart.jsp'" title="Cart">🛒 <span id="cart-count">0</span></span>
 
       <c:if test="${empty sessionScope.user}">
         <a href="${pageContext.request.contextPath}/public/login.jsp" class="nav-login-btn-link">
@@ -398,4 +404,64 @@
     color: #FF9500;
     padding-left: 25px; /* Slide effect */
   }
+
+  /* ================= Search Overlay Styles ================= */
+  .search-container {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-top: 10px;
+  }
+  
+  .search-container.active {
+    display: block;
+    animation: fadeInDown 0.3s ease;
+  }
+  
+  .search-form {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .search-input-header {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    outline: none;
+    font-size: 0.9rem;
+    width: 200px;
+  }
+  
+  .search-btn-header {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+  }
 </style>
+
+<script>
+  function toggleSearch() {
+    const searchContainer = document.querySelector('.search-container');
+    searchContainer.classList.toggle('active');
+    if (searchContainer.classList.contains('active')) {
+      document.querySelector('.search-input-header').focus();
+    }
+  }
+  
+  // Close search when clicking outside
+  document.addEventListener('click', function(event) {
+    const searchContainer = document.querySelector('.search-container');
+    const searchIcon = document.querySelector('.nav-icon-search');
+    
+    if (!searchContainer.contains(event.target) && !searchIcon.contains(event.target)) {
+      searchContainer.classList.remove('active');
+    }
+  });
+</script>

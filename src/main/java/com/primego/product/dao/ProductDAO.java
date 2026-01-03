@@ -170,6 +170,43 @@ public class ProductDAO {
         return products;
     }
 
+    public ProductDTO getProductById(int productId) {
+        ProductDTO product = null;
+        String sql = "SELECT p.*, c.Category_Name, " +
+                     "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
+                     "FROM Product p " +
+                     "LEFT JOIN Category c ON p.Category_Id = c.Category_Id " +
+                     "WHERE p.Product_Id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, productId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    product = new ProductDTO();
+                    product.setProductId(rs.getInt("Product_Id"));
+                    product.setMerchantId(rs.getInt("Merchant_Id"));
+                    product.setCategoryId(rs.getInt("Category_Id"));
+                    product.setProductName(rs.getString("Product_Name"));
+                    product.setProductDescription(rs.getString("Product_Description"));
+                    product.setProductPrice(rs.getBigDecimal("Product_Price"));
+                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
+                    product.setProductStatus(rs.getString("Product_Status"));
+                    product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
+                    product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
+                    
+                    product.setCategoryName(rs.getString("Category_Name"));
+                    product.setPrimaryImageUrl(rs.getString("Primary_Image"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return product;
+    }
+
     // Helper method to get Category ID by name (assuming Category table exists)
     // If Category table doesn't exist yet, this might need adjustment.
     // For now, we'll try to select. If it fails or returns 0, we might need to handle it.

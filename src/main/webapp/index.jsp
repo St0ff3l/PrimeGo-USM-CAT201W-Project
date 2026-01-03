@@ -276,24 +276,8 @@
   window.count = 0;
 
   function addToCart() {
-    window.count++;
-    document.getElementById('cart-count').innerText = window.count;
-    alert("Success! Item added to your cart.");
-  }
-
-  function showCart() {
-    if (window.count === 0) {
-      alert("Your cart is empty. Discover our premium products!");
-    } else {
-      alert("You have " + window.count + " items in your cart. Checkout functionality will be implemented with Java.");
-    }
-  }
-
-  function toggleSearch() {
-    let searchTerm = prompt("Search PrimeGo products:");
-    if (searchTerm) {
-      alert("Searching for: " + searchTerm);
-    }
+    // This function is now largely replaced by direct links, but kept for any legacy buttons
+    window.location.href = "${pageContext.request.contextPath}/customer/order/cart.jsp";
   }
 </script>
 </body>
