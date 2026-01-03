@@ -331,23 +331,7 @@ public class ProductDAO {
         return -1; // Failure
     }
 
-    public boolean insertProductImage(ProductImage image) {
-        String sql = "INSERT INTO Product_Image (Product_Id, Image_Url, Image_Is_Primary) VALUES (?, ?, ?)";
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, image.getProductId());
-            pstmt.setString(2, image.getImageUrl());
-            pstmt.setBoolean(3, image.isImageIsPrimary());
-
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
 
     // ==========================================
     // ⭐ 新增：更新方法 (用于 product_edit.jsp)
@@ -386,33 +370,4 @@ public class ProductDAO {
         return false;
     }
 
-    /**
-     * 更新商品主图 (如果存在则更新，不存在则插入)
-     */
-    public void updateProductPrimaryImage(int productId, String imageUrl) {
-        // 1. 尝试更新现有的主图记录
-        String updateSql = "UPDATE Product_Image SET Image_Url = ?, Image_Upload_Time = NOW() " +
-                "WHERE Product_Id = ? AND Image_Is_Primary = 1";
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-
-            pstmt.setString(1, imageUrl);
-            pstmt.setInt(2, productId);
-
-            int rows = pstmt.executeUpdate();
-
-            // 2. 如果没有更新到任何行 (说明之前没有主图)，则执行插入
-            if (rows == 0) {
-                String insertSql = "INSERT INTO Product_Image (Product_Id, Image_Url, Image_Is_Primary) VALUES (?, ?, 1)";
-                try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                    insertStmt.setInt(1, productId);
-                    insertStmt.setString(2, imageUrl);
-                    insertStmt.executeUpdate();
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 }

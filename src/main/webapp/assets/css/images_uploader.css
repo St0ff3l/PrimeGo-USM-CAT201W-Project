@@ -129,3 +129,46 @@
     from { transform: scale(0.5) translateY(20px); opacity: 0; }
     to { transform: scale(1) translateY(0); opacity: 1; }
 }
+
+/* === 新增：拖拽排序样式 === */
+
+/* 预览卡片现在可以被抓取 */
+.iu-preview-wrapper {
+    cursor: grab; /* 抓手光标 */
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.iu-preview-wrapper:active {
+    cursor: grabbing; /* 抓取中光标 */
+}
+
+/* 正在被拖拽的元素 */
+.iu-preview-wrapper.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    border: 2px dashed var(--iu-primary);
+    box-shadow: none;
+}
+
+/* 拖拽放置的目标指引（可选） */
+.iu-preview-wrapper.drag-over-target {
+    border-left: 4px solid var(--iu-primary);
+}
+
+/* 主图标记 (排在第一位的图片) */
+.iu-preview-wrapper:first-child::after {
+    content: 'Main';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 149, 0, 0.85); /* 橙色背景 */
+    color: white;
+    font-size: 10px;
+    text-align: center;
+    padding: 2px 0;
+    font-weight: bold;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    pointer-events: none;
+}
