@@ -28,9 +28,8 @@ import java.util.UUID;
 )
 public class ProductAddServlet extends HttpServlet {
 
-    private ProductDAO productDAO = new ProductDAO();
-    // ✅ 2. 在这里实例化 ProductImageDAO
-    private ProductImageDAO productImageDAO = new ProductImageDAO();
+    private final ProductDAO productDAO = new ProductDAO();
+    private final ProductImageDAO productImageDAO = new ProductImageDAO();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -65,7 +64,13 @@ public class ProductAddServlet extends HttpServlet {
             product.setProductDescription(description);
             product.setProductPrice(price);
             product.setProductStockQuantity(stock);
-            product.setProductStatus("ON_SALE");
+
+            // ✅ DB schema note:
+            // Product_Status is enum('ON_SALE','OFF_SALE'), so we can’t store PENDING here.
+            // Use Audit_Status to control admin review.
+            product.setProductStatus("OFF_SALE");
+            product.setAuditStatus("PENDING");
+            product.setAuditMessage(null);
 
             // 4. Insert Product first to get the ID
             int productId = productDAO.insertProduct(product);
@@ -79,8 +84,8 @@ public class ProductAddServlet extends HttpServlet {
                 File uploadDirFile = new File(uploadDir);
                 if (!uploadDirFile.exists()) uploadDirFile.mkdirs();
 
-                // 请确保此路径与你的本地环境一致
-                String sourceDir = "/Users/zhangyifei/IdeaProjects/PrimeGo-USM-CAT201W-Project/src/main/webapp/assets/images/products";
+                // Use a portable source dir inside project instead of hard-coded user path
+                String sourceDir = request.getServletContext().getRealPath("/") + File.separator + "assets" + File.separator + "images" + File.separator + "products";
                 File sourceDirFile = new File(sourceDir);
                 if (!sourceDirFile.exists()) sourceDirFile.mkdirs();
 
@@ -120,7 +125,7 @@ public class ProductAddServlet extends HttpServlet {
                     }
                 }
 
-                response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?msg=success");
+                response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?msg=pending_review");
             } else {
                 request.setAttribute("errorMessage", "Failed to insert product record.");
                 request.getRequestDispatcher("/merchant/product/publish.jsp").forward(request, response);

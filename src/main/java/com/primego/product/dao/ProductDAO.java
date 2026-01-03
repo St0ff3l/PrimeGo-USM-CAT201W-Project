@@ -265,6 +265,8 @@ public class ProductDAO {
                     product.setProductPrice(rs.getBigDecimal("Product_Price"));
                     product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
                     product.setProductStatus(rs.getString("Product_Status"));
+                    product.setAuditStatus(rs.getString("Audit_Status"));
+                    product.setAuditMessage(rs.getString("Audit_Message"));
                     product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
                     product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
 
@@ -302,7 +304,7 @@ public class ProductDAO {
 
     public int insertProduct(Product product) {
         String sql = "INSERT INTO Product (Merchant_Id, Category_Id, Product_Name, Product_Description, " +
-                "Product_Price, Product_Stock_Quantity, Product_Status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                "Product_Price, Product_Stock_Quantity, Product_Status, Audit_Status, Audit_Message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -314,6 +316,8 @@ public class ProductDAO {
             pstmt.setBigDecimal(5, product.getProductPrice());
             pstmt.setInt(6, product.getProductStockQuantity());
             pstmt.setString(7, product.getProductStatus());
+            pstmt.setString(8, product.getAuditStatus());
+            pstmt.setString(9, product.getAuditMessage());
 
             int affectedRows = pstmt.executeUpdate();
 
@@ -400,4 +404,84 @@ public class ProductDAO {
         // 注意：这里不要关闭 conn，因为事务还没结束
     }
 
+    // ==========================================
+    // ⭐ Admin review workflow
+    // ==========================================
+
+    /**
+     * Admin: list products waiting for review.
+     * Uses DB column Audit_Status = 'PENDING'.
+     */
+    public List<ProductDTO> getProductsPendingReview() {
+        List<ProductDTO> products = new ArrayList<>();
+        String sql = "SELECT p.*, c.Category_Name, u.username as Merchant_Name, " +
+                "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
+                "FROM Product p " +
+                "LEFT JOIN Category c ON p.Category_Id = c.Category_Id " +
+                "LEFT JOIN users u ON p.Merchant_Id = u.id " +
+                "WHERE p.Audit_Status = 'PENDING' " +
+                "ORDER BY p.Product_Created_At DESC";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                ProductDTO product = new ProductDTO();
+                product.setProductId(rs.getInt("Product_Id"));
+                product.setMerchantId(rs.getInt("Merchant_Id"));
+                product.setCategoryId(rs.getInt("Category_Id"));
+                product.setProductName(rs.getString("Product_Name"));
+                product.setProductDescription(rs.getString("Product_Description"));
+                product.setProductPrice(rs.getBigDecimal("Product_Price"));
+                product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
+                product.setProductStatus(rs.getString("Product_Status"));
+                product.setAuditStatus(rs.getString("Audit_Status"));
+                product.setAuditMessage(rs.getString("Audit_Message"));
+                product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
+                product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
+
+                product.setCategoryName(rs.getString("Category_Name"));
+                product.setPrimaryImageUrl(rs.getString("Primary_Image"));
+                product.setMerchantName(rs.getString("Merchant_Name"));
+
+                products.add(product);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return products;
+    }
+
+    /**
+     * Admin: approve/reject product.
+     * - approve: Audit_Status=APPROVED and Product_Status=ON_SALE
+     * - reject: Audit_Status=REJECTED and Product_Status=OFF_SALE
+     */
+    public boolean updateProductAuditByAdmin(int productId, String auditStatus, String auditMessage) {
+        String newProductStatus = "OFF_SALE";
+        if ("APPROVED".equals(auditStatus)) {
+            newProductStatus = "ON_SALE";
+        }
+
+        String sql = "UPDATE Product SET Audit_Status = ?, Audit_Message = ?, Product_Status = ?, Product_Updated_At = NOW() WHERE Product_Id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, auditStatus);
+            pstmt.setString(2, auditMessage);
+            pstmt.setString(3, newProductStatus);
+            pstmt.setInt(4, productId);
+
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
+
+
