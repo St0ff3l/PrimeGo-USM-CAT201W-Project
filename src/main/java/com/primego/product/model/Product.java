@@ -15,6 +15,10 @@ public class Product {
     private Timestamp productCreatedAt;
     private Timestamp productUpdatedAt;
 
+    // ✅ Admin audit fields (DB: Audit_Status, Audit_Message)
+    private String auditStatus; // 'PENDING', 'APPROVED', 'REJECTED'
+    private String auditMessage;
+
     // Constructors
     public Product() {}
 
@@ -108,5 +112,21 @@ public class Product {
 
     public void setProductUpdatedAt(Timestamp productUpdatedAt) {
         this.productUpdatedAt = productUpdatedAt;
+    }
+
+    public String getAuditStatus() {
+        return auditStatus;
+    }
+
+    public void setAuditStatus(String auditStatus) {
+        this.auditStatus = auditStatus;
+    }
+
+    public String getAuditMessage() {
+        return auditMessage;
+    }
+
+    public void setAuditMessage(String auditMessage) {
+        this.auditMessage = auditMessage;
     }
 }

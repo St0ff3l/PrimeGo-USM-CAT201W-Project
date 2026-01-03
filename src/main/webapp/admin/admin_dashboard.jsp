@@ -243,7 +243,12 @@
         <div class="nav-item" onclick="switchTab('settings', this)">
             <span>⚙️ Settings</span>
         </div>
-        
+
+        <!-- NEW: Product Review Queue -->
+        <a class="nav-item" style="text-decoration:none;" href="${pageContext.request.contextPath}/admin/product/review/list">
+            <span>🧾 Product Review</span>
+        </a>
+
         <div class="sidebar-footer">
             <a href="${pageContext.request.contextPath}/index.jsp" class="btn-logout" style="margin-bottom: 10px; background: #555;">Back to Home</a>
             <a href="${pageContext.request.contextPath}/logout" class="btn-logout">Logout</a>
