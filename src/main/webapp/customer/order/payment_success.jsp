@@ -54,7 +54,8 @@
     <p>Your order has been placed. The seller will contact you shortly.</p>
 
     <a href="<%= request.getContextPath() %>/index.jsp" class="btn btn-primary">Continue Shopping</a>
-    <a href="#" class="btn btn-outline">View Order</a>
+
+    <a href="${pageContext.request.contextPath}/profile?tab=orders" class="btn btn-outline">View Order</a>
 </div>
 
 </body>
