@@ -25,6 +25,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
+// ⭐ 新增 import
+import java.util.Set;
+import java.util.HashSet;
 
 @WebServlet("/placeOrder")
 public class PlaceOrderServlet extends HttpServlet {
@@ -116,6 +119,37 @@ public class PlaceOrderServlet extends HttpServlet {
             // === 场景 B: 购物车结算 ===
             Cart cart = (Cart) session.getAttribute("cart");
             if (cart != null && !cart.getItems().isEmpty()) {
+
+                // ============================================================
+                // ⭐ 新增逻辑：检查是否混杂了多个商家的商品 (仅检查被选中的商品)
+                // ============================================================
+                Set<Integer> merchantIds = new HashSet<>();
+
+                for (CartItem item : cart.getItems()) {
+                    String pId = String.valueOf(item.getProduct().getProductId());
+                    // 只检查被选中的商品
+                    if (!selectedIdList.isEmpty() && !selectedIdList.contains(pId)) {
+                        continue;
+                    }
+                    // 获取该商品的商家ID
+                    int mId = item.getProduct().getMerchantId();
+                    merchantIds.add(mId);
+                }
+
+                // 判断 Set 的大小
+                if (merchantIds.size() > 1) {
+                    // ❌ 包含多个商家，拦截！
+                    String errorMsg = "Sorry, you can only checkout items from ONE merchant at a time. Please remove items from other merchants.";
+
+                    request.setAttribute("errorMessage", errorMsg);
+                    // 返回购物车页面
+                    request.getRequestDispatcher("/customer/cart/view_cart.jsp").forward(request, response);
+                    return; // ⛔️ 非常重要：停止后续代码执行，不生成订单！
+                }
+                // ============================================================
+                // ✅ 只有一个商家，继续原来的逻辑
+                // ============================================================
+
                 for (CartItem cartItem : cart.getItems()) {
                     String pId = String.valueOf(cartItem.getProduct().getProductId());
                     // 只处理选中的商品
@@ -164,6 +198,9 @@ public class PlaceOrderServlet extends HttpServlet {
         // =========================================================================
         // Step 4: 执行交易 (扣款 + 扣库存 + 生成订单)
         // =========================================================================
+        // 注意：因为这里是单商家逻辑，所以 OrderDAO 会创建一个订单。
+        // 如果你使用了 List<Integer> 版本的 createOrder，这里需要相应调整。
+        // 假设你还在使用返回 int orderId 的版本：
         int orderId = orderDAO.createOrder(order);
 
         if (orderId > 0) {

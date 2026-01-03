@@ -20,7 +20,7 @@ public class OrderDAO {
      * 1. 插入 Orders 表
      * 2. 插入 Order_Item 表
      * 3. 扣减 Product 库存
-     * 4. 扣减 Wallet 余额 (新增)
+     * 4. 扣减 Wallet 余额
      * @return 成功返回生成的 ordersId，失败返回 -1
      */
     public int createOrder(Order order) {
@@ -127,15 +127,14 @@ public class OrderDAO {
     }
 
     // =========================================================================
-    // ↓↓↓↓↓ 下面是 Profile 页面显示历史订单的方法 ↓↓↓↓↓
+    // ↓↓↓↓↓ 查询与更新方法 ↓↓↓↓↓
     // =========================================================================
 
     /**
-     * 根据用户ID查询所有订单（包含订单项）
+     * 1. 根据用户ID查询所有订单（顾客视角）
      */
     public List<Order> getOrdersByUserId(int userId) {
         List<Order> orderList = new ArrayList<>();
-        // 按创建时间倒序排列，最新的在前面
         String sql = "SELECT * FROM Orders WHERE Customer_Id = ? ORDER BY Orders_Created_At DESC";
 
         try (Connection conn = DBUtil.getConnection();
@@ -144,19 +143,9 @@ public class OrderDAO {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Order order = new Order();
-                    // 映射 Orders 表字段到 Order 对象
-                    order.setOrdersId(rs.getInt("Orders_Id"));
-                    order.setCustomerId(rs.getInt("Customer_Id"));
-                    order.setTotalAmount(rs.getBigDecimal("Orders_Total_Amount"));
-                    order.setOrderStatus(rs.getString("Orders_Order_Status"));
-                    order.setPaymentStatus(rs.getString("Orders_Payment_Status"));
-                    order.setAddress(rs.getString("Orders_Address"));
-                    order.setCreatedAt(rs.getTimestamp("Orders_Created_At"));
-
-                    // 关键：同时查询该订单下的所有商品项
+                    Order order = mapRowToOrder(rs);
+                    // 关键：查询该订单下的商品项
                     order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
-
                     orderList.add(order);
                 }
             }
@@ -167,13 +156,43 @@ public class OrderDAO {
     }
 
     /**
-     * ⭐⭐ 修改了此方法：查询单个订单的所有商品项，并关联查询图片 ⭐⭐
+     * 2. 根据商家ID查询所有相关订单（商家视角）
+     * 逻辑：通过 Order_Item -> Product 关联表，找到属于该商家的订单
+     */
+    public List<Order> getOrdersByMerchantId(int merchantId) {
+        List<Order> orderList = new ArrayList<>();
+        // DISTINCT 确保同一个订单如果包含多个该商家的商品，只显示一次
+        String sql = "SELECT DISTINCT o.* FROM Orders o " +
+                "JOIN Order_Item oi ON o.Orders_Id = oi.Orders_Id " +
+                "JOIN Product p ON oi.Product_Id = p.Product_Id " +
+                "WHERE p.merchant_id = ? " +
+                "ORDER BY o.Orders_Created_At DESC";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, merchantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Order order = mapRowToOrder(rs);
+                    // 关键：查询该订单下的商品项
+                    order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
+                    orderList.add(order);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return orderList;
+    }
+
+    /**
+     * 3. 查询单个订单的所有商品项（带图片）
      */
     private List<OrderItem> getOrderItemsByOrderId(int ordersId) {
         List<OrderItem> items = new ArrayList<>();
 
-        // ⭐ 修改 SQL：使用子查询从 Product_Image 表获取第一张图片 (LIMIT 1)
-        // 这样前端 JSP 才能显示商品图片
+        // 使用子查询获取商品图片 (LIMIT 1)
         String sql = "SELECT oi.*, " +
                 "(SELECT image_url FROM Product_Image pi WHERE pi.product_id = oi.Product_Id LIMIT 1) as main_image " +
                 "FROM Order_Item oi WHERE oi.Orders_Id = ?";
@@ -185,7 +204,6 @@ public class OrderDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     OrderItem item = new OrderItem();
-                    // 映射 Order_Item 表字段到 OrderItem 对象
                     item.setOrderItemId(rs.getInt("Order_Item_Id"));
                     item.setOrdersId(rs.getInt("Orders_Id"));
                     item.setProductId(rs.getInt("Product_Id"));
@@ -194,9 +212,8 @@ public class OrderDAO {
                     item.setQuantity(rs.getInt("Order_Item_Quantity"));
                     item.setSubtotal(rs.getBigDecimal("Order_Item_Subtotal"));
 
-                    // ⭐ 设置图片路径（需要你在 OrderItem.java 里加了 productImageUrl 字段）
+                    // 设置图片路径
                     String img = rs.getString("main_image");
-                    // 如果数据库里没图，给一个默认值或空值
                     item.setProductImageUrl(img != null ? img : "");
 
                     items.add(item);
@@ -209,10 +226,25 @@ public class OrderDAO {
     }
 
     /**
-     * ⭐⭐ 新增方法：更新订单状态 (用于确认收货) ⭐⭐
-     * @param orderId 订单ID
-     * @param newStatus 新状态 (如 "COMPLETED")
-     * @return 是否更新成功
+     * ⭐ 4. 新增：商家发货 (更新状态并填写快递单号)
+     */
+    public boolean shipOrder(int orderId, String trackingNumber) {
+        String sql = "UPDATE Orders SET Orders_Order_Status = 'SHIPPED', Tracking_Number = ? WHERE Orders_Id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, trackingNumber);
+            ps.setInt(2, orderId);
+
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 5. 原有的更新订单状态 (用于其他通用状态更改，如 COMPLETED)
      */
     public boolean updateOrderStatus(int orderId, String newStatus) {
         String sql = "UPDATE Orders SET Orders_Order_Status = ? WHERE Orders_Id = ?";
@@ -227,5 +259,27 @@ public class OrderDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // 辅助方法：将 ResultSet 映射到 Order 对象
+    private Order mapRowToOrder(ResultSet rs) throws SQLException {
+        Order order = new Order();
+        order.setOrdersId(rs.getInt("Orders_Id"));
+        order.setCustomerId(rs.getInt("Customer_Id"));
+        order.setTotalAmount(rs.getBigDecimal("Orders_Total_Amount"));
+        order.setOrderStatus(rs.getString("Orders_Order_Status"));
+        order.setPaymentStatus(rs.getString("Orders_Payment_Status"));
+        order.setAddress(rs.getString("Orders_Address"));
+        order.setCreatedAt(rs.getTimestamp("Orders_Created_At"));
+
+        // ⭐ 新增：读取快递单号
+        try {
+            order.setTrackingNumber(rs.getString("Tracking_Number"));
+        } catch (SQLException e) {
+            // 防止旧表结构没更新导致报错，虽然这里应该已经改了表
+            order.setTrackingNumber(null);
+        }
+
+        return order;
     }
 }

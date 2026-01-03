@@ -5,6 +5,9 @@
 <%@ page import="com.primego.user.model.User" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.math.BigDecimal" %>
+<%-- ⭐ 1. 必须添加这行 JSTL 引用，否则 c:if 不起作用 --%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
 <%
     // 1. Try to get cart from session
     Cart cart = (Cart) session.getAttribute("cart");
@@ -31,6 +34,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Cart - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { color: #333; position: relative; padding-bottom: 100px; }
@@ -100,6 +104,14 @@
 <div class="container">
     <h1 class="page-title">My Cart <span style="font-size:1rem; color:#666; font-weight:400;">(<%= items.size() %> Items)</span></h1>
 
+    <%-- ⭐ 2. 插入错误提示代码 --%>
+    <c:if test="${not empty errorMessage}">
+        <div style="background-color: #ffebee; color: #c62828; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ef9a9a; display: flex; align-items: center; gap: 10px;">
+            <i class="ri-error-warning-line" style="font-size: 1.2rem;"></i>
+            <span>${errorMessage}</span>
+        </div>
+    </c:if>
+
     <div class="cart-list" id="cartList">
         <% if (items.isEmpty()) { %>
         <div class="empty-cart">
@@ -117,7 +129,7 @@
                 <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
                 <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
                 <% } else { %>
-
+                <span style="font-size: 0.8rem; color: #ccc;">No Image</span>
                 <% } %>
             </div>
             <div class="item-info">
@@ -166,7 +178,6 @@
         document.getElementById('totalPrice').innerText = "RM " + total.toFixed(2);
     }
 
-    // ⭐ 修改点 4: 新增提交逻辑
     function proceedToCheckout() {
         const form = document.getElementById('checkoutForm');
         form.innerHTML = ''; // 清空旧数据

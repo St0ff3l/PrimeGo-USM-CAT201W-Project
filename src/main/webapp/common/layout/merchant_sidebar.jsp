@@ -4,14 +4,8 @@
 <%--
   Merchant Sidebar (Reusable Layout Component)
   Contract:
-  - Input: requestScope.activeMenu (String) e.g. "dashboard" | "products" | "orders" | "wallet" | "profile"
+  - Input: requestScope.activeMenu (String) e.g. "dashboard" | "products" | "order" | "wallet" | "profile"
   - Output: <aside class="sidebar-card">...</aside>
-
-  Self-contained:
-  - Uses inline SVG icons (no external icon fonts)
-  - Optionally injects Poppins font (best-effort; UI still works without it)
-  - Includes all CSS needed for the sidebar look & feel
-  - Styles are scoped under .pg-merchant-sidebar to avoid clashes
 --%>
 
 <script>
@@ -283,8 +277,8 @@
                 <span>Publish</span>
             </a>
 
-            <a class="menu-item ${active == 'orders' ? 'active-view' : ''}"
-               href="${pageContext.request.contextPath}/merchant/order/manage.jsp">
+            <a class="menu-item ${active == 'order' ? 'active-view' : ''}"
+               href="${pageContext.request.contextPath}/merchant/order/manage">
                 <span class="pg-mi" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
                         <rect x="4" y="3" width="16" height="18" rx="2"></rect>

@@ -13,6 +13,9 @@ public class Order {
     private String address;
     private Timestamp createdAt;
 
+    // ⭐ 新增: 快递单号 (对应数据库新增的 Tracking_Number 字段)
+    private String trackingNumber;
+
     // 包含订单项列表
     private List<OrderItem> orderItems;
 
@@ -31,6 +34,11 @@ public class Order {
     public void setAddress(String address) { this.address = address; }
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    // ⭐ 新增 Getter 和 Setter
+    public String getTrackingNumber() { return trackingNumber; }
+    public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
+
     public List<OrderItem> getOrderItems() { return orderItems; }
     public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
 }
