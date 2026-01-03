@@ -1,4 +1,29 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.primego.order.model.Cart" %>
+<%@ page import="com.primego.order.model.CartItem" %>
+<%@ page import="com.primego.order.dao.CartDAO" %>
+<%@ page import="com.primego.user.model.User" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.math.BigDecimal" %>
+<%
+    // 1. Try to get cart from session
+    Cart cart = (Cart) session.getAttribute("cart");
+    User user = (User) session.getAttribute("user");
+    
+    // 2. If session cart is empty/null but user is logged in, try to fetch from DB
+    if (user != null) {
+        CartDAO cartDAO = new CartDAO();
+        // Always refresh from DB for logged-in users to ensure consistency
+        cart = cartDAO.getCartByUserId(user.getId());
+        session.setAttribute("cart", cart);
+    } else if (cart == null) {
+        cart = new Cart();
+        session.setAttribute("cart", cart);
+    }
+    
+    List<CartItem> items = cart.getItems();
+    BigDecimal total = cart.getTotalPrice();
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,10 +35,9 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { color: #333; position: relative; padding-bottom: 100px; }
 
-        header { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 92%; max-width: 1300px; border-radius: 50px; padding: 12px 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); display: flex; justify-content: space-between; align-items: center; }
-        .brand-text { font-size: 1.5rem; font-weight: 700; color: #d63031; }
+        /* Header styles handled by header_bar.jsp */
 
-        .container { max-width: 1000px; margin: 120px auto 0; padding: 0 20px; }
+        .container { max-width: 1000px; margin: 140px auto 0; padding: 0 20px; }
         .page-title { font-size: 2rem; margin-bottom: 30px; font-weight: 700; color: #2d3436; border-left: 5px solid #FF9500; padding-left: 15px; }
 
         /* 购物车列表容器 */
@@ -35,14 +59,15 @@
 
         .item-checkbox { width: 20px; height: 20px; accent-color: #FF3B30; cursor: pointer; }
 
-        .item-img { width: 100px; height: 100px; border-radius: 12px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 2rem; object-fit: cover; }
+        .item-img { width: 100px; height: 100px; border-radius: 12px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 2rem; object-fit: cover; overflow: hidden; }
+        .item-img img { width: 100%; height: 100%; object-fit: cover; }
 
         .item-info { flex: 1; }
         .item-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; }
         .item-meta { color: #666; font-size: 0.9rem; }
         .item-price { color: #FF3B30; font-weight: 700; font-size: 1.2rem; margin-top: 5px; }
 
-        .btn-delete { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ddd; background: white; color: #666; cursor: pointer; transition: 0.2s; }
+        .btn-delete { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ddd; background: white; color: #666; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem; line-height: 1; }
         .btn-delete:hover { background: #FF3B30; color: white; border-color: #FF3B30; }
 
         /* 底部结算栏 */
@@ -61,66 +86,70 @@
             border: none; color: white; padding: 10px 30px; border-radius: 30px;
             font-weight: 600; cursor: pointer; font-size: 1rem;
             box-shadow: 0 4px 15px rgba(255, 59, 48, 0.4);
+            text-decoration: none;
         }
+        
+        .empty-cart { text-align: center; padding: 50px; color: #666; }
     </style>
 </head>
 <body>
 
 <%@ include file="../../common/background.jsp" %>
-
-<header>
-    <a href="${pageContext.request.contextPath}/index.jsp" style="text-decoration:none; display: flex; align-items: center; gap: 10px;">
-
-        <img src="${pageContext.request.contextPath}/assets/images/logo.png"
-             alt="Logo"
-             style="height: 40px; width: auto;">
-
-        <span class="brand-text">PrimeGo</span>
-    </a>
-    <div style="font-weight:600;">Search</div>
-</header>
+<%@ include file="../../common/layout/header_bar.jsp" %>
 
 <div class="container">
-    <h1 class="page-title">My Cart <span style="font-size:1rem; color:#666; font-weight:400;">(3 Items)</span></h1>
+    <h1 class="page-title">My Cart <span style="font-size:1rem; color:#666; font-weight:400;">(<%= items.size() %> Items)</span></h1>
 
     <div class="cart-list" id="cartList">
+        <% if (items.isEmpty()) { %>
+            <div class="empty-cart">
+                <h3>Your cart is empty</h3>
+                <p>Go find some treasures!</p>
+                <a href="${pageContext.request.contextPath}/index.jsp" class="btn-checkout" style="text-decoration:none; display:inline-block; margin-top:20px;">Start Shopping</a>
+            </div>
+        <% } else { 
+            for (CartItem item : items) {
+        %>
         <div class="cart-item">
             <input type="checkbox" class="item-checkbox" checked onchange="updateTotal()">
-            <div class="item-img">💻</div>
-            <div class="item-info">
-                <div class="item-title">Premium Business Laptop</div>
-                <div class="item-meta">Seller: TechGuy_99 | Condition: New</div>
-                <div class="item-price" data-price="3250">RM 3,250.00</div>
+            <div class="item-img">
+                <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
+                    <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
+                <% } else { %>
+                    �
+                <% } %>
             </div>
-            <button class="btn-delete" onclick="removeItem(this)">×</button>
-        </div>
-
-        <div class="cart-item">
-            <input type="checkbox" class="item-checkbox" checked onchange="updateTotal()">
-            <div class="item-img">👟</div>
             <div class="item-info">
-                <div class="item-title">Running Pro Shoes</div>
-                <div class="item-meta">Seller: SportyLife | Condition: New</div>
-                <div class="item-price" data-price="189">RM 189.00</div>
+                <a href="${pageContext.request.contextPath}/customer/product/product_detail.jsp?id=<%= item.getProduct().getProductId() %>" style="text-decoration:none; color:inherit;">
+                    <div class="item-title"><%= item.getProduct().getProductName() %></div>
+                </a>
+                <div class="item-meta" style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                    Quantity: 
+                    <form action="${pageContext.request.contextPath}/cart_action" method="post" style="margin:0;">
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" name="productId" value="<%= item.getProduct().getProductId() %>">
+                        <input type="number" name="quantity" min="1" value="<%= item.getQuantity() %>" 
+                               style="width:60px; padding:5px; border-radius:5px; border:1px solid #ccc;"
+                               onchange="this.form.submit()">
+                    </form>
+                </div>
+                <div class="item-price" data-price="<%= item.getTotalPrice() %>">RM <%= String.format("%.2f", item.getTotalPrice()) %></div>
             </div>
-            <button class="btn-delete" onclick="removeItem(this)">×</button>
+            <a href="${pageContext.request.contextPath}/cart_action?action=remove&productId=<%= item.getProduct().getProductId() %>" class="btn-delete" onclick="return confirm('Remove this item?')">×</a>
         </div>
+        <% 
+            }
+        } 
+        %>
     </div>
 </div>
 
 <div class="checkout-bar">
-    <div class="total-info">Total: <span id="totalPrice">RM 3,439.00</span></div>
-    <button class="btn-checkout" onclick="window.location.href='order_confirmation.jsp'">Checkout</button>
+    <div class="total-info">Total: <span id="totalPrice">RM <%= String.format("%.2f", total) %></span></div>
+    <a href="${pageContext.request.contextPath}/customer/order/order_confirmation.jsp" class="btn-checkout">Checkout</a>
 </div>
 
 <script>
-    function removeItem(btn) {
-        if(confirm("Remove this item from cart?")) {
-            btn.closest('.cart-item').remove();
-            updateTotal();
-        }
-    }
-
     function updateTotal() {
         let total = 0;
         document.querySelectorAll('.cart-item').forEach(item => {

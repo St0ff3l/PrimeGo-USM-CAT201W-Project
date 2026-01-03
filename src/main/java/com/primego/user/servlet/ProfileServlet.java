@@ -111,6 +111,31 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("message", "Failed to update profile details.");
                 req.setAttribute("messageType", "error");
             }
+        } else if ("changePassword".equals(action)) {
+            String oldPassword = req.getParameter("oldPassword");
+            String newPassword = req.getParameter("newPassword");
+            String confirmPassword = req.getParameter("confirmPassword");
+
+            if (newPassword != null && newPassword.equals(confirmPassword)) {
+                // Validate old password
+                User validUser = userDAO.validateCredentials(user.getUsername(), oldPassword);
+                if (validUser != null) {
+                    // Update to new password
+                    if (userDAO.updatePassword(user.getId(), newPassword)) {
+                        req.setAttribute("message", "Password changed successfully!");
+                        req.setAttribute("messageType", "success");
+                    } else {
+                        req.setAttribute("message", "Failed to update password. Database error.");
+                        req.setAttribute("messageType", "error");
+                    }
+                } else {
+                    req.setAttribute("message", "Incorrect old password.");
+                    req.setAttribute("messageType", "error");
+                }
+            } else {
+                req.setAttribute("message", "New passwords do not match.");
+                req.setAttribute("messageType", "error");
+            }
         }
 
         doGet(req, resp); // Reload page
