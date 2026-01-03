@@ -7,7 +7,6 @@
     // ==========================================
     // 1. 安全检查逻辑
     // ==========================================
-
     User user = (User) session.getAttribute("user");
     if (user == null) {
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
@@ -32,27 +31,32 @@
     <title>Publish Product - Seller Center</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <link href="${pageContext.request.contextPath}/assets/css/images_uploader.css" rel="stylesheet">
 
     <style>
         /* ==================== 变量定义 ==================== */
         :root {
             --bg-color: #F3F6F9;
-            --primary: #FF9500;
+            --primary: #FF9500; /* PrimeGo 橙色 */
             --primary-hover: #E68600;
             --secondary: #FF5E55;
             --text-dark: #2d3436;
             --text-gray: #636e72;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --card-radius: 16px;
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-            --border-color: #dfe6e9;
 
-            /* Glass tokens (match merchant sidebar glass) */
+            /* Glass tokens */
             --pg-glass-bg-055: rgba(255, 255, 255, 0.55);
             --pg-glass-border: rgba(255, 255, 255, 0.9);
             --pg-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
             --pg-glass-blur: 25px;
+            --card-radius: 16px;
+
+            /* >>> 2. 覆盖上传组件颜色，适配 PrimeGo 主题 <<< */
+            --iu-primary: var(--primary);
+            --iu-bg: rgba(255, 255, 255, 0.4);
+            --iu-border: #dfe6e9;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -62,7 +66,6 @@
             color: var(--text-dark);
             min-height: 100vh;
             position: relative;
-            /* header_bar.jsp is fixed */
             padding-top: 90px;
         }
 
@@ -84,39 +87,28 @@
             -webkit-backdrop-filter: blur(var(--pg-glass-blur));
             border: 1px solid var(--pg-glass-border);
             box-shadow: var(--pg-glass-shadow);
-
             border-radius: var(--card-radius);
             padding: 30px 40px;
             width: 100%;
-
             /* 入场效果 */
             opacity: 0;
             transform: translateY(22px);
             animation: pgFadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
-        /* 卡片入场动画：从下往上浮现 */
         @keyframes pgFadeInUp {
             from { opacity: 0; transform: translateY(22px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .form-card {
-                opacity: 1;
-                transform: none;
-                animation: none;
-            }
         }
 
         .page-header { margin-bottom: 25px; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 15px; }
         .page-header h2 { font-size: 1.6rem; font-weight: 700; color: var(--text-dark); margin-bottom: 5px; }
         .page-header p { color: var(--text-gray); font-size: 0.85rem; }
 
-        /* Grid: 2:1 比例 */
+        /* Grid: 调整左右比例，给上传区域更多空间 */
         .form-content-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 1.8fr 1.2fr;
             gap: 40px;
         }
 
@@ -141,39 +133,8 @@
             box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.1);
         }
 
-        /* 上传区域 */
+        /* 上传区域容器 */
         .right-col { display: flex; flex-direction: column; }
-        .upload-container { flex-grow: 1; display: flex; flex-direction: column; }
-        .upload-box {
-            flex-grow: 1;
-            min-height: 280px;
-            border: 2px dashed rgba(0,0,0,0.12);
-            border-radius: var(--card-radius);
-            background: rgba(255,255,255,0.35);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            position: relative;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: all 0.3s ease; cursor: pointer; overflow: hidden;
-        }
-        .upload-box:hover { border-color: var(--primary); background: rgba(255, 244, 230, 0.55); }
-
-        .upload-icon-circle {
-            width: 60px; height: 60px; background: rgba(255,255,255,0.7); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-        .upload-icon { font-size: 1.8rem; color: #b2bec3; }
-        .upload-text { font-weight: 700; color: var(--text-dark); margin-bottom: 2px; font-size: 1rem; }
-        .upload-sub { font-size: 0.75rem; color: #b2bec3; text-align: center; }
-
-        #imagePreview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
-        .remove-btn {
-            position: absolute; top: 15px; right: 15px; width: 35px; height: 35px; border-radius: 50%;
-            background: rgba(255,255,255,0.85); color: var(--secondary); border: none; cursor: pointer;
-            display: none; align-items: center; justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-size: 1.2rem; z-index: 10;
-        }
 
         /* 按钮区 */
         .btn-container {
@@ -196,7 +157,6 @@
         @media (max-width: 1024px) {
             .layout-container { grid-template-columns: 80px 1fr; }
             .form-content-grid { grid-template-columns: 1fr; }
-            .upload-box { min-height: 250px; margin-top: 20px; }
         }
     </style>
 </head>
@@ -231,7 +191,7 @@
                         <select id="category" name="categoryId" class="form-select" required>
                             <option value="" disabled selected>Select a category</option>
                             <% for (Category c : categories) { %>
-                                <option value="<%= c.getCategoryId() %>"><%= c.getCategoryName() %></option>
+                            <option value="<%= c.getCategoryId() %>"><%= c.getCategoryName() %></option>
                             <% } %>
                         </select>
                     </div>
@@ -254,26 +214,9 @@
                 </div>
 
                 <div class="right-col">
-                    <label class="form-label" for="fileInput">Product Image <span>*</span></label>
-                    <div class="upload-container">
-                        <input type="file" name="productImage" id="fileInput" accept="image/*" hidden required>
+                    <label class="form-label">Product Images <span>*</span></label>
 
-                        <div class="upload-box" id="dropZone" onclick="document.getElementById('fileInput').click()">
-                            <div id="uploadPlaceholder" style="text-align: center;">
-                                <div class="upload-icon-circle">
-                                    <i class="ri-image-add-line upload-icon"></i>
-                                </div>
-                                <div class="upload-text">Upload Image</div>
-                                <div class="upload-sub">Supports: JPG, PNG, WEBP</div>
-                            </div>
-
-                            <img id="imagePreview" src="" alt="Preview">
-
-                            <button type="button" class="remove-btn" id="removeBtn" onclick="removeImage(event)">
-                                <i class="ri-close-line"></i>
-                            </button>
-                        </div>
-                    </div>
+                    <div id="photo-upload-container"></div>
                 </div>
             </div>
 
@@ -286,59 +229,19 @@
     </main>
 </div>
 
+<script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
+
 <script>
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('dropZone');
-    const imagePreview = document.getElementById('imagePreview');
-    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-    const removeBtn = document.getElementById('removeBtn');
-
-    fileInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) showPreview(this.files[0]);
-    });
-
-    function showPreview(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            imagePreview.src = e.target.result;
-            imagePreview.style.display = 'block';
-            uploadPlaceholder.style.display = 'none';
-            removeBtn.style.display = 'flex';
-            dropZone.style.borderStyle = 'solid';
-            dropZone.style.borderColor = 'transparent';
-        }
-        reader.readAsDataURL(file);
-    }
-
-    function removeImage(event) {
-        event.stopPropagation();
-        fileInput.value = '';
-        imagePreview.style.display = 'none';
-        imagePreview.src = '';
-        uploadPlaceholder.style.display = 'block';
-        removeBtn.style.display = 'none';
-        dropZone.style.borderStyle = 'dashed';
-        dropZone.style.borderColor = 'rgba(0,0,0,0.12)';
-    }
-
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
-        dropZone.addEventListener(e, (ev) => { ev.preventDefault(); ev.stopPropagation(); });
-    });
-
-    dropZone.addEventListener('dragenter', () => dropZone.style.borderColor = 'var(--primary)');
-    dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = 'rgba(0,0,0,0.12)');
-    dropZone.addEventListener('drop', (e) => {
-        dropZone.style.borderColor = 'rgba(0,0,0,0.12)';
-        const files = e.dataTransfer.files;
-        if (files && files[0]) {
-            fileInput.files = files;
-            showPreview(files[0]);
-        }
+    document.addEventListener("DOMContentLoaded", function() {
+        // 5. 初始化组件
+        // 参数1: 容器 ID
+        // 参数2: 配置 input 的 name 属性。
+        // 注意：如果你后端期望同一个 name 接收多个文件，使用 'productImage' 即可。
+        new ImagesUploader('#photo-upload-container', {
+            inputName: 'productImage'
+        });
     });
 </script>
 
 </body>
 </html>
-
-
-

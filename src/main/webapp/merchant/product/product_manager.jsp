@@ -268,18 +268,17 @@
             </div>
             <%
             } else {
-                // 🔥 调整：商品卡片从 0.2s 开始入场，接在搜索栏后面
                 int index = 0;
                 for (ProductDTO p : productList) {
                     String statusClass = "ON_SALE".equals(p.getProductStatus()) ? "status-active" : "status-inactive";
                     String statusText = "ON_SALE".equals(p.getProductStatus()) ? "Active" : "Inactive";
 
-                    // 初始延迟 0.2s + 每个卡片递增 0.1s
+                    // 动画延迟
                     String delayStyle = String.format("animation-delay: %.1fs;", 0.2 + (index * 0.1));
             %>
             <div class="product-card"
                  style="<%= delayStyle %>"
-                 onclick="window.location.href='publish.jsp?id=<%= p.getProductId() %>'">
+                 onclick="window.location.href='product_edit.jsp?id=<%= p.getProductId() %>'">
 
                 <span class="status-badge <%= statusClass %>">
                     <%= statusText %>
@@ -298,7 +297,7 @@
                     <div class="card-footer">
                         <span class="card-price">RM <%= String.format("%.2f", p.getProductPrice()) %></span>
                         <div class="card-actions" onclick="event.stopPropagation()">
-                            <button class="btn-edit" onclick="window.location.href='publish.jsp?id=<%= p.getProductId() %>'" title="Edit">
+                            <button class="btn-edit" onclick="window.location.href='product_edit.jsp?id=<%= p.getProductId() %>'" title="Edit">
                                 <i class="ri-edit-line"></i>
                             </button>
                         </div>
@@ -335,6 +334,3 @@
 
 </body>
 </html>
-
-
-

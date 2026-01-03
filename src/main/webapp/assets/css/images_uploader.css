@@ -1,0 +1,131 @@
+/* ==========================================
+ * Images Uploader Component Styles
+ * File: assets/css/images_uploader.css
+ * ========================================== */
+
+:root {
+    /* 默认颜色，会被 JSP 中的变量覆盖 */
+    --iu-primary: #4F46E5;
+    --iu-bg: #F8FAFC;
+    --iu-border: #CBD5E1;
+}
+
+.iu-upload-area {
+    border: 2px dashed var(--iu-border);
+    border-radius: 20px;
+    padding: 20px;
+    padding-bottom: 70px; /* Space for bottom-right button */
+    min-height: 280px;
+    background: var(--iu-bg);
+    transition: all 0.3s ease;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; cursor: default;
+    font-family: inherit;
+}
+
+/* Hover or drag-over effect */
+.iu-upload-area:hover, .iu-upload-area.drag-over {
+    border-color: var(--iu-primary);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* Placeholder text area */
+.iu-placeholder {
+    text-align: center;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+    width: 100%; padding: 20px;
+    margin-top: 30px;
+}
+.iu-upload-area:hover .iu-placeholder { transform: translateY(-5px); }
+
+/* Camera icon */
+.iu-icon {
+    font-size: 3rem;
+    background: white;
+    width: 90px; height: 90px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    color: var(--iu-primary);
+    margin: 0 auto;
+}
+
+/* Preview area container */
+.iu-preview {
+    display: none;
+    width: 100%; gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-top: 10px;
+}
+
+/* Single image container */
+.iu-preview-wrapper {
+    position: relative;
+    width: 100px; height: 100px;
+    animation: iuPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Image item */
+.iu-preview-item {
+    width: 100%; height: 100%;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.iu-preview-wrapper:hover .iu-preview-item {
+    transform: scale(1.05) rotate(1deg);
+}
+
+/* Delete button */
+.iu-del-btn {
+    position: absolute; top: -8px; right: -8px;
+    width: 24px; height: 24px;
+    background: #EF4444; color: white;
+    border-radius: 50%; border: 2px solid white;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 12px; font-weight: bold;
+    opacity: 0; transform: scale(0.8);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+.iu-preview-wrapper:hover .iu-del-btn { opacity: 1; transform: scale(1); }
+.iu-del-btn:hover { background: #DC2626; transform: scale(1.2); }
+
+/* Add button */
+.iu-add-btn {
+    width: 45px; height: 45px; border-radius: 50%;
+    background: var(--iu-primary); color: white; border: none;
+    font-size: 24px;
+    display: none; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    position: absolute; bottom: 15px; right: 15px; z-index: 20;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.iu-add-btn:hover {
+    filter: brightness(1.1);
+    transform: scale(1.15) rotate(90deg);
+}
+
+/* Clear button */
+.iu-clear-btn {
+    position: absolute; top: 15px; right: 15px;
+    background: rgba(239, 68, 68, 0.1); color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 6px 14px; border-radius: 30px;
+    font-size: 0.8rem; font-weight: 700; cursor: pointer;
+    z-index: 10; display: none; transition: 0.2s;
+}
+.iu-clear-btn:hover { background: #EF4444; color: white; }
+
+@keyframes iuPopIn {
+    from { transform: scale(0.5) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
