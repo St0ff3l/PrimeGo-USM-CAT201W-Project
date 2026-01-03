@@ -145,10 +145,10 @@ public class CartDAO {
         if (cartId == -1) return cart; // Empty cart
 
         String sql = "SELECT ci.Cart_Item_Quantity, p.*, " +
-                     "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
-                     "FROM Cart_Item ci " +
-                     "JOIN Product p ON ci.Product_Id = p.Product_Id " +
-                     "WHERE ci.Cart_Id = ?";
+                "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
+                "FROM Cart_Item ci " +
+                "JOIN Product p ON ci.Product_Id = p.Product_Id " +
+                "WHERE ci.Cart_Id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -161,7 +161,9 @@ public class CartDAO {
                     product.setProductPrice(rs.getBigDecimal("Product_Price"));
                     product.setProductDescription(rs.getString("Product_Description"));
                     product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-                    // Add other fields if needed
+
+                    // ⭐ 关键修改：必须设置库存数量，否则前端获取到的库存为0，无法操作
+                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
 
                     CartItem item = new CartItem(product, rs.getInt("Cart_Item_Quantity"));
                     cart.addItem(item);
