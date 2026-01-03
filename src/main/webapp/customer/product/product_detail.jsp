@@ -248,6 +248,7 @@
 
 <%@ include file="../../common/background.jsp" %>
 <%@ include file="../../common/layout/header_bar.jsp" %>
+<%@ include file="../../common/login_check_modal.jsp" %>
 
 <div class="container">
     <div class="product-wrapper">
@@ -285,13 +286,23 @@
             </div>
 
             <div class="action-group">
-                <a href="${pageContext.request.contextPath}/cart_action?action=add&productId=<%= product.getProductId() %>" class="btn-action btn-cart">
-                    <i class="ri-shopping-cart-2-line"></i> Add to Cart
-                </a>
+                <% if (currentUser != null) { %>
+                    <a href="${pageContext.request.contextPath}/cart_action?action=add&productId=<%= product.getProductId() %>" class="btn-action btn-cart">
+                        <i class="ri-shopping-cart-2-line"></i> Add to Cart
+                    </a>
 
-                <a href="checkout.jsp?id=<%= product.getProductId() %>" class="btn-action btn-buy">
-                    Buy Now
-                </a>
+                    <a href="${pageContext.request.contextPath}/customer/order/order_confirmation.jsp?productId=<%= product.getProductId() %>" class="btn-action btn-buy">
+                        Buy Now
+                    </a>
+                <% } else { %>
+                    <button onclick="showLoginModal()" class="btn-action btn-cart">
+                        <i class="ri-shopping-cart-2-line"></i> Add to Cart
+                    </button>
+
+                    <button onclick="showLoginModal()" class="btn-action btn-buy">
+                        Buy Now
+                    </button>
+                <% } %>
             </div>
 
             <div style="margin-top: 30px; font-size: 0.85rem; color: var(--text-gray); display: flex; align-items: center; gap: 8px;">

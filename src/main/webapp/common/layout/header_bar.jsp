@@ -83,7 +83,7 @@
       </span>
 
       <span class="nav-icon nav-icon-cart" onclick="window.location.href='${pageContext.request.contextPath}/customer/order/cart.jsp'" title="Cart">
-        <i class="ri-shopping-cart-fill"></i> <span id="cart-count">0</span>
+        <i class="ri-shopping-cart-fill"></i>
       </span>
 
       <c:if test="${empty sessionScope.user}">

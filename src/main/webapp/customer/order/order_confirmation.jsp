@@ -1,4 +1,47 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.primego.product.dao.ProductDAO" %>
+<%@ page import="com.primego.product.model.ProductDTO" %>
+<%@ page import="com.primego.order.model.Cart" %>
+<%@ page import="com.primego.order.model.CartItem" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.math.BigDecimal" %>
+
+<%
+    // Check if we are buying a single product directly or checking out the cart
+    String productIdStr = request.getParameter("productId");
+    List<CartItem> orderItems = new ArrayList<>();
+    BigDecimal subTotal = BigDecimal.ZERO;
+    
+    if (productIdStr != null && !productIdStr.isEmpty()) {
+        // Buy Now mode
+        try {
+            int productId = Integer.parseInt(productIdStr);
+            ProductDAO productDAO = new ProductDAO();
+            ProductDTO product = productDAO.getProductById(productId);
+            if (product != null) {
+                CartItem item = new CartItem(product, 1);
+                orderItems.add(item);
+                subTotal = item.getTotalPrice();
+            }
+        } catch (NumberFormatException e) {
+            // Handle error
+        }
+    } else {
+        // Cart Checkout mode
+        Cart cart = (Cart) session.getAttribute("cart");
+        if (cart != null) {
+            orderItems = cart.getItems();
+            subTotal = cart.getTotalPrice();
+        }
+    }
+    
+    // If no items, redirect back
+    if (orderItems.isEmpty()) {
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,18 +52,20 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { color: #333; position: relative; }
 
-        header { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 92%; max-width: 1300px; border-radius: 50px; padding: 12px 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); display: flex; justify-content: space-between; align-items: center; }
-        .brand-text { font-size: 1.5rem; font-weight: 700; color: #d63031; }
+        /* Header styles handled by header_bar.jsp */
 
-        .container { max-width: 1000px; margin: 120px auto 50px; padding: 0 20px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; align-items: start; }
+        .container { max-width: 1000px; margin: 140px auto 50px; padding: 0 20px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; align-items: start; }
 
         .card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
 
         h2 { font-size: 1.2rem; margin-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; }
 
         /* 商品展示 */
-        .order-item { display: flex; gap: 15px; align-items: center; }
-        .item-img { width: 80px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 2rem; }
+        .order-item { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }
+        .order-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        
+        .item-img { width: 80px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 2rem; overflow: hidden; }
+        .item-img img { width: 100%; height: 100%; object-fit: cover; }
 
         /* 配送选项 */
         .delivery-opt { display: flex; gap: 15px; margin-bottom: 15px; }
@@ -42,30 +87,33 @@
 <body>
 
 <%@ include file="../../common/background.jsp" %>
-
-<header>
-    <a href="${pageContext.request.contextPath}/index.jsp" style="text-decoration:none; display: flex; align-items: center; gap: 10px;">
-
-        <img src="${pageContext.request.contextPath}/assets/images/logo.png"
-             alt="Logo"
-             style="height: 40px; width: auto;">
-
-        <span class="brand-text">PrimeGo</span>
-    </a>
-    <div style="font-weight:600;">Search</div>
-</header>
+<%@ include file="../../common/layout/header_bar.jsp" %>
 
 <div class="container">
     <div class="left-col">
         <div class="card">
-            <h2>Order Item</h2>
+            <h2>Order Items (<%= orderItems.size() %>)</h2>
+            <% for(CartItem item : orderItems) { %>
             <div class="order-item">
-                <div class="item-img">📦</div>
+                <div class="item-img">
+                    <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
+                        <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
+                    <% } else { %>
+                        📦
+                    <% } %>
+                </div>
                 <div>
-                    <h4 id="prodTitle">Product Name</h4>
-                    <p style="color:#FF3B30; font-weight:700;" id="prodPrice">RM 0.00</p>
+                    <h4><%= item.getProduct().getProductName() %></h4>
+                    <div style="display: flex; align-items: center; gap: 10px; margin: 5px 0;">
+                        <span style="color:#666; font-size: 0.9rem;">Quantity:</span>
+                        <input type="number" min="1" value="<%= item.getQuantity() %>" 
+                               style="width: 60px; padding: 5px; border-radius: 5px; border: 1px solid #ccc;"
+                               onchange="updateQuantity(this, <%= item.getProduct().getProductPrice() %>)">
+                    </div>
+                    <p style="color:#FF3B30; font-weight:700;" class="item-total-price" data-unit-price="<%= item.getProduct().getProductPrice() %>">RM <%= String.format("%.2f", item.getTotalPrice()) %></p>
                 </div>
             </div>
+            <% } %>
         </div>
 
         <div class="card">
@@ -77,6 +125,7 @@
             <div id="shippingForm">
                 <div class="input-group"><input type="text" class="input-field" placeholder="Full Name"></div>
                 <div class="input-group"><input type="text" class="input-field" placeholder="Address"></div>
+                <div class="input-group"><input type="text" class="input-field" placeholder="Phone Number"></div>
             </div>
         </div>
     </div>
@@ -84,9 +133,9 @@
     <div class="right-col">
         <div class="card">
             <h2>Summary</h2>
-            <div class="summary-row"><span>Subtotal</span><span id="subTotal">RM 0.00</span></div>
-            <div class="summary-row"><span>Delivery</span><span id="shipFee">RM 0.00</span></div>
-            <div class="total-row"><span>Total</span><span id="totalDisplay" style="color:#FF3B30;">RM 0.00</span></div>
+            <div class="summary-row"><span>Subtotal</span><span id="subTotal">RM <%= String.format("%.2f", subTotal) %></span></div>
+            <div class="summary-row"><span>Delivery</span><span id="shipFee">RM 15.00</span></div>
+            <div class="total-row"><span>Total</span><span id="totalDisplay" style="color:#FF3B30;">RM <%= String.format("%.2f", subTotal.add(new BigDecimal("15.00"))) %></span></div>
 
             <button class="btn-pay" onclick="window.location.href='payment_success.jsp'">Pay Now</button>
         </div>
@@ -94,30 +143,47 @@
 </div>
 
 <script>
-    let basePrice = 3250.00; // Example price
-    let shipCost = 15; // 默认改为15，因为只剩下Shipping选项
+    let basePrice = <%= subTotal %>;
+    let shipCost = 15;
 
-    document.addEventListener("DOMContentLoaded", () => {
-        // Initial Render
+    function updateQuantity(input, unitPrice) {
+        let quantity = parseInt(input.value);
+        if (quantity < 1) {
+            quantity = 1;
+            input.value = 1;
+        }
+        
+        // Update item total price display
+        let itemContainer = input.closest('.order-item');
+        let priceDisplay = itemContainer.querySelector('.item-total-price');
+        let itemTotal = unitPrice * quantity;
+        priceDisplay.innerText = "RM " + itemTotal.toFixed(2);
+        
+        // Recalculate subtotal
+        let newSubTotal = 0;
+        document.querySelectorAll('.item-total-price').forEach(el => {
+            let priceText = el.innerText.replace('RM ', '');
+            newSubTotal += parseFloat(priceText);
+        });
+        
+        basePrice = newSubTotal;
+        document.getElementById('subTotal').innerText = "RM " + basePrice.toFixed(2);
         updateSummary();
-        document.getElementById('prodTitle').innerText = "Premium Business Laptop";
-        document.getElementById('prodPrice').innerText = "RM " + basePrice.toFixed(2);
-    });
+    }
 
     function selectOpt(el, cost) {
         document.querySelectorAll('.opt-box').forEach(b => b.classList.remove('selected'));
         el.classList.add('selected');
 
         shipCost = cost;
-        // 这里的逻辑保留，但实际上只会走到 cost > 0 的情况
         document.getElementById('shippingForm').style.display = cost > 0 ? 'block' : 'none';
         updateSummary();
     }
 
     function updateSummary() {
-        document.getElementById('subTotal').innerText = "RM " + basePrice.toFixed(2);
         document.getElementById('shipFee').innerText = "RM " + shipCost.toFixed(2);
-        document.getElementById('totalDisplay').innerText = "RM " + (basePrice + shipCost).toFixed(2);
+        let total = basePrice + shipCost;
+        document.getElementById('totalDisplay').innerText = "RM " + total.toFixed(2);
     }
 </script>
 
