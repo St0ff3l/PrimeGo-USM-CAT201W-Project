@@ -1,6 +1,9 @@
 package com.primego.user.servlet;
 
+import com.primego.common.util.PasswordUtil;
+import com.primego.user.dao.ProfileDAO;
 import com.primego.user.dao.UserDAO;
+import com.primego.user.model.AdminProfile;
 import com.primego.user.model.Role;
 import com.primego.user.model.User;
 import javax.servlet.ServletException;
@@ -17,6 +20,7 @@ import java.util.List;
 @WebServlet("/admin/dashboard")
 public class AdminDashboardServlet extends HttpServlet {
     private UserDAO userDAO = new UserDAO();
+    private ProfileDAO profileDAO = new ProfileDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -31,6 +35,10 @@ public class AdminDashboardServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
             return;
         }
+
+        // Load Admin Profile
+        AdminProfile adminProfile = profileDAO.getAdminProfile(user.getId());
+        req.setAttribute("adminProfile", adminProfile);
 
         // --- 1. Dashboard Overview Data (Mock) ---
         req.setAttribute("totalUsers", 1250);
@@ -55,6 +63,65 @@ public class AdminDashboardServlet extends HttpServlet {
         req.getRequestDispatcher("/admin/admin_dashboard.jsp").forward(req, resp);
     }
 
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
+        }
+
+        User user = (User) session.getAttribute("user");
+        if (user.getRole() != Role.ADMIN) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
+            return;
+        }
+
+        String action = req.getParameter("action");
+        String message = "";
+        String messageType = "info";
+
+        if ("updateProfile".equals(action)) {
+            String department = req.getParameter("department");
+            AdminProfile profile = new AdminProfile(user.getId(), department, 0); // Level not editable from UI
+            if (profileDAO.updateAdminProfile(profile)) {
+                message = "Profile updated successfully.";
+                messageType = "success";
+            } else {
+                message = "Failed to update profile.";
+                messageType = "error";
+            }
+        } else if ("changePassword".equals(action)) {
+            String currentPassword = req.getParameter("currentPassword");
+            String newPassword = req.getParameter("newPassword");
+            String confirmPassword = req.getParameter("confirmPassword");
+
+            if (!PasswordUtil.checkPassword(currentPassword, user.getPassword())) {
+                message = "Current password is incorrect.";
+                messageType = "error";
+            } else if (!newPassword.equals(confirmPassword)) {
+                message = "New passwords do not match.";
+                messageType = "error";
+            } else {
+                if (userDAO.updatePassword(user.getId(), newPassword)) {
+                    // Update session user password
+                    user.setPassword(PasswordUtil.hashPassword(newPassword));
+                    message = "Password changed successfully.";
+                    messageType = "success";
+                } else {
+                    message = "Failed to change password.";
+                    messageType = "error";
+                }
+            }
+        }
+
+        // Set message and reload dashboard
+        req.setAttribute("settingsMessage", message);
+        req.setAttribute("settingsMessageType", messageType);
+
+        doGet(req, resp); // Reload dashboard with updated data
+    }
+
     public static class LogEntry {
         private String level;
         private String message;
@@ -66,8 +133,16 @@ public class AdminDashboardServlet extends HttpServlet {
             this.time = time;
         }
 
-        public String getLevel() { return level; }
-        public String getMessage() { return message; }
-        public String getTime() { return time; }
+        public String getLevel() {
+            return level;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public String getTime() {
+            return time;
+        }
     }
 }

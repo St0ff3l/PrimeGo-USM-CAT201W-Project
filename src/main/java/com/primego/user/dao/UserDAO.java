@@ -18,11 +18,11 @@ public class UserDAO {
     public User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, username);
             System.out.println("[DEBUG] Executing query: " + sql + " with username: " + username);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return mapResultSetToUser(rs);
@@ -52,7 +52,7 @@ public class UserDAO {
     public boolean createUser(User user, String email) {
         String insertUserSql = "INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, ?)";
         String insertProfileSql = "INSERT INTO customer_profiles (user_id, email, full_name, phone, address) VALUES (?, ?, ?, '', '')";
-        
+
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
@@ -65,7 +65,7 @@ public class UserDAO {
                 stmt.setString(2, PasswordUtil.hashPassword(user.getPassword())); // Hash password before saving
                 stmt.setString(3, user.getRole().toString());
                 stmt.setInt(4, user.getStatus());
-                
+
                 int affectedRows = stmt.executeUpdate();
                 if (affectedRows == 0) {
                     throw new SQLException("Creating user failed, no rows affected.");
@@ -80,7 +80,8 @@ public class UserDAO {
                 }
             }
 
-            // 2. Insert into customer_profiles table (assuming default role is CUSTOMER for now)
+            // 2. Insert into customer_profiles table (assuming default role is CUSTOMER for
+            // now)
             if (user.getRole() == Role.CUSTOMER) {
                 try (PreparedStatement stmt = conn.prepareStatement(insertProfileSql)) {
                     stmt.setInt(1, userId);
@@ -112,9 +113,9 @@ public class UserDAO {
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM users ORDER BY id DESC";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+
             while (rs.next()) {
                 users.add(mapResultSetToUser(rs));
             }
@@ -134,5 +135,33 @@ public class UserDAO {
         user.setCreatedAt(rs.getTimestamp("created_at"));
         user.setUpdatedAt(rs.getTimestamp("updated_at"));
         return user;
+    }
+
+    public boolean updatePassword(int userId, String newPassword) {
+        String sql = "UPDATE users SET password = ? WHERE id = ?";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, PasswordUtil.hashPassword(newPassword));
+            stmt.setInt(2, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateUsername(int userId, String newUsername) {
+        String sql = "UPDATE users SET username = ? WHERE id = ?";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, newUsername);
+            stmt.setInt(2, userId);
+
+            // Note: In a real app we should check for duplicate username exception here
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false; // Likely duplicate entry
+        }
     }
 }

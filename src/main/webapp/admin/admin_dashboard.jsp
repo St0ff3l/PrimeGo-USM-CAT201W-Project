@@ -381,8 +381,56 @@
             <div class="header-section">
                 <h1>System Settings</h1>
             </div>
+
+            <c:if test="${not empty settingsMessage}">
+                <div style="padding: 15px; margin-bottom: 20px; border-radius: 10px; 
+                            background: ${settingsMessageType eq 'success' ? '#e8f5e9' : '#ffebee'}; 
+                            color: ${settingsMessageType eq 'success' ? '#2e7d32' : '#c62828'};
+                            border: 1px solid ${settingsMessageType eq 'success' ? '#c8e6c9' : '#ffcdd2'};">
+                    ${settingsMessage}
+                </div>
+            </c:if>
+
             <div class="glass-panel">
-                <p>Settings configuration panel coming soon...</p>
+                <h3 style="margin-bottom: 20px; color: #333;">Profile Settings</h3>
+                <form action="${pageContext.request.contextPath}/admin/dashboard" method="post">
+                    <input type="hidden" name="action" value="updateProfile">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: #666; font-weight: 500;">Department</label>
+                        <input type="text" name="department" value="${adminProfile.department}" 
+                               style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: rgba(255,255,255,0.8); outline: none;">
+                    </div>
+                    <button type="submit" style="padding: 12px 30px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s;">
+                        Save Changes
+                    </button>
+                </form>
+            </div>
+
+            <div class="glass-panel">
+                <h3 style="margin-bottom: 20px; color: #333;">Security Settings</h3>
+                <form action="${pageContext.request.contextPath}/admin/dashboard" method="post">
+                    <input type="hidden" name="action" value="changePassword">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div style="margin-bottom: 20px; grid-column: span 2;">
+                            <label style="display: block; margin-bottom: 8px; color: #666; font-weight: 500;">Current Password</label>
+                            <input type="password" name="currentPassword" required 
+                                   style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: rgba(255,255,255,0.8); outline: none;">
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #666; font-weight: 500;">New Password</label>
+                            <input type="password" name="newPassword" required 
+                                   style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: rgba(255,255,255,0.8); outline: none;">
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #666; font-weight: 500;">Confirm New Password</label>
+                            <input type="password" name="confirmPassword" required 
+                                   style="width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: rgba(255,255,255,0.8); outline: none;">
+                        </div>
+                    </div>
+                    <button type="submit" style="padding: 12px 30px; background: #d63031; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s;">
+                        Change Password
+                    </button>
+                </form>
             </div>
         </div>
 
