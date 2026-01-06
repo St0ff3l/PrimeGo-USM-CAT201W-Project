@@ -157,12 +157,18 @@ public class CartDAO {
                 while (rs.next()) {
                     ProductDTO product = new ProductDTO();
                     product.setProductId(rs.getInt("Product_Id"));
+
+                    // ⭐⭐⭐ 关键修复：读取 Merchant_Id ⭐⭐⭐
+                    // 只有这里读出来了，PlaceOrderServlet 才能正确拆单
+                    product.setMerchantId(rs.getInt("Merchant_Id"));
+                    product.setCategoryId(rs.getInt("Category_Id")); // 顺便也加上 Category_Id
+
                     product.setProductName(rs.getString("Product_Name"));
                     product.setProductPrice(rs.getBigDecimal("Product_Price"));
                     product.setProductDescription(rs.getString("Product_Description"));
                     product.setPrimaryImageUrl(rs.getString("Primary_Image"));
 
-                    // ⭐ 关键修改：必须设置库存数量，否则前端获取到的库存为0，无法操作
+                    // 设置库存数量
                     product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
 
                     CartItem item = new CartItem(product, rs.getInt("Cart_Item_Quantity"));

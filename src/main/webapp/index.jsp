@@ -3,6 +3,7 @@
 <%@ page import="com.primego.product.dao.ProductDAO" %>
 <%@ page import="com.primego.product.model.ProductDTO" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%
@@ -27,10 +28,20 @@
   }
 
   // ============================================================
-  // 2. 获取商品数据
+  // 2. 获取商品数据并过滤库存
   // ============================================================
   ProductDAO productDAO = new ProductDAO();
   List<ProductDTO> productList = productDAO.getAllProducts();
+
+  // ⭐ 新增：过滤逻辑，只保留库存大于 0 的商品
+  List<ProductDTO> displayList = new ArrayList<>();
+  if (productList != null) {
+    for (ProductDTO p : productList) {
+      if (p.getProductStockQuantity() > 0) {
+        displayList.add(p);
+      }
+    }
+  }
 %>
 
 <!DOCTYPE html>
@@ -225,7 +236,8 @@
 
   <div class="product-grid">
     <%
-      if (productList == null || productList.isEmpty()) {
+      // ⭐ 修改：使用 displayList (已过滤库存) 进行判空
+      if (displayList.isEmpty()) {
     %>
     <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
       <h3>No products available at the moment.</h3>
@@ -233,7 +245,8 @@
     </div>
     <%
     } else {
-      for (ProductDTO p : productList) {
+      // ⭐ 修改：遍历 displayList
+      for (ProductDTO p : displayList) {
         // 卡片整体点击跳转到详情页
         String detailUrl = request.getContextPath() + "/customer/product/product_detail.jsp?id=" + p.getProductId();
     %>
@@ -260,7 +273,7 @@
         </p>
 
         <%--
-          关键修改：addToCart() 现在接收商品 ID
+          addToCart() 接收商品 ID
           event.stopPropagation() 防止点击按钮时触发卡片的跳转
         --%>
         <button class="btn btn-add" onclick="event.stopPropagation(); addToCart(<%= p.getProductId() %>)">Add to Cart</button>

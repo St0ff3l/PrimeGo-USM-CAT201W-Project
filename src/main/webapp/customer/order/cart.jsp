@@ -5,7 +5,7 @@
 <%@ page import="com.primego.user.model.User" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.math.BigDecimal" %>
-<%-- ⭐ 1. 必须添加这行 JSTL 引用，否则 c:if 不起作用 --%>
+<%-- ⭐ 必须添加这行 JSTL 引用，否则 c:if 不起作用 --%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%
@@ -63,7 +63,7 @@
 
         .item-checkbox { width: 20px; height: 20px; accent-color: #FF3B30; cursor: pointer; }
 
-        .item-img { width: 100px; height: 100px; border-radius: 12px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 2rem; object-fit: cover; overflow: hidden; }
+        .item-img { width: 100px; height: 100px; border-radius: 12px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 2rem; object-fit: cover; overflow: hidden; position: relative; }
         .item-img img { width: 100%; height: 100%; object-fit: cover; }
 
         .item-info { flex: 1; }
@@ -92,6 +92,12 @@
             box-shadow: 0 4px 15px rgba(255, 59, 48, 0.4);
             text-decoration: none;
         }
+        /* 禁用按钮样式 */
+        .btn-checkout:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
 
         .empty-cart { text-align: center; padding: 50px; color: #666; }
     </style>
@@ -104,12 +110,13 @@
 <div class="container">
     <h1 class="page-title">My Cart <span style="font-size:1rem; color:#666; font-weight:400;">(<%= items.size() %> Items)</span></h1>
 
-    <%-- ⭐ 2. 插入错误提示代码 --%>
-    <c:if test="${not empty errorMessage}">
+    <%-- ⭐ 2. 修正错误提示逻辑：读取 Session 中的 cartError 并在显示后清除 --%>
+    <c:if test="${not empty sessionScope.cartError}">
         <div style="background-color: #ffebee; color: #c62828; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ef9a9a; display: flex; align-items: center; gap: 10px;">
             <i class="ri-error-warning-line" style="font-size: 1.2rem;"></i>
-            <span>${errorMessage}</span>
+            <span>${sessionScope.cartError}</span>
         </div>
+        <% session.removeAttribute("cartError"); %>
     </c:if>
 
     <div class="cart-list" id="cartList">
@@ -121,9 +128,17 @@
         </div>
         <% } else {
             for (CartItem item : items) {
+                // ⭐ 获取库存并判断状态
+                int stock = item.getProduct().getProductStockQuantity();
+                boolean isOutOfStock = (stock <= 0);
         %>
-        <div class="cart-item">
-            <input type="checkbox" class="item-checkbox" value="<%= item.getProduct().getProductId() %>" checked onchange="updateTotal()">
+        <%-- ⭐ 如果缺货，背景变灰 --%>
+        <div class="cart-item" style="<%= isOutOfStock ? "opacity: 0.6; background: #f9f9f9;" : "" %>">
+            <%-- ⭐ Checkbox: 如果缺货则禁用 --%>
+            <input type="checkbox" class="item-checkbox"
+                   value="<%= item.getProduct().getProductId() %>"
+                <%= isOutOfStock ? "disabled" : "checked" %>
+                   onchange="updateTotal()">
 
             <div class="item-img">
                 <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
@@ -131,21 +146,45 @@
                 <% } else { %>
                 <span style="font-size: 0.8rem; color: #ccc;">No Image</span>
                 <% } %>
+
+                <%-- ⭐ 图片上的 Sold Out 标记 --%>
+                <% if (isOutOfStock) { %>
+                <div style="position:absolute; background:rgba(0,0,0,0.7); color:white; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px;">Sold Out</div>
+                <% } %>
             </div>
+
             <div class="item-info">
                 <a href="${pageContext.request.contextPath}/customer/product/product_detail.jsp?id=<%= item.getProduct().getProductId() %>" style="text-decoration:none; color:inherit;">
                     <div class="item-title"><%= item.getProduct().getProductName() %></div>
                 </a>
-                <div class="item-meta" style="display:flex; align-items:center; gap:10px; margin-top:5px;">
-                    Quantity:
-                    <form action="${pageContext.request.contextPath}/cart_action" method="post" style="margin:0;">
-                        <input type="hidden" name="action" value="update">
-                        <input type="hidden" name="productId" value="<%= item.getProduct().getProductId() %>">
-                        <input type="number" name="quantity" min="1" value="<%= item.getQuantity() %>"
-                               style="width:60px; padding:5px; border-radius:5px; border:1px solid #ccc;"
-                               onchange="this.form.submit()">
-                    </form>
+
+                <div class="item-meta" style="display:flex; flex-direction: column; gap: 5px; margin-top:5px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        Quantity:
+                        <form action="${pageContext.request.contextPath}/cart_action" method="post" style="margin:0;">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="productId" value="<%= item.getProduct().getProductId() %>">
+
+                            <%-- ⭐ Input: 增加 max 属性，缺货则禁用 --%>
+                            <input type="number" name="quantity" min="1"
+                                   max="<%= stock %>"
+                                   value="<%= item.getQuantity() %>"
+                                <%= isOutOfStock ? "disabled" : "" %>
+                                   style="width:60px; padding:5px; border-radius:5px; border:1px solid #ccc;"
+                                   onchange="this.form.submit()">
+                        </form>
+                    </div>
+
+                    <%-- ⭐ 显示剩余库存提示 --%>
+                    <div style="font-size: 0.85rem; color: <%= stock < 5 ? "#e74c3c" : "#7f8c8d" %>;">
+                        <% if (isOutOfStock) { %>
+                        <span style="color: #e74c3c; font-weight: bold;">Out of Stock</span>
+                        <% } else { %>
+                        Stock: <%= stock %> available
+                        <% } %>
+                    </div>
                 </div>
+
                 <div class="item-price" data-price="<%= item.getTotalPrice() %>">RM <%= String.format("%.2f", item.getTotalPrice()) %></div>
             </div>
             <a href="${pageContext.request.contextPath}/cart_action?action=remove&productId=<%= item.getProduct().getProductId() %>" class="btn-delete" onclick="return confirm('Remove this item?')">×</a>
@@ -170,6 +209,7 @@
         let total = 0;
         document.querySelectorAll('.cart-item').forEach(item => {
             const checkbox = item.querySelector('.item-checkbox');
+            // 只计算被选中的（disabled 的不会被选中）
             if(checkbox.checked) {
                 const price = parseFloat(item.querySelector('.item-price').dataset.price);
                 total += price;
@@ -177,6 +217,11 @@
         });
         document.getElementById('totalPrice').innerText = "RM " + total.toFixed(2);
     }
+
+    // 初始化时执行一次，以防有默认没选中的情况（虽然JSP里设了默认checked，但disabled的除外）
+    window.onload = function() {
+        updateTotal();
+    };
 
     function proceedToCheckout() {
         const form = document.getElementById('checkoutForm');

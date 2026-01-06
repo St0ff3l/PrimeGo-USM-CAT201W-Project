@@ -205,6 +205,10 @@
   /* ================= 菜单链接样式 ================= */
   .nav-menu {
     display: flex;
+    /* ⭐ 新增以下两行 ⭐ */
+    justify-content: center; /* 水平居中 */
+    align-items: center;     /* 垂直居中 */
+
     list-style: none;
     gap: 40px;
     margin: 0;

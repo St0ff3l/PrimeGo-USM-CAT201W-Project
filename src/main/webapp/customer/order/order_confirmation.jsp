@@ -15,6 +15,9 @@
 <%-- ⭐ 新增导入：用于检查 PIN 码 --%>
 <%@ page import="com.primego.user.dao.ProfileDAO" %>
 <%@ page import="com.primego.user.model.CustomerProfile" %>
+<%-- ⭐ 新增导入：用于计算商家数量 --%>
+<%@ page import="java.util.Set" %>
+<%@ page import="java.util.HashSet" %>
 
 <%
     // ⭐ 0. 获取当前用户 (必须登录)
@@ -89,6 +92,21 @@
         response.sendRedirect(request.getContextPath() + "/index.jsp");
         return;
     }
+
+    // ========================================================
+    // ⭐ 新增：计算涉及的商家数量，以便正确计算运费
+    // ========================================================
+    Set<Integer> merchantSet = new HashSet<>();
+    for (CartItem item : orderItems) {
+        if (item.getProduct() != null) {
+            merchantSet.add(item.getProduct().getMerchantId());
+        }
+    }
+    int merchantCount = merchantSet.isEmpty() ? 1 : merchantSet.size();
+
+    // 基础运费 RM 15.00 * 商家数量
+    BigDecimal singleShipFee = new BigDecimal("15.00");
+    BigDecimal totalShipFee = singleShipFee.multiply(new BigDecimal(merchantCount));
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -244,7 +262,8 @@
             <div class="card">
                 <h2>Delivery Method</h2>
                 <div class="delivery-opt">
-                    <div class="opt-box selected" onclick="selectOpt(this, 15)">🚚 Shipping</div>
+                    <%-- ⭐ 修改：显示运费金额 (Java算好的) --%>
+                    <div class="opt-box selected">🚚 Shipping</div>
                 </div>
 
                 <input type="hidden" name="fullName" id="inputName" value="<%= defaultAddress != null ? defaultAddress.getRecipientName() : "" %>">
@@ -283,8 +302,15 @@
                 </div>
 
                 <div class="summary-row"><span>Subtotal</span><span id="subTotal">RM <%= String.format("%.2f", subTotal) %></span></div>
-                <div class="summary-row"><span>Delivery</span><span id="shipFee">RM 15.00</span></div>
-                <div class="total-row"><span>Total</span><span id="totalDisplay" style="color:#FF3B30;">RM <%= String.format("%.2f", subTotal.add(new BigDecimal("15.00"))) %></span></div>
+
+                <%-- ⭐ 修改：显示商家数量和总运费 --%>
+                <div class="summary-row">
+                    <span>Delivery (<%= merchantCount %> Merchant<%= merchantCount > 1 ? "s" : "" %>)</span>
+                    <span id="shipFee">RM <%= String.format("%.2f", totalShipFee) %></span>
+                </div>
+
+                <%-- ⭐ 修改：显示总价 (subTotal + totalShipFee) --%>
+                <div class="total-row"><span>Total</span><span id="totalDisplay" style="color:#FF3B30;">RM <%= String.format("%.2f", subTotal.add(totalShipFee)) %></span></div>
 
                 <%-- ⭐ 修改：按钮类型改为 button，点击触发 handlePayClick --%>
                 <button type="button" class="btn-pay" onclick="handlePayClick()">Pay Now</button>
@@ -347,7 +373,8 @@
 
 <script>
     let basePrice = <%= subTotal %>;
-    let shipCost = 15;
+    // ⭐ 修改 JS：运费不再是固定的 15，而是算出来的 totalShipFee
+    let shipCost = <%= totalShipFee %>;
 
     // ⭐ 后端传入变量
     const userHasPin = <%= hasPin %>;
@@ -458,13 +485,7 @@
         updateSummary();
     }
 
-    function selectOpt(el, cost) {
-        document.querySelectorAll('.opt-box').forEach(b => b.classList.remove('selected'));
-        el.classList.add('selected');
-        shipCost = cost;
-        updateSummary();
-    }
-
+    // ⭐ 修改 updateSummary 函数
     function updateSummary() {
         document.getElementById('shipFee').innerText = "RM " + shipCost.toFixed(2);
         let total = basePrice + shipCost;

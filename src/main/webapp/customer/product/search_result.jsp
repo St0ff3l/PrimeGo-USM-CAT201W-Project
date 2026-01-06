@@ -36,6 +36,16 @@
     ProductDAO productDAO = new ProductDAO();
     List<ProductDTO> productList = productDAO.searchProductsWithFilter(keyword, categoryId, minPrice, maxPrice);
 
+    // ⭐ 新增：过滤逻辑，只保留库存大于 0 的商品
+    List<ProductDTO> displayList = new ArrayList<>();
+    if (productList != null) {
+        for (ProductDTO p : productList) {
+            if (p.getProductStockQuantity() > 0) {
+                displayList.add(p);
+            }
+        }
+    }
+
     String resultTitle = "All Products";
     if (keyword != null && !keyword.isEmpty()) {
         resultTitle = "Search Results for \"" + keyword + "\"";
@@ -218,13 +228,14 @@
         <h3 style="margin-bottom:20px; color:#555;"><%= resultTitle %></h3>
 
         <div class="product-grid">
-            <% if (productList == null || productList.isEmpty()) { %>
+            <%-- ⭐ 修改：使用 displayList (已过滤库存) 进行判空和遍历 --%>
+            <% if (displayList.isEmpty()) { %>
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
                 <h3>No products found.</h3>
                 <p>Try adjusting your search or category.</p>
             </div>
             <% } else {
-                for (ProductDTO p : productList) {
+                for (ProductDTO p : displayList) {
             %>
             <%-- 修改点：将整个 card 包装在指向 product_detail.jsp 的 a 标签中 --%>
             <a href="product_detail.jsp?id=<%= p.getProductId() %>" class="product-card">

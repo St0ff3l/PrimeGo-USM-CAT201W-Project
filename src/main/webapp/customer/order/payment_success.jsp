@@ -1,16 +1,26 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%
+    // ⭐ 获取 orderIds 参数 (可能是逗号分隔的字符串，如 "1001,1002")
+    String orderIdsStr = request.getParameter("orderIds");
+
+    // 兼容旧逻辑：如果没有 orderIds，尝试获取 orderId
+    if (orderIdsStr == null || orderIdsStr.isEmpty()) {
+        orderIdsStr = request.getParameter("orderId");
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Payment Success - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { color: #333; position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; }
 
         .card {
-            width: 400px;
+            width: 450px; /* 稍微宽一点以容纳长订单号 */
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.6);
@@ -29,7 +39,18 @@
         }
 
         h1 { margin-bottom: 10px; color: #2d3436; }
-        p { color: #666; margin-bottom: 30px; }
+        p { color: #666; margin-bottom: 20px; line-height: 1.5; }
+
+        .note {
+            font-size: 0.85rem;
+            color: #666;
+            background: #eef2f7;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+            text-align: left;
+        }
 
         .btn { display: block; width: 100%; padding: 15px; border-radius: 15px; text-decoration: none; font-weight: 600; margin-bottom: 10px; transition: 0.2s; }
 
@@ -51,11 +72,31 @@
 <div class="card">
     <div class="icon-circle">✓</div>
     <h1>Payment Successful!</h1>
-    <p>Your order has been placed. The seller will contact you shortly.</p>
+
+    <p>
+        <% if (orderIdsStr != null && orderIdsStr.contains(",")) { %>
+        The following orders have been placed successfully:<br>
+        <strong style="font-size: 1.1rem; color: #2d3436;">#<%= orderIdsStr.replace(",", ", #") %></strong>
+        <% } else if (orderIdsStr != null) { %>
+        Order <strong>#<%= orderIdsStr %></strong> has been placed successfully.
+        <% } else { %>
+        Your order has been placed successfully.
+        <% } %>
+        <br>The sellers will process your items shortly.
+    </p>
+
+    <% if (orderIdsStr != null && orderIdsStr.contains(",")) { %>
+    <div class="note">
+        <div style="font-weight: 600; margin-bottom: 4px; color:#333;">
+            <i class="ri-information-fill" style="color:#3498db;"></i> Multiple Shipments
+        </div>
+        Since you purchased items from different merchants, your order has been split into separate shipments automatically.
+    </div>
+    <% } %>
 
     <a href="<%= request.getContextPath() %>/index.jsp" class="btn btn-primary">Continue Shopping</a>
 
-    <a href="${pageContext.request.contextPath}/profile?tab=orders" class="btn btn-outline">View Order</a>
+    <a href="${pageContext.request.contextPath}/profile?tab=orders" class="btn btn-outline">View My Orders</a>
 </div>
 
 </body>
