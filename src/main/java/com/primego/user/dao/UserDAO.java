@@ -49,9 +49,9 @@ public class UserDAO {
         return null;
     }
 
-    public boolean createUser(User user, String email) {
+    public void createUser(User user, String email) throws SQLException {
         String insertUserSql = "INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, ?)";
-        String insertProfileSql = "INSERT INTO customer_profiles (user_id, email, full_name, phone, address) VALUES (?, ?, ?, '', '')";
+        String insertProfileSql = "INSERT INTO customer_profiles (user_id, email, full_name, phone) VALUES (?, ?, ?, '')";
 
         Connection conn = null;
         try {
@@ -92,7 +92,6 @@ public class UserDAO {
             }
 
             conn.commit(); // Commit transaction
-            return true;
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -103,7 +102,7 @@ public class UserDAO {
                     ex.printStackTrace();
                 }
             }
-            return false;
+            throw e; // Rethrow exception to be handled by caller
         } finally {
             DBUtil.close(conn);
         }

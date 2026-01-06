@@ -49,13 +49,14 @@ public class RegisterServlet extends HttpServlet {
 
         // Create new user (Default role: CUSTOMER)
         User newUser = new User(username, password, Role.CUSTOMER);
-        boolean success = userDAO.createUser(newUser, email);
-
-        if (success) {
-            // Redirect to login page with success message (optional: could pass via session or URL param)
+        try {
+            userDAO.createUser(newUser, email);
+            // Redirect to login page with success message (optional: could pass via session
+            // or URL param)
             resp.sendRedirect(req.getContextPath() + "/public/login.jsp");
-        } else {
-            req.setAttribute("error", "Registration failed. Please try again.");
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+            req.setAttribute("error", "Registration failed: " + e.getMessage());
             req.getRequestDispatcher("/public/signup.jsp").forward(req, resp);
         }
     }
