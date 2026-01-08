@@ -255,7 +255,7 @@
             <div class="menu-group-title">Manage</div>
 
             <a class="menu-item ${active == 'products' ? 'active-view' : ''}"
-               href="${pageContext.request.contextPath}/merchant/product/product_manager.jsp">
+               href="${pageContext.request.contextPath}/merchant/product/product_management.jsp">
                 <span class="pg-mi" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -278,7 +278,7 @@
             </a>
 
             <a class="menu-item ${active == 'order' ? 'active-view' : ''}"
-               href="${pageContext.request.contextPath}/merchant/order/manage">
+               href="${pageContext.request.contextPath}/merchant/order/order_management">
                 <span class="pg-mi" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
                         <rect x="4" y="3" width="16" height="18" rx="2"></rect>

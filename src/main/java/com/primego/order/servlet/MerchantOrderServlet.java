@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.List;
 
 // 访问路径: /merchant/order/manage
-@WebServlet("/merchant/order/manage")
+@WebServlet("/merchant/order/order_management")
 public class MerchantOrderServlet extends HttpServlet {
 
     private OrderDAO orderDAO = new OrderDAO();
@@ -35,7 +35,7 @@ public class MerchantOrderServlet extends HttpServlet {
         req.setAttribute("orders", orders);
 
         // 3. 转发到 JSP 页面
-        req.getRequestDispatcher("/merchant/order/manage.jsp").forward(req, resp);
+        req.getRequestDispatcher("/merchant/order/order_management.jsp").forward(req, resp);
     }
 
     @Override
@@ -53,6 +53,6 @@ public class MerchantOrderServlet extends HttpServlet {
             }
         }
 
-        resp.sendRedirect(req.getContextPath() + "/merchant/order/manage");
+        resp.sendRedirect(req.getContextPath() + "/merchant/order/order_management");
     }
 }

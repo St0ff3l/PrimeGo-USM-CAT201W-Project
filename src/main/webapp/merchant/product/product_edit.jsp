@@ -31,7 +31,7 @@
             product = productDAO.getProductById(pid);
 
             if (product != null && product.getMerchantId() != currentUser.getId()) {
-                response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?error=unauthorized");
+                response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?error=unauthorized");
                 return;
             }
 
@@ -47,7 +47,7 @@
     }
 
     if (product == null) {
-        response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?error=notfound");
+        response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?error=notfound");
         return;
     }
 %>
@@ -319,7 +319,7 @@
                 </div>
 
                 <div class="action-bar">
-                    <a href="${pageContext.request.contextPath}/merchant/product/product_manager.jsp" class="btn-action btn-cancel">Cancel</a>
+                    <a href="${pageContext.request.contextPath}/merchant/product/product_management.jsp" class="btn-action btn-cancel">Cancel</a>
                     <button type="submit" class="btn-action btn-save"><i class="ri-save-line" style="margin-right: 6px;"></i> Save Changes</button>
                 </div>
 
@@ -385,3 +385,4 @@
 
 </body>
 </html>
+

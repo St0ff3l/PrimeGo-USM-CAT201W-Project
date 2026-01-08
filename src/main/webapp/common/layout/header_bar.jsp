@@ -159,7 +159,7 @@
     box-shadow:
             0 10px 30px rgba(0, 0, 0, 0.1),
             0 4px 6px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
   }
 
   .navbar {

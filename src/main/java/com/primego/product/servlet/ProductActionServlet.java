@@ -43,7 +43,7 @@ public class ProductActionServlet extends HttpServlet {
         } else if ("delete".equals(action)) {
             handleDelete(request, response);
         } else {
-            response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp");
+            response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp");
         }
     }
 
@@ -153,14 +153,14 @@ public class ProductActionServlet extends HttpServlet {
                     }
                 }
 
-                response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?msg=updated");
+                response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?msg=updated");
             } else {
-                response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?error=failed");
+                response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?error=failed");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?error=exception");
+            response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?error=exception");
         }
     }
 
@@ -177,7 +177,7 @@ public class ProductActionServlet extends HttpServlet {
                 e.printStackTrace();
             }
         }
-        response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp");
+        response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp");
     }
 
     private String getFileName(Part part) {

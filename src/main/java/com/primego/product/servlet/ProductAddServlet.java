@@ -125,7 +125,7 @@ public class ProductAddServlet extends HttpServlet {
                     }
                 }
 
-                response.sendRedirect(request.getContextPath() + "/merchant/product/product_manager.jsp?msg=pending_review");
+                response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?msg=pending_review");
             } else {
                 request.setAttribute("errorMessage", "Failed to insert product record.");
                 request.getRequestDispatcher("/merchant/product/publish.jsp").forward(request, response);

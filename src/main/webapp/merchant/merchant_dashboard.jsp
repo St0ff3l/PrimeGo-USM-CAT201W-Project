@@ -270,7 +270,7 @@
                                 <p>3 items are low in stock</p>
                             </div>
                         </div>
-                        <a href="${pageContext.request.contextPath}/merchant/product/product_manager.jsp" class="todo-action">Restock</a>
+                        <a href="${pageContext.request.contextPath}/merchant/product/product_management.jsp" class="todo-action">Restock</a>
                     </div>
 
                     <div class="todo-item">

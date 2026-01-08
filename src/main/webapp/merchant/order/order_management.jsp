@@ -194,6 +194,24 @@
                 </div>
             </div>
 
+            <%-- If orders is not set, this page was likely accessed directly instead of via the servlet. --%>
+            <c:if test="${orders == null}">
+                <div class="glass-panel" style="margin-bottom: 20px; border-left: 5px solid #ff9500;">
+                    <div style="display:flex; gap:12px; align-items:flex-start;">
+                        <i class="ri-information-line" style="font-size: 1.3rem; color: #ff9500; margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-weight: 700; margin-bottom: 6px;">Orders didn’t load</div>
+                            <div style="color: #666; font-size: 0.95rem; line-height: 1.5;">
+                                You’re opening this JSP directly, so the backend didn’t fetch orders.
+                                Please enter this page via the Orders menu (servlet) or click
+                                    <%-- 【修改点1】 修复 Reload 链接 --%>
+                                <a href="${pageContext.request.contextPath}/merchant/order/order_management" style="color:#ff9500; font-weight: 600;">reload orders</a>.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </c:if>
+
             <c:if test="${empty orders}">
                 <div style="text-align: center; padding: 50px; color: #999;">
                     <i class="ri-inbox-line" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
@@ -228,9 +246,9 @@
                             <div class="item-row">
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <div style="width: 30px; height: 30px; background: #eee; border-radius: 5px; overflow: hidden;">
-                                        <img src="${pageContext.request.contextPath}/${item.productImageUrl}"
+                                        <img src="${pageContext.request.contextPath}${empty item.productImageUrl ? '/assets/images/product-placeholder.svg' : '/' += item.productImageUrl}"
                                              style="width: 100%; height: 100%; object-fit: cover;"
-                                             onerror="this.src='https://via.placeholder.com/30'">
+                                             onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/images/product-placeholder.svg'">
                                     </div>
                                     <span>${item.productName} <span style="color: #999;">x${item.quantity}</span></span>
                                 </div>
@@ -287,7 +305,8 @@
         <h3 style="margin-bottom: 15px;">Ship Order</h3>
         <p style="margin-bottom: 20px; color: #666;">Enter tracking number to confirm shipment.</p>
 
-        <form action="${pageContext.request.contextPath}/merchant/order/manage" method="post">
+        <%-- 【修改点2】 修复表单提交路径 --%>
+        <form action="${pageContext.request.contextPath}/merchant/order/order_management" method="post">
             <input type="hidden" name="action" value="shipOrder">
             <input type="hidden" id="modalOrderId" name="orderId" value="">
 
