@@ -15,18 +15,19 @@
         return;
     }
 
-    WalletDAO dao = new WalletDAO();
     String role = (user.getRole() != null) ? user.getRole().toString() : "";
-
+    // 如果管理员误入此页面，可以重定向到审批页
     if ("ADMIN".equals(role)) {
-        List<WalletTransaction> pendingList = dao.getPendingTransactions();
-        request.setAttribute("pendingList", pendingList);
-    } else {
-        BigDecimal currentBalance = dao.getBalance(user.getId());
-        request.setAttribute("displayBalance", String.format("%.2f", currentBalance));
-        List<WalletTransaction> myTransactions = dao.getUserTransactions(user.getId());
-        request.setAttribute("myTransactions", myTransactions);
+        response.sendRedirect("admin_approval.jsp");
+        return;
     }
+
+    WalletDAO dao = new WalletDAO();
+    BigDecimal currentBalance = dao.getBalance(user.getId());
+    request.setAttribute("displayBalance", String.format("%.2f", currentBalance));
+
+    List<WalletTransaction> myTransactions = dao.getUserTransactions(user.getId());
+    request.setAttribute("myTransactions", myTransactions);
 %>
 
 <!DOCTYPE html>
@@ -51,7 +52,6 @@
         .role-badge { padding:8px 20px; border-radius:999px; font-size:.85rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.8px; box-shadow:0 8px 18px rgba(0,0,0,0.18); }
         .badge-cust  { background:linear-gradient(145deg, #ffad33, #e68a00); }
         .badge-merch { background:linear-gradient(135deg,#ffdb4d,#e6b800); }
-        .badge-admin { background:linear-gradient(135deg,#ff5e55,#d92e25); }
         .btn-group { display:flex; gap:20px; margin-bottom:30px; }
         .btn { padding:14px 32px; border-radius:50px; text-decoration:none; font-weight:600; transition:all .3s ease; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:10px; font-size:1rem; }
         .btn-primary { background:linear-gradient(45deg,#2ecc71,#27ae60); color:#fff; box-shadow:0 10px 20px rgba(39,174,96,0.35); }
@@ -70,9 +70,6 @@
         .txn-right { display:flex; align-items:center; gap:10px; font-size:1rem; font-weight:700; color:#2d3436; }
         .txn-amount-minus { color:#e74c3c; }
         .txn-amount-plus  { color:#27ae60; }
-        .admin-action-btn { padding:8px 14px; border-radius:999px; border:none; color:#fff; font-size:.85rem; font-weight:600; cursor:pointer; text-decoration: none; display: inline-block;}
-        .btn-approve { background: #2ecc71; }
-        .btn-reject { background: #e74c3c; }
     </style>
 </head>
 <body>
@@ -80,9 +77,6 @@
 <c:choose>
     <c:when test="${sessionScope.user.role == 'MERCHANT'}">
         <jsp:include page="/common/background_merchant.jsp" />
-    </c:when>
-    <c:when test="${sessionScope.user.role == 'ADMIN'}">
-        <jsp:include page="/common/background_admin.jsp" />
     </c:when>
     <c:otherwise>
         <jsp:include page="/common/background_customer.jsp" />
@@ -102,37 +96,21 @@
         </div>
         <c:remove var="message" scope="session" />
     </c:if>
-    <c:if test="${not empty requestScope.error}">
-        <div style="background: #f8d7da; color: #721c24; padding: 15px 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #f5c6cb; display: flex; align-items: center; gap: 10px;">
-            <i class="ri-error-warning-line"></i><span>${requestScope.error}</span>
-        </div>
-    </c:if>
 
     <div class="header-row">
         <div>
             <div class="balance-label">
                 <c:choose>
-                    <c:when test="${sessionScope.user.role == 'ADMIN'}">Audit Dashboard</c:when>
                     <c:when test="${sessionScope.user.role == 'MERCHANT'}">Shop Total Revenue</c:when>
                     <c:otherwise>Personal Balance</c:otherwise>
                 </c:choose>
             </div>
-            <c:choose>
-                <c:when test="${sessionScope.user.role == 'ADMIN'}">
-                    <div style="font-size: 2rem; font-weight: 800; color: #2d3436; margin-top: 10px;">Pending Requests</div>
-                </c:when>
-                <c:otherwise>
-                    <div class="balance-val">RM ${displayBalance}</div>
-                </c:otherwise>
-            </c:choose>
+            <div class="balance-val">RM ${displayBalance}</div>
         </div>
         <div>
             <c:choose>
                 <c:when test="${sessionScope.user.role == 'MERCHANT'}">
                     <span class="role-badge badge-merch">MERCHANT</span>
-                </c:when>
-                <c:when test="${sessionScope.user.role == 'ADMIN'}">
-                    <span class="role-badge badge-admin">ADMIN</span>
                 </c:when>
                 <c:otherwise>
                     <span class="role-badge badge-cust">CUSTOMER</span>
@@ -141,109 +119,63 @@
         </div>
     </div>
 
-    <c:if test="${sessionScope.user.role != 'ADMIN'}">
-        <div class="btn-group">
-            <c:choose>
-                <c:when test="${sessionScope.user.role == 'CUSTOMER' || empty sessionScope.user.role}">
-                    <a href="topup.jsp" class="btn btn-primary">＋ Top Up Wallet</a>
-                    <a href="withdraw.jsp" class="btn btn-secondary">↘ Withdraw Funds</a>
-                </c:when>
-                <c:when test="${sessionScope.user.role == 'MERCHANT'}">
-                    <a href="withdraw.jsp" class="btn btn-purple">🏦 Withdraw Revenue</a>
-                    <a href="#" class="btn btn-secondary" onclick="alert('Exporting report...')">📄 Export Report</a>
-                </c:when>
-            </c:choose>
-        </div>
-    </c:if>
+    <div class="btn-group">
+        <c:choose>
+            <c:when test="${sessionScope.user.role == 'CUSTOMER' || empty sessionScope.user.role}">
+                <a href="topup.jsp" class="btn btn-primary">＋ Top Up Wallet</a>
+                <a href="withdraw.jsp" class="btn btn-secondary">↘ Withdraw Funds</a>
+            </c:when>
+            <c:when test="${sessionScope.user.role == 'MERCHANT'}">
+                <a href="withdraw.jsp" class="btn btn-purple">🏦 Withdraw Revenue</a>
+                <a href="#" class="btn btn-secondary" onclick="alert('Exporting report...')">📄 Export Report</a>
+            </c:when>
+        </c:choose>
+    </div>
 
     <div class="txn-header-row">
-        <div class="txn-title">
-            ${sessionScope.user.role == 'ADMIN' ? 'Approval Queue' : 'Transactions'}
+        <div class="txn-title">Transactions</div>
+        <div class="txn-tabs tabs-cust">
+            <button class="txn-tab txn-tab-active">All</button>
         </div>
-        <c:if test="${sessionScope.user.role != 'ADMIN'}">
-            <div class="txn-tabs tabs-cust">
-                <button class="txn-tab txn-tab-active">All</button>
-            </div>
-        </c:if>
     </div>
 
     <div class="txn-list">
-        <!-- ADMIN 视图 -->
-        <c:if test="${sessionScope.user.role == 'ADMIN'}">
-            <c:if test="${empty pendingList}">
-                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No pending requests.</p></div>
-            </c:if>
-            <c:forEach var="txn" items="${pendingList}">
-                <div class="txn-item">
-                    <div>
-                        <div class="txn-left-main">
-                                ${txn.transactionType == 'TOPUP' ? 'Top Up Request' : 'Withdraw Request'}
-                            <span style="font-weight:normal; color:#666; font-size:0.9rem;">(ID: ${txn.id})</span>
-                        </div>
-                        <div class="txn-left-sub">
-                            User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
-                            <c:if test="${txn.transactionType == 'TOPUP' && not empty txn.receiptImage}">
-                                <br>
-                                <a href="${pageContext.request.contextPath}/assets/images/Recharge_Photos/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
-                                    <i class="ri-image-line"></i> View Receipt
-                                </a>
-                            </c:if>
-                        </div>
-                    </div>
-                    <div class="txn-right">
-                        <span style="font-size: 1.2rem; margin-right: 15px;">RM ${txn.amount}</span>
-                        <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline;">
-                            <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="reject">
-                            <button type="submit" class="admin-action-btn btn-reject">Reject</button>
-                        </form>
-                        <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline; margin-left:5px;">
-                            <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="approve">
-                            <button type="submit" class="admin-action-btn btn-approve">Approve</button>
-                        </form>
-                    </div>
-                </div>
-            </c:forEach>
+        <c:if test="${empty myTransactions}">
+            <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No transaction history found.</p></div>
         </c:if>
-
-        <!-- 普通用户/商家 视图 -->
-        <c:if test="${sessionScope.user.role != 'ADMIN'}">
-            <c:if test="${empty myTransactions}">
-                <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No transaction history found.</p></div>
-            </c:if>
-            <c:forEach var="txn" items="${myTransactions}">
-                <div class="txn-item">
-                    <div>
-                        <div class="txn-left-main">
-                            <c:choose>
-                                <c:when test="${txn.transactionType == 'TOPUP'}">Top Up</c:when>
-                                <c:when test="${txn.transactionType == 'WITHDRAW'}">Withdraw</c:when>
-                                <c:when test="${txn.transactionType == 'PURCHASE'}">Payment (Shopping)</c:when>
-                                <c:when test="${txn.transactionType == 'SALES'}">Sales Revenue</c:when>
-                                <c:otherwise>${txn.transactionType}</c:otherwise>
-                            </c:choose>
-                            <span style="font-size:0.8rem; padding:2px 8px; border-radius:10px; margin-left: 5px;
-                                    background:${txn.status == 'APPROVED' ? '#d4edda' : (txn.status == 'PENDING' ? '#fff3cd' : '#f8d7da')};
-                                    color:${txn.status == 'APPROVED' ? '#155724' : (txn.status == 'PENDING' ? '#856404' : '#721c24')};">
-                                    ${txn.status}
-                            </span>
-                        </div>
-                        <div class="txn-left-sub">
-                            <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
-                        </div>
-                    </div>
-                    <div class="txn-right">
+        <c:forEach var="txn" items="${myTransactions}">
+            <div class="txn-item">
+                <div>
+                    <div class="txn-left-main">
                         <c:choose>
-                            <c:when test="${txn.transactionType == 'TOPUP' || txn.transactionType == 'SALES'}">
-                                <span class="txn-amount-plus">+ RM ${txn.amount}</span>
-                            </c:when>
-                            <c:otherwise>
-                                <span class="txn-amount-minus">- RM ${txn.amount}</span>
-                            </c:otherwise>
+                            <c:when test="${txn.transactionType == 'TOPUP'}">Top Up</c:when>
+                            <c:when test="${txn.transactionType == 'WITHDRAW'}">Withdraw</c:when>
+                            <c:when test="${txn.transactionType == 'PURCHASE'}">Payment (Shopping)</c:when>
+                            <c:when test="${txn.transactionType == 'SALES'}">Sales Revenue</c:when>
+                            <c:otherwise>${txn.transactionType}</c:otherwise>
                         </c:choose>
+                        <span style="font-size:0.8rem; padding:2px 8px; border-radius:10px; margin-left: 5px;
+                                background:${txn.status == 'APPROVED' ? '#d4edda' : (txn.status == 'PENDING' ? '#fff3cd' : '#f8d7da')};
+                                color:${txn.status == 'APPROVED' ? '#155724' : (txn.status == 'PENDING' ? '#856404' : '#721c24')};">
+                                ${txn.status}
+                        </span>
+                    </div>
+                    <div class="txn-left-sub">
+                        <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
                     </div>
                 </div>
-            </c:forEach>
-        </c:if>
+                <div class="txn-right">
+                    <c:choose>
+                        <c:when test="${txn.transactionType == 'TOPUP' || txn.transactionType == 'SALES'}">
+                            <span class="txn-amount-plus">+ RM ${txn.amount}</span>
+                        </c:when>
+                        <c:otherwise>
+                            <span class="txn-amount-minus">- RM ${txn.amount}</span>
+                        </c:otherwise>
+                    </c:choose>
+                </div>
+            </div>
+        </c:forEach>
     </div>
 </div>
 </body>
