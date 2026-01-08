@@ -67,6 +67,6 @@ public class WalletAdminServlet extends HttpServlet {
         }
 
         // 6. 重定向回钱包页面
-        response.sendRedirect(request.getContextPath() + "/common/wallet/wallet.jsp");
+        response.sendRedirect(request.getContextPath() + "/public/wallet/wallet.jsp");
     }
 }

@@ -67,19 +67,19 @@ public class TopUpServlet extends HttpServlet {
 
             if (success) {
                 session.setAttribute("message", "Top-up request submitted! Waiting for approval.");
-                response.sendRedirect(request.getContextPath() + "/common/wallet/wallet.jsp");
+                response.sendRedirect(request.getContextPath() + "/public/wallet/wallet.jsp");
             } else {
                 request.setAttribute("error", "Database error. Please try again.");
-                request.getRequestDispatcher("/common/wallet/topup.jsp").forward(request, response);
+                request.getRequestDispatcher("/public/wallet/topup.jsp").forward(request, response);
             }
 
         } catch (NumberFormatException e) {
             request.setAttribute("error", "Invalid amount format.");
-            request.getRequestDispatcher("/common/wallet/topup.jsp").forward(request, response);
+            request.getRequestDispatcher("/public/wallet/topup.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "An error occurred: " + e.getMessage());
-            request.getRequestDispatcher("/common/wallet/topup.jsp").forward(request, response);
+            request.getRequestDispatcher("/public/wallet/topup.jsp").forward(request, response);
         }
     }
 }

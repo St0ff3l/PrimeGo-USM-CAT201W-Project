@@ -348,7 +348,7 @@
         <i class="ri-map-pin-line"></i><span>Addresses</span>
     </div>
     <div class="nav-item"
-         onclick="window.location.href='${pageContext.request.contextPath}/common/wallet/wallet.jsp'">
+         onclick="window.location.href='${pageContext.request.contextPath}/public/wallet/wallet.jsp'">
         <i class="ri-wallet-line"></i><span>Wallet</span>
     </div>
     <div class="nav-item" onclick="switchTab('settings', this)">
@@ -1023,3 +1023,4 @@
 </body>
 
 </html>
+

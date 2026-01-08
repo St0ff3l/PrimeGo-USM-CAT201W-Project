@@ -36,7 +36,7 @@ public class WithdrawServlet extends HttpServlet {
 
             if (currentBalance.compareTo(amount) < 0) {
                 request.setAttribute("error", "Insufficient balance!");
-                request.getRequestDispatcher("/common/wallet/withdraw.jsp").forward(request, response);
+                request.getRequestDispatcher("/public/wallet/withdraw.jsp").forward(request, response);
                 return;
             }
 
@@ -52,15 +52,15 @@ public class WithdrawServlet extends HttpServlet {
 
             if (success) {
                 session.setAttribute("message", "Withdrawal request submitted successfully!");
-                response.sendRedirect(request.getContextPath() + "/common/wallet/wallet.jsp");
+                response.sendRedirect(request.getContextPath() + "/public/wallet/wallet.jsp");
             } else {
                 request.setAttribute("error", "Database error. Please try again.");
-                request.getRequestDispatcher("/common/wallet/withdraw.jsp").forward(request, response);
+                request.getRequestDispatcher("/public/wallet/withdraw.jsp").forward(request, response);
             }
 
         } catch (NumberFormatException e) {
             request.setAttribute("error", "Invalid amount format.");
-            request.getRequestDispatcher("/common/wallet/withdraw.jsp").forward(request, response);
+            request.getRequestDispatcher("/public/wallet/withdraw.jsp").forward(request, response);
         }
     }
 }
