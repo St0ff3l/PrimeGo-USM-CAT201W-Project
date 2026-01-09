@@ -327,24 +327,134 @@
                 }
 
                 .modal-content {
-                    background: white;
+                    background: rgba(255, 255, 255, 0.95);
                     padding: 30px;
-                    border-radius: 15px;
+                    border-radius: 20px;
                     width: 400px;
                     max-width: 90%;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+                    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
                     position: relative;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.5);
+                    animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+
+                @keyframes modalPop {
+                    0% {
+                        transform: scale(0.8);
+                        opacity: 0;
+                    }
+
+                    100% {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                }
+
+                .modal-lg {
+                    width: 900px;
+                    max-height: 85vh;
+                    overflow-y: auto;
                 }
 
                 .close-btn {
                     position: absolute;
-                    top: 15px;
-                    right: 20px;
-                    background: none;
+                    top: 20px;
+                    right: 25px;
+                    background: rgba(0, 0, 0, 0.05);
                     border: none;
-                    font-size: 1.5rem;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    font-size: 1.2rem;
                     cursor: pointer;
-                    color: #666;
+                    color: #555;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: 0.2s;
+                }
+
+                .close-btn:hover {
+                    background: #ff5e55;
+                    color: white;
+                    transform: rotate(90deg);
+                }
+
+                /* Transaction Modal Specifics */
+                .modal-header {
+                    margin-bottom: 25px;
+                    padding-bottom: 15px;
+                    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                }
+
+                .modal-header h2 {
+                    color: #2c3e50;
+                    font-weight: 700;
+                }
+
+                .transaction-section {
+                    background: white;
+                    border-radius: 15px;
+                    padding: 20px;
+                    margin-bottom: 25px;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+                    border: 1px solid rgba(0, 0, 0, 0.02);
+                }
+
+                .section-title {
+                    font-size: 1.1rem;
+                    color: #333;
+                    margin-bottom: 15px;
+                    padding-bottom: 8px;
+                    display: flex;
+                    align-items: center;
+                    font-weight: 600;
+                }
+
+                .section-title::before {
+                    content: '';
+                    display: inline-block;
+                    width: 4px;
+                    height: 18px;
+                    margin-right: 10px;
+                    border-radius: 2px;
+                }
+
+                .title-paid {
+                    color: #27ae60;
+                    border-bottom: 2px solid rgba(39, 174, 96, 0.1);
+                }
+
+                .title-paid::before {
+                    background: #27ae60;
+                }
+
+                .title-shipped {
+                    color: #2980b9;
+                    border-bottom: 2px solid rgba(41, 128, 185, 0.1);
+                }
+
+                .title-shipped::before {
+                    background: #2980b9;
+                }
+
+                .title-completed {
+                    color: #8e44ad;
+                    border-bottom: 2px solid rgba(142, 68, 173, 0.1);
+                }
+
+                .title-completed::before {
+                    background: #8e44ad;
+                }
+
+                .title-cancelled {
+                    color: #c0392b;
+                    border-bottom: 2px solid rgba(192, 57, 43, 0.1);
+                }
+
+                .title-cancelled::before {
+                    background: #c0392b;
                 }
             </style>
         </head>
@@ -371,6 +481,12 @@
                 <a class="nav-item" style="text-decoration:none;"
                     href="${pageContext.request.contextPath}/admin/product/review/list">
                     <span>🧾 Product Review</span>
+                </a>
+
+                <!-- NEW: Funds Approval -->
+                <a class="nav-item" style="text-decoration:none;"
+                    href="${pageContext.request.contextPath}/admin/wallet/admin_approval.jsp">
+                    <span>💰 Funds Approval</span>
                 </a>
 
                 <div class="sidebar-footer">
@@ -406,8 +522,8 @@
                             <span class="metric-value">${dailyVisits}</span>
                             <span class="metric-trend">↑ 5% vs yesterday</span>
                         </div>
-                        <div class="glass-panel metric-card">
-                            <span class="metric-title">Total Revenue</span>
+                        <div class="glass-panel metric-card" onclick="openTransactionsModal()" style="cursor: pointer;">
+                            <span class="metric-title">Total Transactions</span>
                             <span class="metric-value">${revenue}</span>
                             <span class="metric-trend">↑ 8% vs last month</span>
                         </div>
@@ -594,6 +710,159 @@
                 </div>
             </div>
 
+            <!-- Transactions Detail Modal -->
+            <div id="transactionsModal" class="modal-overlay">
+                <div class="modal-content modal-lg">
+                    <button class="close-btn" onclick="closeTransactionsModal()">&times;</button>
+                    <div class="modal-header">
+                        <h2>Total Transactions Detail</h2>
+                    </div>
+
+                    <div class="transaction-section">
+                        <h3 class="section-title title-paid">PAID Orders</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer ID</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <c:choose>
+                                        <c:when test="${empty paidOrders}">
+                                            <tr>
+                                                <td colspan="4">No PAID orders found.</td>
+                                            </tr>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="o" items="${paidOrders}">
+                                                <tr>
+                                                    <td>#${o.ordersId}</td>
+                                                    <td>User #${o.customerId}</td>
+                                                    <td>RM ${o.totalAmount}</td>
+                                                    <td>${o.createdAt}</td>
+                                                </tr>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="transaction-section">
+                        <h3 class="section-title title-shipped">SHIPPED Orders</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer ID</th>
+                                        <th>Amount</th>
+                                        <th>Tracking</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <c:choose>
+                                        <c:when test="${empty shippedOrders}">
+                                            <tr>
+                                                <td colspan="5">No SHIPPED orders found.</td>
+                                            </tr>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="o" items="${shippedOrders}">
+                                                <tr>
+                                                    <td>#${o.ordersId}</td>
+                                                    <td>User #${o.customerId}</td>
+                                                    <td>RM ${o.totalAmount}</td>
+                                                    <td>${o.trackingNumber}</td>
+                                                    <td>${o.createdAt}</td>
+                                                </tr>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="transaction-section">
+                        <h3 class="section-title title-completed">COMPLETED Orders</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer ID</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <c:choose>
+                                        <c:when test="${empty completedOrders}">
+                                            <tr>
+                                                <td colspan="4">No COMPLETED orders found.</td>
+                                            </tr>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="o" items="${completedOrders}">
+                                                <tr>
+                                                    <td>#${o.ordersId}</td>
+                                                    <td>User #${o.customerId}</td>
+                                                    <td>RM ${o.totalAmount}</td>
+                                                    <td>${o.createdAt}</td>
+                                                </tr>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="transaction-section">
+                        <h3 class="section-title title-cancelled">CANCELLED Orders</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer ID</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <c:choose>
+                                        <c:when test="${empty cancelledOrders}">
+                                            <tr>
+                                                <td colspan="4">No CANCELLED orders found.</td>
+                                            </tr>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach var="o" items="${cancelledOrders}">
+                                                <tr>
+                                                    <td>#${o.ordersId}</td>
+                                                    <td>User #${o.customerId}</td>
+                                                    <td>RM ${o.totalAmount}</td>
+                                                    <td>${o.createdAt}</td>
+                                                </tr>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
             <script>
                 // Tab Switching Logic
                 function switchTab(tabId, navElement) {
@@ -640,7 +909,7 @@
                     data: {
                         labels: ['Customers', 'Merchants', 'Admins'],
                         datasets: [{
-                            data: [85, 10, 5],
+                            data: [${ userChartData }],
                             backgroundColor: ['#FF9500', '#FFCC00', '#FF3B30'],
                             borderWidth: 0
                         }]
@@ -731,11 +1000,24 @@
                     document.getElementById('userDetailModal').style.display = 'none';
                 }
 
-                // Close on outside click
+                // Transactions Modal Logic
+                function openTransactionsModal() {
+                    document.getElementById('transactionsModal').style.display = 'flex';
+                }
+
+                function closeTransactionsModal() {
+                    document.getElementById('transactionsModal').style.display = 'none';
+                }
+
+                // Close on outside click for both modals
                 window.onclick = function (event) {
-                    const modal = document.getElementById('userDetailModal');
-                    if (event.target == modal) {
-                        modal.style.display = "none";
+                    const uModal = document.getElementById('userDetailModal');
+                    const tModal = document.getElementById('transactionsModal');
+                    if (event.target == uModal) {
+                        uModal.style.display = "none";
+                    }
+                    if (event.target == tModal) {
+                        tModal.style.display = "none";
                     }
                 }
             </script>

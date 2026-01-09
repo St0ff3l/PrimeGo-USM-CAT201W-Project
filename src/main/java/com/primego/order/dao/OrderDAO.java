@@ -18,6 +18,7 @@ public class OrderDAO {
     /**
      * ⭐ 核心新增：批量创建订单 (用于拆单逻辑)
      * 在一个数据库事务中，创建多个 Order，插入对应的 OrderItems，扣减库存，扣减钱包
+     * 
      * @param orders 分组后的订单列表
      * @return 成功生成的订单ID列表，失败返回 null
      */
@@ -123,10 +124,20 @@ public class OrderDAO {
                 try {
                     conn.setAutoCommit(true);
                     conn.close();
-                } catch (SQLException e) { e.printStackTrace(); }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
-            try { if (orderStmt != null && !orderStmt.isClosed()) orderStmt.close(); } catch (SQLException e) {}
-            try { if (itemStmt != null && !itemStmt.isClosed()) itemStmt.close(); } catch (SQLException e) {}
+            try {
+                if (orderStmt != null && !orderStmt.isClosed())
+                    orderStmt.close();
+            } catch (SQLException e) {
+            }
+            try {
+                if (itemStmt != null && !itemStmt.isClosed())
+                    itemStmt.close();
+            } catch (SQLException e) {
+            }
         }
     }
 
@@ -160,7 +171,9 @@ public class OrderDAO {
                     orderList.add(order);
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return orderList;
     }
 
@@ -180,7 +193,9 @@ public class OrderDAO {
                     orderList.add(order);
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return orderList;
     }
 
@@ -198,7 +213,9 @@ public class OrderDAO {
                     order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return order;
     }
 
@@ -219,7 +236,9 @@ public class OrderDAO {
                     orderList.add(order);
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return orderList;
     }
 
@@ -243,7 +262,9 @@ public class OrderDAO {
                     items.add(item);
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return items;
     }
 
@@ -253,13 +274,16 @@ public class OrderDAO {
             ps.setString(1, trackingNumber);
             ps.setInt(2, orderId);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) { e.printStackTrace(); return false; }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public boolean updateOrderStatus(int orderId, String newStatus) {
         String sql = "UPDATE Orders SET Orders_Order_Status = ? WHERE Orders_Id = ?";
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, newStatus);
             ps.setInt(2, orderId);
@@ -280,7 +304,45 @@ public class OrderDAO {
         order.setPaymentStatus(rs.getString("Orders_Payment_Status"));
         order.setAddress(rs.getString("Orders_Address"));
         order.setCreatedAt(rs.getTimestamp("Orders_Created_At"));
-        try { order.setTrackingNumber(rs.getString("Tracking_Number")); } catch (SQLException e) { order.setTrackingNumber(null); }
+        try {
+            order.setTrackingNumber(rs.getString("Tracking_Number"));
+        } catch (SQLException e) {
+            order.setTrackingNumber(null);
+        }
         return order;
+    }
+
+    public int countTotalTransactions() {
+        String sql = "SELECT COUNT(*) FROM Orders WHERE Orders_Order_Status IN ('PAID', 'SHIPPED', 'COMPLETED', 'CANCELLED')";
+        try (Connection conn = DBUtil.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public List<Order> getOrdersByStatusForAdmin(String status) {
+        List<Order> orderList = new ArrayList<>();
+        String sql = "SELECT * FROM Orders WHERE Orders_Order_Status = ? ORDER BY Orders_Created_At DESC";
+        try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Order order = mapRowToOrder(rs);
+                    // For dashboard summary, we might not need items to improve performance,
+                    // but let's include them for completeness if needed in modal detail
+                    // order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
+                    orderList.add(order);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return orderList;
     }
 }
