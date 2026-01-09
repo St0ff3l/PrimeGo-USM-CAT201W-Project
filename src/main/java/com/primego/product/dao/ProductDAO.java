@@ -11,7 +11,7 @@ import java.util.List;
 public class ProductDAO {
 
     // ==========================================
-    // 查询方法 (保持不变)
+    // 查询方法
     // ==========================================
 
     public List<ProductDTO> getProductsByMerchantId(int merchantId) {
@@ -270,6 +270,9 @@ public class ProductDAO {
                     product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
                     product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
 
+                    // ⭐ 确保这里能读取到 WhatsApp
+                    product.setContactWhatsapp(rs.getString("Contact_Whatsapp"));
+
                     product.setCategoryName(rs.getString("Category_Name"));
                     product.setPrimaryImageUrl(rs.getString("Primary_Image"));
                     product.setMerchantName(rs.getString("Merchant_Name"));
@@ -299,12 +302,14 @@ public class ProductDAO {
     }
 
     // ==========================================
-    // 插入方法 (保持不变)
+    // 插入方法
     // ==========================================
 
     public int insertProduct(Product product) {
+        // ⭐ SQL 包含了 Contact_Whatsapp
         String sql = "INSERT INTO Product (Merchant_Id, Category_Id, Product_Name, Product_Description, " +
-                "Product_Price, Product_Stock_Quantity, Product_Status, Audit_Status, Audit_Message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "Product_Price, Product_Stock_Quantity, Contact_Whatsapp, Product_Status, Audit_Status, Audit_Message) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -315,9 +320,13 @@ public class ProductDAO {
             pstmt.setString(4, product.getProductDescription());
             pstmt.setBigDecimal(5, product.getProductPrice());
             pstmt.setInt(6, product.getProductStockQuantity());
-            pstmt.setString(7, product.getProductStatus());
-            pstmt.setString(8, product.getAuditStatus());
-            pstmt.setString(9, product.getAuditMessage());
+
+            // ⭐ 插入 WhatsApp
+            pstmt.setString(7, product.getContactWhatsapp());
+
+            pstmt.setString(8, product.getProductStatus());
+            pstmt.setString(9, product.getAuditStatus());
+            pstmt.setString(10, product.getAuditMessage());
 
             int affectedRows = pstmt.executeUpdate();
 
@@ -335,18 +344,16 @@ public class ProductDAO {
     }
 
     // ==========================================
-    // 更新方法 (用于 product_edit.jsp)
+    // ⭐ 更新方法 (已修复，加入了 WhatsApp 字段)
     // ==========================================
 
-    /**
-     * 更新商品基本信息
-     */
     public boolean updateProduct(Product product) {
+        // ⭐ 修改后的 SQL，包含 Contact_Whatsapp = ?
         String sql = "UPDATE Product SET " +
                 "Category_Id = ?, Product_Name = ?, Product_Description = ?, " +
-                "Product_Price = ?, Product_Stock_Quantity = ?, Product_Status = ?, " +
+                "Product_Price = ?, Product_Stock_Quantity = ?, Contact_Whatsapp = ?, Product_Status = ?, " +
                 "Product_Updated_At = NOW() " +
-                "WHERE Product_Id = ? AND Merchant_Id = ?"; // 增加Merchant_Id校验防止越权
+                "WHERE Product_Id = ? AND Merchant_Id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -356,11 +363,14 @@ public class ProductDAO {
             pstmt.setString(3, product.getProductDescription());
             pstmt.setBigDecimal(4, product.getProductPrice());
             pstmt.setInt(5, product.getProductStockQuantity());
-            pstmt.setString(6, product.getProductStatus());
 
-            // WHERE 条件
-            pstmt.setInt(7, product.getProductId());
-            pstmt.setInt(8, product.getMerchantId());
+            // ⭐ 设置参数 6: WhatsApp
+            pstmt.setString(6, product.getContactWhatsapp());
+
+            // ⭐ 参数索引顺延
+            pstmt.setString(7, product.getProductStatus());
+            pstmt.setInt(8, product.getProductId());
+            pstmt.setInt(9, product.getMerchantId());
 
             int rows = pstmt.executeUpdate();
             return rows > 0;
@@ -372,46 +382,30 @@ public class ProductDAO {
     }
 
     // ==========================================
-    // ⭐ 新增：库存扣减方法 (用于下订单事务)
+    // 库存扣减方法
     // ==========================================
 
-    /**
-     * 扣减库存 (事务专用)
-     * 该方法不自己获取/关闭连接，而是使用传入的 Connection，以便参与 OrderDAO 的事务。
-     *
-     * @param conn 已经开启了事务的数据库连接
-     * @param productId 商品ID
-     * @param quantity 需要扣减的数量
-     * @throws SQLException 如果数据库错误或库存不足
-     */
     public void decreaseStock(Connection conn, int productId, int quantity) throws SQLException {
-        // SQL 逻辑：只有当当前库存 >= 购买数量时才执行更新
         String sql = "UPDATE Product SET Product_Stock_Quantity = Product_Stock_Quantity - ? " +
                 "WHERE Product_Id = ? AND Product_Stock_Quantity >= ?";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, quantity);
             pstmt.setInt(2, productId);
-            pstmt.setInt(3, quantity); // 再次传入数量作为判断条件
+            pstmt.setInt(3, quantity);
 
             int affectedRows = pstmt.executeUpdate();
 
             if (affectedRows == 0) {
-                // 如果没有行被更新，说明库存不足或者商品ID不存在
                 throw new SQLException("库存不足或商品不存在 (Product ID: " + productId + ")");
             }
         }
-        // 注意：这里不要关闭 conn，因为事务还没结束
     }
 
     // ==========================================
-    // ⭐ Admin review workflow
+    // Admin review workflow
     // ==========================================
 
-    /**
-     * Admin: list products waiting for review.
-     * Uses DB column Audit_Status = 'PENDING'.
-     */
     public List<ProductDTO> getProductsPendingReview() {
         List<ProductDTO> products = new ArrayList<>();
         String sql = "SELECT p.*, c.Category_Name, u.username as Merchant_Name, " +
@@ -454,11 +448,6 @@ public class ProductDAO {
         return products;
     }
 
-    /**
-     * Admin: approve/reject product.
-     * - approve: Audit_Status=APPROVED and Product_Status=ON_SALE
-     * - reject: Audit_Status=REJECTED and Product_Status=OFF_SALE
-     */
     public boolean updateProductAuditByAdmin(int productId, String auditStatus, String auditMessage) {
         String newProductStatus = "OFF_SALE";
         if ("APPROVED".equals(auditStatus)) {
@@ -481,7 +470,4 @@ public class ProductDAO {
             return false;
         }
     }
-
 }
-
-

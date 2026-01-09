@@ -207,6 +207,13 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label" for="whatsapp">
+                            <i class="ri-whatsapp-line" style="font-size: 1.1rem; vertical-align: middle; margin-right: 4px; color: #25D366;"></i>
+                            WhatsApp Contact <span>*</span>
+                        </label>
+                        <input id="whatsapp" type="text" name="contactWhatsapp" class="form-input" placeholder="e.g. 60123456789" required>
+                    </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label class="form-label" for="description">Description</label>
                         <textarea id="description" name="description" class="form-textarea" rows="5" placeholder="Describe your item..."></textarea>

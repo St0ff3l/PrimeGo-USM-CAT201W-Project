@@ -66,6 +66,9 @@ public class ProductActionServlet extends HttpServlet {
             String status = request.getParameter("productStatus");
             String description = request.getParameter("productDescription");
 
+            // ⭐ 获取 WhatsApp 联系方式
+            String whatsapp = request.getParameter("contactWhatsapp");
+
             Product product = new Product();
             product.setProductId(productId);
             product.setMerchantId(user.getId());
@@ -73,6 +76,10 @@ public class ProductActionServlet extends HttpServlet {
             product.setCategoryId(categoryId);
             product.setProductPrice(price);
             product.setProductStockQuantity(stock);
+
+            // ⭐ 设置 WhatsApp 到对象中
+            product.setContactWhatsapp(whatsapp);
+
             product.setProductStatus(status);
             product.setProductDescription(description);
 

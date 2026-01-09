@@ -11,6 +11,7 @@ public class Product {
     private String productDescription;
     private BigDecimal productPrice;
     private int productStockQuantity;
+    private String contactWhatsapp;
     private String productStatus; // 'ON_SALE', 'OFF_SALE'
     private Timestamp productCreatedAt;
     private Timestamp productUpdatedAt;
@@ -18,6 +19,7 @@ public class Product {
     // ✅ Admin audit fields (DB: Audit_Status, Audit_Message)
     private String auditStatus; // 'PENDING', 'APPROVED', 'REJECTED'
     private String auditMessage;
+
 
     // Constructors
     public Product() {}
@@ -34,6 +36,14 @@ public class Product {
     }
 
     // Getters and Setters
+    public String getContactWhatsapp() {
+        return contactWhatsapp;
+    }
+
+    public void setContactWhatsapp(String contactWhatsapp) {
+        this.contactWhatsapp = contactWhatsapp;
+    }
+
     public int getProductId() {
         return productId;
     }

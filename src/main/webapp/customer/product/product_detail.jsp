@@ -23,7 +23,7 @@
             ProductDAO productDAO = new ProductDAO();
             product = productDAO.getProductById(pid);
 
-            // ⭐ 新增：获取该商品的所有图片
+            // 获取该商品的所有图片
             ProductImageDAO imageDAO = new ProductImageDAO();
             imageList = imageDAO.getImagesByProductId(pid);
 
@@ -32,6 +32,7 @@
         }
     }
 
+    // 如果找不到商品，跳回首页
     if (product == null) {
         response.sendRedirect(request.getContextPath() + "/index.jsp");
         return;
@@ -48,7 +49,7 @@
         }
     }
 
-    // 获取当前登录用户
+    // 获取当前登录用户 (用于判断购物车/购买按钮状态)
     User currentUser = (User) session.getAttribute("user");
 %>
 
@@ -127,17 +128,16 @@
             justify-content: center;
             overflow: hidden;
             margin-bottom: 20px;
-            position: relative; /* 为绝对定位的按钮提供参照 */
+            position: relative;
         }
 
         .carousel-img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-            transition: opacity 0.3s ease; /* 淡入淡出效果 */
+            transition: opacity 0.3s ease;
         }
 
-        /* 左右切换按钮 */
         .carousel-btn {
             position: absolute;
             top: 50%;
@@ -153,14 +153,13 @@
             color: var(--text-dark);
             z-index: 10;
             transition: all 0.2s;
-            opacity: 0; /* 默认隐藏，悬停显示 */
+            opacity: 0;
         }
         .main-image-container:hover .carousel-btn { opacity: 1; }
         .carousel-btn:hover { background: var(--primary); color: white; }
         .prev-btn { left: 20px; }
         .next-btn { right: 20px; }
 
-        /* 底部指示点 */
         .carousel-indicators {
             display: flex;
             justify-content: center;
@@ -180,7 +179,7 @@
         .indicator.active { border-color: var(--primary); opacity: 1; transform: scale(1.1); }
 
 
-        /* --- 4. Info --- */
+        /* --- 4. Info Styles --- */
         .info-section {
             background: var(--pg-glass-bg);
             backdrop-filter: blur(var(--pg-glass-blur));
@@ -224,7 +223,7 @@
         .description-box h3 { margin-bottom: 10px; font-size: 1.1rem; }
         .description-box p { color: var(--text-gray); line-height: 1.7; }
 
-        /* --- 5. Seller Card --- */
+        /* --- 5. Seller Card (Enhanced) --- */
         .seller-card {
             display: flex;
             align-items: center;
@@ -242,9 +241,33 @@
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-weight: 700;
+            font-size: 1.2rem;
         }
 
-        /* --- 6. Buttons --- */
+        /* WhatsApp Button */
+        .btn-whatsapp {
+            margin-left: auto;
+            background-color: #25D366;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-whatsapp:hover {
+            background-color: #128C7E;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(37, 211, 102, 0.4);
+            color: white;
+        }
+
+        /* --- 6. Action Buttons --- */
         .action-group {
             display: flex;
             gap: 15px;
@@ -267,7 +290,6 @@
             border: none;
         }
 
-        /* Add to Cart - 深色风格 */
         .btn-cart {
             background: var(--dark-btn);
             color: white;
@@ -279,7 +301,6 @@
             box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
         }
 
-        /* Buy Now - 橙色风格 */
         .btn-buy {
             background: var(--primary);
             color: white;
@@ -323,9 +344,9 @@
         </div>
 
         <div class="info-section">
-                <span class="condition-tag">
-                    <i class="ri-shield-check-line"></i> <%= statusDisplay %>
-                </span>
+            <span class="condition-tag">
+                <i class="ri-shield-check-line"></i> <%= statusDisplay %>
+            </span>
 
             <h1 class="product-title"><%= product.getProductName() %></h1>
 
@@ -338,9 +359,26 @@
                     <%= (product.getMerchantName() != null && product.getMerchantName().length() > 0) ? product.getMerchantName().substring(0,1).toUpperCase() : "S" %>
                 </div>
                 <div>
-                    <div style="font-weight: 600;"><%= product.getMerchantName() %></div>
+                    <div style="font-weight: 600; font-size: 1.05rem;"><%= product.getMerchantName() %></div>
                     <div style="font-size: 0.8rem; color: var(--text-gray);">Official Merchant</div>
+
+                    <%-- ⭐ 号码展示区域 --%>
+                    <% if (product.getContactWhatsapp() != null && !product.getContactWhatsapp().trim().isEmpty()) { %>
+                    <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px; color: #25D366; font-weight: 500; font-size: 0.9rem;">
+                        <i class="ri-whatsapp-fill"></i>
+                        <span><%= product.getContactWhatsapp() %></span>
+                    </div>
+                    <% } %>
                 </div>
+
+                <%-- ⭐ Chat 按钮 (点击跳转) --%>
+                <% if (product.getContactWhatsapp() != null && !product.getContactWhatsapp().trim().isEmpty()) { %>
+                <a href="https://wa.me/<%= product.getContactWhatsapp().replaceAll("[^0-9]", "") %>"
+                   target="_blank" class="btn-whatsapp">
+                    Chat
+                    <i class="ri-arrow-right-up-line"></i>
+                </a>
+                <% } %>
             </div>
 
             <div class="description-box">
@@ -388,7 +426,6 @@
         <% } %>
     ];
 
-    // 如果没有图片，放一张默认图
     if (productImages.length === 0) {
         productImages.push("https://via.placeholder.com/600x600?text=No+Image");
     }
@@ -398,40 +435,25 @@
     const indicatorsContainer = document.getElementById('indicators');
 
     function renderGallery() {
-        // 淡出
         mainImage.style.opacity = 0;
-
         setTimeout(() => {
             mainImage.src = productImages[currentIndex];
-            mainImage.style.opacity = 1; // 淡入
+            mainImage.style.opacity = 1;
         }, 150);
 
-        // 渲染底部缩略图
         indicatorsContainer.innerHTML = '';
         productImages.forEach((src, idx) => {
             const div = document.createElement('div');
-            // 注意反斜杠 \${} 防止 JSP 报错
             div.className = `indicator \${idx === currentIndex ? 'active' : ''}`;
             div.innerHTML = `<img src="\${src}" alt="Thumb">`;
-            div.onclick = () => {
-                currentIndex = idx;
-                renderGallery();
-            };
+            div.onclick = () => { currentIndex = idx; renderGallery(); };
             indicatorsContainer.appendChild(div);
         });
     }
 
-    function prevImage() {
-        currentIndex = (currentIndex === 0) ? productImages.length - 1 : currentIndex - 1;
-        renderGallery();
-    }
+    function prevImage() { currentIndex = (currentIndex === 0) ? productImages.length - 1 : currentIndex - 1; renderGallery(); }
+    function nextImage() { currentIndex = (currentIndex === productImages.length - 1) ? 0 : currentIndex + 1; renderGallery(); }
 
-    function nextImage() {
-        currentIndex = (currentIndex === productImages.length - 1) ? 0 : currentIndex + 1;
-        renderGallery();
-    }
-
-    // 初始化
     renderGallery();
 </script>
 

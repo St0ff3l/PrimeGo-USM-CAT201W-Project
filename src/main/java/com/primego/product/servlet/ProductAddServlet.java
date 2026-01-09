@@ -49,6 +49,7 @@ public class ProductAddServlet extends HttpServlet {
             String categoryIdStr = request.getParameter("categoryId");
             String priceStr = request.getParameter("price");
             String stockStr = request.getParameter("stock");
+            String whatsapp = request.getParameter("contactWhatsapp");
             String description = request.getParameter("description");
 
             // 2. Validate and Parse
@@ -64,6 +65,7 @@ public class ProductAddServlet extends HttpServlet {
             product.setProductDescription(description);
             product.setProductPrice(price);
             product.setProductStockQuantity(stock);
+            product.setContactWhatsapp(whatsapp);
 
             // ✅ DB schema note:
             // Product_Status is enum('ON_SALE','OFF_SALE'), so we can’t store PENDING here.

@@ -299,6 +299,18 @@
                                 <label class="form-label">Stock</label>
                                 <input type="number" name="productStock" class="form-control" step="1" min="0" value="<%= product.getProductStockQuantity() %>" required>
                             </div>
+
+                            <%-- ⭐ 新增：WhatsApp 联系方式 (回显数据) ⭐ --%>
+                            <div class="form-group col-span-2">
+                                <label class="form-label">
+                                    <i class="ri-whatsapp-line" style="font-size: 1.1rem; vertical-align: middle; margin-right: 4px; color: #25D366;"></i>
+                                    WhatsApp Contact
+                                </label>
+                                <input type="text" name="contactWhatsapp" class="form-control"
+                                       placeholder="e.g. 60123456789"
+                                       value="<%= product.getContactWhatsapp() != null ? product.getContactWhatsapp() : "" %>" required>
+                            </div>
+                            <%-- ⭐ 结束新增 ⭐ --%>
                         </div>
                     </div>
 
@@ -385,4 +397,3 @@
 
 </body>
 </html>
-
