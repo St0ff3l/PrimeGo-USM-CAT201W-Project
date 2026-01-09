@@ -169,12 +169,10 @@
                         <div class="txn-left-sub">
                             User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
 
-                            <!-- ⭐ 显示图片链接 (智能判断文件夹) -->
+                            <!-- ⭐ 显示图片链接 (直接使用数据库中的相对路径) -->
                             <c:if test="${not empty txn.receiptImage}">
                                 <br>
-                                <c:set var="folderName" value="${txn.transactionType == 'WITHDRAW' ? 'Withdraw_Photos' : 'Recharge_Photos'}" />
-
-                                <a href="${pageContext.request.contextPath}/assets/images/${folderName}/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
+                                <a href="${pageContext.request.contextPath}/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
                                     <i class="${txn.transactionType == 'WITHDRAW' ? 'ri-qr-code-line' : 'ri-image-line'}"></i>
                                         ${txn.transactionType == 'WITHDRAW' ? 'View QR Code' : 'View Receipt'}
                                 </a>

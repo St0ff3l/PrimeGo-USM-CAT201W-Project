@@ -46,7 +46,7 @@ public class WithdrawServlet extends HttpServlet {
             BigDecimal currentBalance = walletDAO.getBalance(user.getId());
             if (currentBalance.compareTo(amount) < 0) {
                 request.setAttribute("error", "Insufficient balance.");
-                request.getRequestDispatcher("/common/wallet/withdraw.jsp").forward(request, response);
+                request.getRequestDispatcher("/public/wallet/withdraw.jsp").forward(request, response);
                 return;
             }
 
@@ -64,18 +64,35 @@ public class WithdrawServlet extends HttpServlet {
                 }
                 fileName = UUID.randomUUID().toString() + fileExt;
 
-                // ⭐ 修改点：保存到 Withdraw_Photos 文件夹
-                String uploadPath = getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "Withdraw_Photos";
+                // ⭐ 修改点：保存到 withdrawphotos 文件夹
+                // 1. 部署目录
+                String uploadPath = getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "withdrawphotos";
+                
+                // 2. 源码目录
+                String projectPath = "/Users/zhangyifei/IdeaProjects/PrimeGo-USM-CAT201W-Project/src/main/webapp/assets/images/withdrawphotos";
 
                 // 自动创建文件夹
                 File uploadDir = new File(uploadPath);
                 if (!uploadDir.exists()) uploadDir.mkdirs();
+                
+                File sourceDir = new File(projectPath);
+                if (!sourceDir.exists()) sourceDir.mkdirs();
 
-                // 保存文件
+                // 保存文件到部署目录
                 filePart.write(uploadPath + File.separator + fileName);
+                
+                // 复制到源码目录
+                try {
+                    java.nio.file.Files.copy(
+                        new File(uploadPath + File.separator + fileName).toPath(),
+                        new File(projectPath + File.separator + fileName).toPath()
+                    );
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } else {
                 request.setAttribute("error", "Please upload your QR Code.");
-                request.getRequestDispatcher("/common/wallet/withdraw.jsp").forward(request, response);
+                request.getRequestDispatcher("/public/wallet/withdraw.jsp").forward(request, response);
                 return;
             }
 
@@ -85,23 +102,24 @@ public class WithdrawServlet extends HttpServlet {
             transaction.setAmount(amount);
             transaction.setStatus("PENDING");
             transaction.setTransactionType("WITHDRAW");
-            transaction.setReceiptImage(fileName); // 存入文件名
+            // 保存相对路径
+            transaction.setReceiptImage("assets/images/withdrawphotos/" + fileName);
 
             // 5. 保存到数据库
             boolean success = walletDAO.requestWithdraw(transaction);
 
             if (success) {
                 session.setAttribute("message", "Withdrawal request submitted! QR Code uploaded.");
-                response.sendRedirect(request.getContextPath() + "/common/wallet/wallet.jsp");
+                response.sendRedirect(request.getContextPath() + "/public/wallet/wallet.jsp");
             } else {
                 request.setAttribute("error", "Failed to submit request.");
-                request.getRequestDispatcher("/common/wallet/withdraw.jsp").forward(request, response);
+                request.getRequestDispatcher("/public/wallet/withdraw.jsp").forward(request, response);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "System error: " + e.getMessage());
-            request.getRequestDispatcher("/common/wallet/withdraw.jsp").forward(request, response);
+            request.getRequestDispatcher("/public/wallet/withdraw.jsp").forward(request, response);
         }
     }
 }
