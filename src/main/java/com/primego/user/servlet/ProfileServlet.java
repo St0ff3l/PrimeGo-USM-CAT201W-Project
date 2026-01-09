@@ -37,8 +37,15 @@ public class ProfileServlet extends HttpServlet {
                 // Fetch addresses for the new Addresses tab
                 req.setAttribute("addresses", new com.primego.user.dao.AddressDAO().getAddressesByUserId(userId));
 
-                // 获取历史订单并存入 request
-                req.setAttribute("orderList", orderDAO.getOrdersByUserId(userId));
+                // Handle Order Filtering
+                String status = req.getParameter("status");
+                if (status != null && !status.isEmpty() && !"ALL".equals(status)) {
+                    req.setAttribute("orderList", orderDAO.getOrdersByUserIdAndStatus(userId, status));
+                    req.setAttribute("currentStatus", status);
+                } else {
+                    req.setAttribute("orderList", orderDAO.getOrdersByUserId(userId));
+                    req.setAttribute("currentStatus", "ALL");
+                }
 
                 req.getRequestDispatcher("/customer/user/customer_profile.jsp").forward(req, resp);
                 break;

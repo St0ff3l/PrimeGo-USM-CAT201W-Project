@@ -164,6 +164,26 @@ public class OrderDAO {
         return orderList;
     }
 
+    /**
+     * Get orders by user ID and status
+     */
+    public List<Order> getOrdersByUserIdAndStatus(int userId, String status) {
+        List<Order> orderList = new ArrayList<>();
+        String sql = "SELECT * FROM Orders WHERE Customer_Id = ? AND Orders_Order_Status = ? ORDER BY Orders_Created_At DESC";
+        try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setString(2, status);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Order order = mapRowToOrder(rs);
+                    order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
+                    orderList.add(order);
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return orderList;
+    }
+
     public List<Order> getOrdersByMerchantId(int merchantId) {
         List<Order> orderList = new ArrayList<>();
         // DISTINCT 确保同一个订单如果包含多个该商家的商品，只显示一次

@@ -328,6 +328,38 @@
             transform: translateY(-2px);
             /* Subtle lift on focus */
         }
+
+        /* Order Tabs */
+        .order-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .order-tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            color: #555;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.3s;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+
+        .order-tab:hover {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .order-tab.active {
+            background: #e68a00;
+            color: white;
+            box-shadow: 0 4px 10px rgba(230, 138, 0, 0.3);
+        }
     </style>
 </head>
 
@@ -552,11 +584,11 @@
         <div class="glass-panel">
             <h3 style="margin-bottom: 20px; color: #e68a00;">My Orders</h3>
             <div class="order-status-grid">
-                <div class="status-item">
+                <div class="status-item" onclick="window.location.href='${pageContext.request.contextPath}/profile?tab=orders&status=PAID'">
                     <i class="ri-box-3-line status-icon"></i>
                     <span class="status-label">To Ship</span>
                 </div>
-                <div class="status-item">
+                <div class="status-item" onclick="window.location.href='${pageContext.request.contextPath}/profile?tab=orders&status=SHIPPED'">
                     <i class="ri-truck-line status-icon"></i>
                     <span class="status-label">To Receive</span>
                 </div>
@@ -756,6 +788,14 @@
     <div id="orders" class="tab-content">
         <div class="header-section">
             <h1>Order History</h1>
+        </div>
+
+        <div class="order-tabs">
+            <a href="${pageContext.request.contextPath}/profile?tab=orders&status=ALL" class="order-tab ${currentStatus == 'ALL' || currentStatus == null ? 'active' : ''}">All</a>
+            <a href="${pageContext.request.contextPath}/profile?tab=orders&status=PAID" class="order-tab ${currentStatus == 'PAID' ? 'active' : ''}">To Ship</a>
+            <a href="${pageContext.request.contextPath}/profile?tab=orders&status=SHIPPED" class="order-tab ${currentStatus == 'SHIPPED' ? 'active' : ''}">To Receive</a>
+            <a href="${pageContext.request.contextPath}/profile?tab=orders&status=COMPLETED" class="order-tab ${currentStatus == 'COMPLETED' ? 'active' : ''}">Completed</a>
+            <a href="${pageContext.request.contextPath}/profile?tab=orders&status=CANCELLED" class="order-tab ${currentStatus == 'CANCELLED' ? 'active' : ''}">Cancelled</a>
         </div>
 
         <c:choose>
