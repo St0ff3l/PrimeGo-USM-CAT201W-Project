@@ -391,7 +391,7 @@
 
                                         <%-- D: 拒绝次数 >= 2 -> 强制联系 WhatsApp (也应用了统一样式) --%>
                                         <c:when test="${order.rejectionCount >= 2}">
-                                            <a href="https://wa.me/60123456789?text=Order%20ID%3A%20${order.ordersId}.%20My%20return%20was%20rejected%20twice."
+                                            <a href="https://wa.me/6001114489511?text=Order%20ID%3A%20${order.ordersId}.%20My%20return%20was%20rejected%20twice."
                                                target="_blank"
                                                class="btn-whatsapp-action">
                                                 <i class="ri-whatsapp-line" style="font-size: 1.1rem;"></i> Contact Support
