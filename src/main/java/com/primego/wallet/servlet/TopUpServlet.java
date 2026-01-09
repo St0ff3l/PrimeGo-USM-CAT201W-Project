@@ -3,6 +3,7 @@ package com.primego.wallet.servlet;
 import com.primego.wallet.dao.WalletDAO;
 import com.primego.wallet.model.WalletTransaction;
 import com.primego.user.model.User;
+import com.primego.common.util.PathUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -46,9 +47,12 @@ public class TopUpServlet extends HttpServlet {
             // 1. 获取部署目录路径 (用于当前运行)
             String uploadPath = request.getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "rechargephotos";
             
-            // 2. 获取源码目录路径 (用于持久化保存) - 假设项目结构是标准的 Maven 结构
-            // 注意：这里硬编码了项目路径，实际生产环境不建议这样做，但为了开发方便
-            String projectPath = "/Users/zhangyifei/IdeaProjects/PrimeGo-USM-CAT201W-Project/src/main/webapp/assets/images/rechargephotos";
+            // 2. 获取源码目录路径 (用于持久化保存) - 使用 PathUtil
+            String projectPath = PathUtil.getUploadDir(request.getServletContext(), "rechargephotos");
+
+            // DEBUG LOGGING
+            System.out.println("[TopUpServlet] Upload Dir (Runtime): " + uploadPath);
+            System.out.println("[TopUpServlet] Source Dir (Local): " + projectPath);
 
             File uploadDir = new File(uploadPath);
             if (!uploadDir.exists()) uploadDir.mkdirs(); // 如果目录不存在，自动创建
@@ -64,15 +68,17 @@ public class TopUpServlet extends HttpServlet {
             filePart.write(uploadPath + File.separator + uniqueFileName);
             
             // 保存到源码目录 (需要手动复制流，或者再次写入)
-            // 由于 Part.write 可能会删除临时文件，所以最好是先写入一个，再复制
-            // 或者使用 Files.copy
-            try {
-                java.nio.file.Files.copy(
-                    new File(uploadPath + File.separator + uniqueFileName).toPath(),
-                    new File(projectPath + File.separator + uniqueFileName).toPath()
-                );
-            } catch (Exception e) {
-                e.printStackTrace(); // 忽略源码目录写入失败，不影响主流程
+            // 只有当 projectPath 和 uploadPath 不一致时才复制 (防止 PathUtil 回退到运行时目录导致报错)
+            if (!new File(uploadPath).getAbsolutePath().equals(new File(projectPath).getAbsolutePath())) {
+                try {
+                    java.nio.file.Files.copy(
+                        new File(uploadPath + File.separator + uniqueFileName).toPath(),
+                        new File(projectPath + File.separator + uniqueFileName).toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                    );
+                } catch (Exception e) {
+                    e.printStackTrace(); // 忽略源码目录写入失败，不影响主流程
+                }
             }
 
             // 4. 保存到数据库

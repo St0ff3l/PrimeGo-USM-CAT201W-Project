@@ -5,6 +5,7 @@ import com.primego.product.dao.ProductImageDAO;
 import com.primego.product.model.Product;
 import com.primego.product.model.ProductImage;
 import com.primego.user.model.User;
+import com.primego.common.util.PathUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -109,7 +110,13 @@ public class ProductActionServlet extends HttpServlet {
                 File uploadDirFile = new File(uploadDir);
                 if (!uploadDirFile.exists()) uploadDirFile.mkdirs();
 
-                String sourceDir = "/Users/zhangyifei/IdeaProjects/PrimeGo-USM-CAT201W-Project/src/main/webapp/assets/images/products";
+                // 使用 PathUtil 获取源码目录
+                String sourceDir = PathUtil.getUploadDir(getServletContext(), "products");
+                
+                // DEBUG LOGGING
+                System.out.println("[ProductActionServlet] Upload Dir (Runtime): " + uploadDir);
+                System.out.println("[ProductActionServlet] Source Dir (Local): " + sourceDir);
+                
                 File sourceDirFile = new File(sourceDir);
                 if (!sourceDirFile.exists()) sourceDirFile.mkdirs();
 
@@ -123,15 +130,17 @@ public class ProductActionServlet extends HttpServlet {
                         String filePath = uploadDir + File.separator + fileName;
                         part.write(filePath);
 
-                        // 保存到本地源码目录
-                        try {
-                            java.nio.file.Files.copy(
-                                    new File(filePath).toPath(),
-                                    new File(sourceDir + File.separator + fileName).toPath(),
-                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
-                            );
-                        } catch (Exception e) {
-                            System.err.println("Local copy failed: " + e.getMessage());
+                        // 保存到本地源码目录 (如果不同)
+                        if (!new File(uploadDir).getAbsolutePath().equals(new File(sourceDir).getAbsolutePath())) {
+                            try {
+                                java.nio.file.Files.copy(
+                                        new File(filePath).toPath(),
+                                        new File(sourceDir + File.separator + fileName).toPath(),
+                                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                                );
+                            } catch (Exception e) {
+                                System.err.println("Local copy failed: " + e.getMessage());
+                            }
                         }
 
                         // 插入数据库 (新上传的默认为非主图 false)

@@ -3,6 +3,7 @@ package com.primego.wallet.servlet;
 import com.primego.wallet.dao.WalletDAO;
 import com.primego.wallet.model.WalletTransaction;
 import com.primego.user.model.User;
+import com.primego.common.util.PathUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -68,8 +69,12 @@ public class WithdrawServlet extends HttpServlet {
                 // 1. 部署目录
                 String uploadPath = getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "withdrawphotos";
                 
-                // 2. 源码目录
-                String projectPath = "/Users/zhangyifei/IdeaProjects/PrimeGo-USM-CAT201W-Project/src/main/webapp/assets/images/withdrawphotos";
+                // 2. 源码目录 - 使用 PathUtil
+                String projectPath = PathUtil.getUploadDir(getServletContext(), "withdrawphotos");
+
+                // DEBUG LOGGING
+                System.out.println("[WithdrawServlet] Upload Dir (Runtime): " + uploadPath);
+                System.out.println("[WithdrawServlet] Source Dir (Local): " + projectPath);
 
                 // 自动创建文件夹
                 File uploadDir = new File(uploadPath);
@@ -82,13 +87,16 @@ public class WithdrawServlet extends HttpServlet {
                 filePart.write(uploadPath + File.separator + fileName);
                 
                 // 复制到源码目录
-                try {
-                    java.nio.file.Files.copy(
-                        new File(uploadPath + File.separator + fileName).toPath(),
-                        new File(projectPath + File.separator + fileName).toPath()
-                    );
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (!new File(uploadPath).getAbsolutePath().equals(new File(projectPath).getAbsolutePath())) {
+                    try {
+                        java.nio.file.Files.copy(
+                            new File(uploadPath + File.separator + fileName).toPath(),
+                            new File(projectPath + File.separator + fileName).toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                        );
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             } else {
                 request.setAttribute("error", "Please upload your QR Code.");

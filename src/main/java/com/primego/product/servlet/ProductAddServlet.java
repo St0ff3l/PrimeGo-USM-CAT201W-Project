@@ -5,6 +5,7 @@ import com.primego.product.dao.ProductImageDAO; // 1. 引入类
 import com.primego.product.model.Product;
 import com.primego.product.model.ProductImage;
 import com.primego.user.model.User;
+import com.primego.common.util.PathUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -86,8 +87,13 @@ public class ProductAddServlet extends HttpServlet {
                 File uploadDirFile = new File(uploadDir);
                 if (!uploadDirFile.exists()) uploadDirFile.mkdirs();
 
-                // Use a portable source dir inside project instead of hard-coded user path
-                String sourceDir = request.getServletContext().getRealPath("/") + File.separator + "assets" + File.separator + "images" + File.separator + "products";
+                // Use PathUtil to get the persistent source directory
+                String sourceDir = PathUtil.getUploadDir(getServletContext(), "products");
+                
+                // DEBUG LOGGING
+                System.out.println("[ProductAddServlet] Upload Dir (Runtime): " + uploadDir);
+                System.out.println("[ProductAddServlet] Source Dir (Local): " + sourceDir);
+                
                 File sourceDirFile = new File(sourceDir);
                 if (!sourceDirFile.exists()) sourceDirFile.mkdirs();
 
@@ -104,15 +110,17 @@ public class ProductAddServlet extends HttpServlet {
                         String filePath = uploadDir + File.separator + fileName;
                         part.write(filePath);
 
-                        // B. Save to Source
-                        try {
-                            java.nio.file.Files.copy(
-                                    new File(filePath).toPath(),
-                                    new File(sourceDir + File.separator + fileName).toPath(),
-                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
-                            );
-                        } catch (Exception e) {
-                            System.err.println("Failed to copy to local source dir: " + e.getMessage());
+                        // B. Save to Source (only if different)
+                        if (!new File(uploadDir).getAbsolutePath().equals(new File(sourceDir).getAbsolutePath())) {
+                            try {
+                                java.nio.file.Files.copy(
+                                        new File(filePath).toPath(),
+                                        new File(sourceDir + File.separator + fileName).toPath(),
+                                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                                );
+                            } catch (Exception e) {
+                                System.err.println("Failed to copy to local source dir: " + e.getMessage());
+                            }
                         }
 
                         // C. Insert into DB
