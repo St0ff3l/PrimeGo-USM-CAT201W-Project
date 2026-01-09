@@ -106,6 +106,7 @@
 
 <%@ include file="../../common/background.jsp" %>
 <%@ include file="../../common/layout/header_bar.jsp" %>
+<%@ include file="../../common/confirm_modal.jsp" %>
 
 <div class="container">
     <h1 class="page-title">My Cart <span style="font-size:1rem; color:#666; font-weight:400;">(<%= items.size() %> Items)</span></h1>
@@ -187,7 +188,7 @@
 
                 <div class="item-price" data-price="<%= item.getTotalPrice() %>">RM <%= String.format("%.2f", item.getTotalPrice()) %></div>
             </div>
-            <a href="${pageContext.request.contextPath}/cart_action?action=remove&productId=<%= item.getProduct().getProductId() %>" class="btn-delete" onclick="return confirm('Remove this item?')">×</a>
+            <a href="#" class="btn-delete" onclick="event.preventDefault(); showConfirmModal('${pageContext.request.contextPath}/cart_action?action=remove&productId=<%= item.getProduct().getProductId() %>')">×</a>
         </div>
         <%
                 }

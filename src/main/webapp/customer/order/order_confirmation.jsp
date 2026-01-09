@@ -180,14 +180,14 @@
             border: 1px solid #ccc; text-align: center; font-size: 1.5rem;
             font-weight: bold; color: #333; outline: none; transition: 0.3s;
         }
-        .pin-digit:focus { border-color: #7b61ff; box-shadow: 0 0 0 4px rgba(123, 97, 255, 0.2); }
+        .pin-digit:focus { border-color: #FF9500; box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.2); }
 
         .btn-modal-confirm {
-            background: #7b61ff; color: white; border: none; padding: 12px 40px;
+            background: #FF9500; color: white; border: none; padding: 12px 40px;
             border-radius: 30px; font-weight: 600; cursor: pointer; width: 100%;
             font-size: 1rem; transition: 0.3s; margin-top: 10px;
         }
-        .btn-modal-confirm:hover { background: #6a50e0; transform: translateY(-2px); }
+        .btn-modal-confirm:hover { background: #e68600; transform: translateY(-2px); }
 
         .btn-modal-cancel {
             background: transparent; border: 1px solid #ccc; color: #666;
@@ -329,6 +329,12 @@
         <div class="modal-icon">🔒</div>
         <h2 style="color:#333; margin-bottom:5px;">Enter Payment PIN</h2>
         <p style="color:#666; font-size:0.9rem;">Please enter your 6-digit PIN to confirm.</p>
+
+        <% if(request.getAttribute("errorMessage") != null) { %>
+        <p style="color: #FF3B30; font-size: 0.9rem; margin-top: 10px; font-weight: 600; background: #ffebee; padding: 8px; border-radius: 8px;">
+            <i class="ri-error-warning-line"></i> <%= request.getAttribute("errorMessage") %>
+        </p>
+        <% } %>
 
         <div class="pin-input-container">
             <% for(int i=0; i<6; i++) { %>
