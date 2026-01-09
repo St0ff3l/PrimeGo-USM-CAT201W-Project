@@ -3,6 +3,7 @@
 <%@ page import="com.primego.product.model.ProductDTO" %>
 <%@ page import="com.primego.product.dao.CategoryDAO" %>
 <%@ page import="com.primego.product.model.Category" %>
+<%@ page import="com.primego.user.model.User" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%
@@ -60,6 +61,9 @@
     // Fetch Categories for Sidebar
     CategoryDAO categoryDAO = new CategoryDAO();
     List<Category> categories = categoryDAO.findAll();
+
+    // Get current user
+    User currentUser = (User) session.getAttribute("user");
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -186,6 +190,7 @@
 
 <%@ include file="../../common/background.jsp" %>
 <%@ include file="../../common/layout/header_bar.jsp" %>
+<%@ include file="../../common/login_check_modal.jsp" %>
 
 <div class="search-bar-container">
     <form action="search_result.jsp" method="get">
@@ -257,7 +262,7 @@
                                 : (p.getProductDescription() != null ? p.getProductDescription() : "") %>
                     </p>
                     <%-- 注意：为了防止点击按钮也触发卡片的跳转，可以加上 stopPropagation --%>
-                    <div onclick="event.preventDefault(); window.location.href='${pageContext.request.contextPath}/cart_action?action=add&productId=<%= p.getProductId() %>';" class="btn-add-cart">
+                    <div onclick="event.preventDefault(); addToCart(<%= p.getProductId() %>);" class="btn-add-cart">
                         Add to Cart
                     </div>
                 </div>
@@ -269,6 +274,18 @@
         </div>
     </main>
 </div>
+
+<script>
+    const isLoggedIn = <%= currentUser != null %>;
+
+    function addToCart(productId) {
+        if (!isLoggedIn) {
+            showLoginModal();
+            return;
+        }
+        window.location.href = "${pageContext.request.contextPath}/cart_action?action=add&productId=" + productId;
+    }
+</script>
 
 </body>
 </html>

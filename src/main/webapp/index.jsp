@@ -224,6 +224,7 @@
 <%-- 引入通用组件 --%>
 <%@ include file="common/background.jsp" %>
 <%@ include file="common/layout/header_bar.jsp" %>
+<%@ include file="common/login_check_modal.jsp" %>
 
 <section class="hero glass-panel">
   <h1>Welcome to PrimeGo<br>Premium Marketplace</h1>
@@ -293,12 +294,17 @@
 
 <script>
   window.count = 0;
+  const isLoggedIn = <%= __idxUser != null %>;
 
   /**
    * 添加到购物车逻辑
    * @param {number} productId - 商品ID
    */
   function addToCart(productId) {
+    if (!isLoggedIn) {
+      showLoginModal();
+      return;
+    }
     // 假设你的 Servlet 映射为 /cart_action，并且接受 add 动作
     // 如果未登录，后端 Servlet 应该处理重定向或 Session 存储
     window.location.href = "${pageContext.request.contextPath}/cart_action?action=add&productId=" + productId + "&quantity=1";
