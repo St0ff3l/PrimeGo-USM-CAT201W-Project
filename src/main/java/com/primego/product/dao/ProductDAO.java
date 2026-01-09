@@ -39,6 +39,8 @@ public class ProductDAO {
                     product.setProductPrice(rs.getBigDecimal("Product_Price"));
                     product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
                     product.setProductStatus(rs.getString("Product_Status"));
+                    product.setAuditStatus(rs.getString("Audit_Status"));
+                    product.setAuditMessage(rs.getString("Audit_Message"));
                     product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
                     product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
 
@@ -348,10 +350,11 @@ public class ProductDAO {
     // ==========================================
 
     public boolean updateProduct(Product product) {
-        // ⭐ 修改后的 SQL，包含 Contact_Whatsapp = ?
+        // ⭐ 修改后的 SQL，包含 Contact_Whatsapp = ?, Audit_Status = ?, Audit_Message = ?
         String sql = "UPDATE Product SET " +
                 "Category_Id = ?, Product_Name = ?, Product_Description = ?, " +
                 "Product_Price = ?, Product_Stock_Quantity = ?, Contact_Whatsapp = ?, Product_Status = ?, " +
+                "Audit_Status = ?, Audit_Message = ?, " +
                 "Product_Updated_At = NOW() " +
                 "WHERE Product_Id = ? AND Merchant_Id = ?";
 
@@ -369,8 +372,13 @@ public class ProductDAO {
 
             // ⭐ 参数索引顺延
             pstmt.setString(7, product.getProductStatus());
-            pstmt.setInt(8, product.getProductId());
-            pstmt.setInt(9, product.getMerchantId());
+            
+            // ⭐ 新增 Audit 字段
+            pstmt.setString(8, product.getAuditStatus());
+            pstmt.setString(9, product.getAuditMessage());
+            
+            pstmt.setInt(10, product.getProductId());
+            pstmt.setInt(11, product.getMerchantId());
 
             int rows = pstmt.executeUpdate();
             return rows > 0;
@@ -414,7 +422,7 @@ public class ProductDAO {
                 "LEFT JOIN Category c ON p.Category_Id = c.Category_Id " +
                 "LEFT JOIN users u ON p.Merchant_Id = u.id " +
                 "WHERE p.Audit_Status = 'PENDING' " +
-                "ORDER BY p.Product_Created_At DESC";
+                "ORDER BY p.Product_Updated_At DESC";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql);

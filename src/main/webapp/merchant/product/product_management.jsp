@@ -195,6 +195,9 @@
         }
         .status-active { background: #ECFDF5; color: #10B981; }
         .status-inactive { background: #FEF2F2; color: #EF4444; }
+        .status-review { background: #FFF4E6; color: #FF9500; }
+        .status-out-stock { background: #F3F4F6; color: #636E72; }
+        .status-rejected { background: #FFEBEB; color: #C0392B; }
 
         .card-info { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
         .card-category { font-size: 0.8rem; color: var(--text-gray); margin-bottom: 5px; }
@@ -253,7 +256,9 @@
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                <option value="out_stock">Out of Stock</option>
                 <option value="review">Under Review</option>
+                <option value="rejected">Rejected</option>
             </select>
         </div>
 
@@ -270,20 +275,35 @@
             } else {
                 int index = 0;
                 for (ProductDTO p : productList) {
-                    // 缺货(<=0)的商品一律当作 inactive 显示
-                    boolean isOutOfStock = p.getProductStockQuantity() <= 0;
+                    // 状态判断逻辑
+                    String displayStatus = "";
+                    String statusClass = "";
+                    String statusValueForUi = "";
 
-                    boolean isOnSale = "ON_SALE".equals(p.getProductStatus());
-                    boolean isActiveForUi = isOnSale && !isOutOfStock;
-
-                    String statusClass = isActiveForUi ? "status-active" : "status-inactive";
-                    String statusText = isActiveForUi ? "Active" : "Inactive";
+                    if ("PENDING".equals(p.getAuditStatus())) {
+                        displayStatus = "Under Review";
+                        statusClass = "status-review";
+                        statusValueForUi = "review";
+                    } else if ("REJECTED".equals(p.getAuditStatus())) {
+                        displayStatus = "Rejected";
+                        statusClass = "status-rejected";
+                        statusValueForUi = "rejected";
+                    } else if (p.getProductStockQuantity() <= 0) {
+                        displayStatus = "Out of Stock";
+                        statusClass = "status-out-stock";
+                        statusValueForUi = "out_stock";
+                    } else if ("OFF_SALE".equals(p.getProductStatus())) {
+                        displayStatus = "Inactive";
+                        statusClass = "status-inactive";
+                        statusValueForUi = "inactive";
+                    } else {
+                        displayStatus = "Active";
+                        statusClass = "status-active";
+                        statusValueForUi = "active";
+                    }
 
                     // 动画延迟
                     String delayStyle = String.format("animation-delay: %.1fs;", 0.2 + (index * 0.1));
-
-                    // 给前端筛选使用
-                    String statusValueForUi = isActiveForUi ? "active" : "inactive";
             %>
             <div class="product-card"
                  style="<%= delayStyle %>"
@@ -292,7 +312,7 @@
                  onclick="window.location.href='product_edit.jsp?id=<%= p.getProductId() %>'">
 
                 <span class="status-badge <%= statusClass %>">
-                    <%= statusText %>
+                    <%= displayStatus %>
                 </span>
 
                 <div class="card-img-container">

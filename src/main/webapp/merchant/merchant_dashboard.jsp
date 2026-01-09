@@ -385,7 +385,7 @@
                     <div class="metric-val"><%= completedCount %></div>
                     <div class="metric-label">Completed</div>
                 </div>
-                <div class="metric-card" onclick="location.href='${pageContext.request.contextPath}/merchant/order/order_management?filter=all'" style="cursor:pointer;">
+                <div class="metric-card" onclick="location.href='${pageContext.request.contextPath}/merchant/product/product_management.jsp'" style="cursor:pointer;">
                     <div class="metric-val"><%= lowStockCount %></div>
                     <div class="metric-label">Low Stock</div>
                 </div>

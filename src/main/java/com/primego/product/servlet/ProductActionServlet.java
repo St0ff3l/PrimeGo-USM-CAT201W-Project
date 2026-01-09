@@ -81,7 +81,11 @@ public class ProductActionServlet extends HttpServlet {
             // ⭐ 设置 WhatsApp 到对象中
             product.setContactWhatsapp(whatsapp);
 
-            product.setProductStatus(status);
+            // ⭐ 强制重置审核状态为 PENDING，并下架商品 (防止修改后绕过审核)
+            product.setProductStatus("OFF_SALE");
+            product.setAuditStatus("PENDING");
+            product.setAuditMessage(null); // 清空之前的审核消息
+
             product.setProductDescription(description);
 
             boolean updateSuccess = productDAO.updateProduct(product);
