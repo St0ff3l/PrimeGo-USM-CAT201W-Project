@@ -646,6 +646,9 @@
                                             provide a seamless premium shopping experience. This project demonstrates
                                             full-stack Java web development capabilities including user management,
                                             product handling, and secure transactions.
+                                            <br><br>
+                                            1. If you are a user, please contact: User@PrimeGo.com<br>
+                                            2. If you want to become a merchant, please contact: Merchant@PrimeGo.com
                                         </p>
 
                                         <ul class="team-list">
