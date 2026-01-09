@@ -66,6 +66,113 @@
         .btn-submit-refund:hover {
             background: #c0392b;
         }
+
+        /* ⭐ UI Styles for Return Section Optimization */
+        .return-address-card {
+            background: #fff8e1; /* Very light orange/yellow background */
+            border: 1px solid #ffe0b2;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.05);
+            position: relative;
+        }
+
+        .return-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            background: #ff9800;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .address-content {
+            background: rgba(255,255,255,0.6);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px dashed #ffcc80;
+            color: #5d4037;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .tracking-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            background: white;
+            padding: 5px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            width: 100%; /* Ensure full width */
+            box-sizing: border-box;
+        }
+
+        .tracking-input {
+            border: none;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            flex-grow: 1;
+            outline: none;
+            border-radius: 8px;
+            background: transparent;
+            min-width: 0; /* Prevents overflow in flex */
+        }
+
+        .tracking-input:focus {
+            background: #fafafa;
+        }
+
+        .btn-ship-action {
+            background: #2d3436;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-ship-action:hover {
+            background: #000;
+            transform: translateY(-1px);
+        }
+
+        /* ⭐ Fixed & Unified WhatsApp Button Style */
+        .btn-whatsapp-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;  /* ⭐ Fixed Length: Always full width of container */
+            height: 42px; /* ⭐ Fixed Height: Ensure consistency */
+            padding: 0 15px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            box-sizing: border-box; /* Ensures padding doesn't affect width */
+            margin-top: 5px;
+        }
+
+        .btn-whatsapp-action:hover {
+            background: #25D366;
+            color: white;
+            border-color: #25D366;
+        }
     </style>
 </head>
 
@@ -201,14 +308,36 @@
                                 <div style="font-size: 0.9rem; color: #333; font-weight: 500; margin-top: 5px; line-height: 1.4; white-space: normal; word-wrap: break-word;">
                                         ${order.address}
                                 </div>
+
+                                    <%-- ⭐ LEFT SIDE: Optimized Return Address UI --%>
+                                <c:if test="${order.refundStatus == 'WAITING_RETURN'}">
+                                    <div class="return-address-card">
+                                        <div class="return-badge">
+                                            <i class="ri-check-line"></i> Merchant Agreed
+                                        </div>
+
+                                        <c:if test="${not empty order.returnAddress}">
+                                            <div class="address-content">
+                                                <div style="font-weight: 700; color: #e65100; margin-bottom: 5px; font-size: 0.95rem;">
+                                                    <i class="ri-map-pin-line"></i> Return Address
+                                                </div>
+                                                    ${order.returnAddress}
+                                            </div>
+                                            <div style="font-size: 0.75rem; color: #8d6e63; margin-top: 8px; display: flex; align-items: center; gap: 5px;">
+                                                <i class="ri-arrow-right-line"></i>
+                                                <span>Ship item here & update tracking on the right.</span>
+                                            </div>
+                                        </c:if>
+                                    </div>
+                                </c:if>
                             </div>
 
                             <div style="text-align: right;">
                                 <span style="font-size: 0.9rem; color: #666;">Total Amount</span>
                                 <div style="font-size: 1.3rem; color: #e68a00; font-weight: bold; margin-bottom: 10px;">$${order.totalAmount}</div>
 
-                                    <%-- ⭐⭐⭐ 核心操作按钮区域 (已完整集成) ⭐⭐⭐ --%>
-                                <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: flex-start; flex-wrap: wrap;">
+                                    <%-- ⭐⭐⭐ RIGHT SIDE: Actions & Tracking Form (Optimized UI) ⭐⭐⭐ --%>
+                                <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: flex-start; flex-wrap: wrap; width: 100%; max-width: 350px; margin-left: auto;">
 
                                         <%-- 1. 待发货：允许取消 --%>
                                     <c:if test="${order.orderStatus == 'PAID'}">
@@ -225,36 +354,23 @@
 
                                         <%-- 2. 售后/退款处理逻辑 --%>
                                     <c:choose>
-                                        <%-- A: 商家同意退货 -> 等待买家发货 (显示 WhatsApp 和 '我已寄出') --%>
+                                        <%-- A: 商家同意退货 -> 等待买家发货 (优化版输入框 + 统一样式的 WhatsApp 按钮) --%>
                                         <c:when test="${order.refundStatus == 'WAITING_RETURN'}">
-                                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; max-width: 420px;">
-                                                <div style="font-size:0.8rem; color:#e67e22; background:#fff3cd; padding:5px 10px; border-radius:5px;">
-                                                    Merchant agreed. Please return item.
-                                                </div>
-
-                                                <c:if test="${not empty order.returnAddress}">
-                                                    <div style="font-size:0.85rem; color:#444; background:#f8f9fa; padding:10px; border-radius:8px; width:100%;">
-                                                        <strong>Return Address:</strong>
-                                                        <div style="margin-top:4px; white-space: pre-wrap;">${order.returnAddress}</div>
-                                                    </div>
-                                                </c:if>
-
-                                                <form action="${pageContext.request.contextPath}/customer/orders" method="post" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                                            <div style="width: 100%;">
+                                                <form action="${pageContext.request.contextPath}/customer/orders" method="post" style="width: 100%;">
                                                     <input type="hidden" name="action" value="confirmReturnShipped">
                                                     <input type="hidden" name="orderId" value="${order.ordersId}">
 
-                                                    <input type="text" name="returnTrackingNumber" placeholder="Return tracking no." required
-                                                           style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 10px; min-width: 220px;" />
-
-                                                    <button type="button" onclick="confirmForm(this, 'Confirm Shipping', 'Submit return tracking number and mark as shipped?')"
-                                                            style="background: #2d3436; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600;">
-                                                        I Have Shipped
-                                                    </button>
+                                                    <div class="tracking-input-group">
+                                                        <input type="text" name="returnTrackingNumber" class="tracking-input" placeholder="Return tracking no." required />
+                                                        <button type="button" class="btn-ship-action" onclick="confirmForm(this, 'Confirm Shipping', 'Submit return tracking number and mark as shipped?')">
+                                                            I Have Shipped
+                                                        </button>
+                                                    </div>
                                                 </form>
 
-                                                <a href="https://wa.me/60123456789?text=Arranging return for Order ${order.ordersId}" target="_blank"
-                                                   style="background: #25D366; color: white; padding: 8px 15px; border-radius: 10px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
-                                                    <i class="ri-whatsapp-line"></i> Contact to Ship
+                                                <a href="https://wa.me/60123456789?text=Arranging return for Order ${order.ordersId}" target="_blank" class="btn-whatsapp-action">
+                                                    <i class="ri-whatsapp-line" style="font-size: 1.1rem;"></i> Contact to Ship
                                                 </a>
                                             </div>
                                         </c:when>
@@ -273,12 +389,12 @@
                                             </button>
                                         </c:when>
 
-                                        <%-- D: 拒绝次数 >= 2 -> 强制联系 WhatsApp --%>
+                                        <%-- D: 拒绝次数 >= 2 -> 强制联系 WhatsApp (也应用了统一样式) --%>
                                         <c:when test="${order.rejectionCount >= 2}">
                                             <a href="https://wa.me/60123456789?text=Order%20ID%3A%20${order.ordersId}.%20My%20return%20was%20rejected%20twice."
                                                target="_blank"
-                                               style="background: #25D366; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-                                                <i class="ri-whatsapp-line"></i> Contact Support
+                                               class="btn-whatsapp-action">
+                                                <i class="ri-whatsapp-line" style="font-size: 1.1rem;"></i> Contact Support
                                             </a>
                                             <div style="width: 100%; text-align: right; font-size: 0.8rem; color: #c0392b; margin-top: 5px;">
                                                 Reason: ${order.merchantRejectReason}
@@ -391,4 +507,3 @@
 
 </body>
 </html>
-
