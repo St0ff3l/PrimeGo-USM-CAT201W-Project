@@ -49,7 +49,8 @@
     <h3 class="modal-title" id="modalTitle">Title</h3>
     <p class="modal-message" id="modalMessage">Message goes here.</p>
 
-    <button class="modal-btn" onclick="closeModal()">OK, Got it</button>
+    <button class="modal-btn" id="modalBtnCancel" onclick="closeModal(false)" style="background: #e0e0e0; color: #333; display: none; margin-right: 10px;">Cancel</button>
+    <button class="modal-btn" id="modalBtnOk" onclick="closeModal(true)">OK, Got it</button>
   </div>
 </div>
 
@@ -61,14 +62,21 @@
     const modalMessage = document.getElementById('modalMessage');
     const modalIcon = document.getElementById('modalIcon');
     const modalIconBg = document.getElementById('modalIconBg');
-    let onCloseCallback = null; // 用于存储关闭时的回调
+    const modalBtnCancel = document.getElementById('modalBtnCancel');
+    const modalBtnOk = document.getElementById('modalBtnOk');
+
+    let currentMode = 'alert'; // 'alert' or 'confirm'
+    let onPrimaryCallback = null;   // alert: callback; confirm: onConfirm
+    let onSecondaryCallback = null; // confirm: onCancel
 
     // 挂载到 window 对象，使其成为全局函数
     // type 参数支持: 'error', 'success', 'warning' (或者是旧代码的 true/false)
     window.showModal = function(title, message, type = 'error', callback = null) {
+      currentMode = 'alert';
       modalTitle.innerText = title;
       modalMessage.innerText = message;
-      onCloseCallback = callback;
+      onPrimaryCallback = callback;
+      onSecondaryCallback = null;
 
       // 重置样式
       modalIcon.className = '';
@@ -86,23 +94,60 @@
         modalIconBg.classList.add('icon-warning');
       }
 
+      // Hide cancel, show OK
+      modalBtnCancel.style.display = 'none';
+      modalBtnOk.innerText = "OK, Got it";
+
       // 显示弹窗
       modalOverlay.classList.add('active');
     };
 
-    // 关闭弹窗函数
-    window.closeModal = function() {
-      modalOverlay.classList.remove('active');
-      if (onCloseCallback) {
-        onCloseCallback(); // 如果有回调，执行它
-        onCloseCallback = null;
-      }
+    // 新增：确认弹窗
+    window.showConfirm = function(title, message, onConfirm, onCancel = null) {
+      currentMode = 'confirm';
+      modalTitle.innerText = title;
+      modalMessage.innerText = message;
+      onPrimaryCallback = onConfirm;
+      onSecondaryCallback = onCancel;
+
+      // Icon for question/confirmation
+      modalIcon.className = 'ri-question-line';
+      modalIconBg.className = 'modal-icon-wrap icon-warning';
+      modalIconBg.classList.remove('icon-error', 'icon-success');
+      modalIconBg.classList.add('icon-warning');
+
+      // Show cancel, Update OK text
+      modalBtnCancel.style.display = 'inline-block';
+      modalBtnOk.innerText = "Yes, Proceed";
+
+      modalOverlay.classList.add('active');
     };
 
-    // 点击遮罩层也可以关闭
+    // 关闭弹窗函数
+    window.closeModal = function(isPrimaryAction = false) {
+      modalOverlay.classList.remove('active');
+
+      if (currentMode === 'alert') {
+        // Alert mode: always run callback if exists (old behavior)
+        if (onPrimaryCallback) onPrimaryCallback();
+      } else {
+        // Confirm mode
+        if (isPrimaryAction) {
+           if (onPrimaryCallback) onPrimaryCallback();
+        } else {
+           if (onSecondaryCallback) onSecondaryCallback();
+        }
+      }
+
+      // Clear
+      onPrimaryCallback = null;
+      onSecondaryCallback = null;
+    };
+
+    // 点击遮罩层也可以关闭 (视为 Cancel / Close)
     modalOverlay.addEventListener('click', function(e) {
       if(e.target === modalOverlay) {
-        window.closeModal();
+        window.closeModal(false);
       }
     });
   })();

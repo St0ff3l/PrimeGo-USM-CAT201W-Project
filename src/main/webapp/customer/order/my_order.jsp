@@ -78,6 +78,8 @@
     <jsp:param name="active" value="orders" />
 </jsp:include>
 
+<jsp:include page="../../assets/jsp/global_modal.jsp" />
+
 <div class="main-content">
     <div class="header-section">
         <h1>Order History</h1>
@@ -214,7 +216,7 @@
                                             <input type="hidden" name="action" value="cancelOrder">
                                             <input type="hidden" name="orderId" value="${order.ordersId}">
                                             <input type="hidden" name="status" value="${param.status}">
-                                            <button type="submit" onclick="return confirm('Cancel this order?')"
+                                            <button type="button" onclick="confirmForm(this, 'Cancel Order', 'Are you sure you want to cancel this order?')"
                                                     style="background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600;">
                                                 <i class="ri-close-circle-line"></i> Cancel Order
                                             </button>
@@ -244,7 +246,7 @@
                                                     <input type="text" name="returnTrackingNumber" placeholder="Return tracking no." required
                                                            style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 10px; min-width: 220px;" />
 
-                                                    <button type="submit" onclick="return confirm('Submit return tracking number and mark as shipped?')"
+                                                    <button type="button" onclick="confirmForm(this, 'Confirm Shipping', 'Submit return tracking number and mark as shipped?')"
                                                             style="background: #2d3436; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600;">
                                                         I Have Shipped
                                                     </button>
@@ -304,7 +306,7 @@
                                                 <input type="hidden" name="action" value="confirmReceipt">
                                                 <input type="hidden" name="orderId" value="${order.ordersId}">
                                                 <input type="hidden" name="status" value="${param.status}">
-                                                <button type="submit" onclick="return confirm('Confirm receipt?')"
+                                                <button type="button" onclick="confirmForm(this, 'Confirm Receipt', 'Are you sure you want to confirm receipt?')"
                                                         style="background: #2d3436; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600; margin-left: 5px;">
                                                     <i class="ri-check-double-line"></i> Confirm Receipt
                                                 </button>
@@ -368,7 +370,25 @@
             closeRefundModal();
         }
     }
+
+    // Helper to wire global confirm with form submission
+    function confirmForm(btn, title, msg) {
+        // Validation check for inputs if any (e.g. shipping number)
+        // Find form of the button
+        const form = btn.closest('form');
+
+        // Basic required check
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        showConfirm(title, msg, function() {
+            form.submit();
+        });
+    }
 </script>
 
 </body>
 </html>
+

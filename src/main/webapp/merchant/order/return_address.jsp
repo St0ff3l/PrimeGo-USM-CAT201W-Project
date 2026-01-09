@@ -36,6 +36,8 @@
 
 <%@ include file="../../common/background_merchant.jsp" %>
 <%@ include file="../../common/layout/header_bar.jsp" %>
+<%-- Include Global Modal --%>
+<jsp:include page="../../assets/jsp/global_modal.jsp" />
 
 <div class="container">
     <div class="panel">
@@ -57,13 +59,32 @@
 
                 <div class="row">
                     <button type="button" class="btn btn-cancel" onclick="window.location='${pageContext.request.contextPath}/merchant/order/order_management?filter=return'">Cancel</button>
-                    <button type="submit" class="btn btn-save">Save & Continue</button>
+                    <button type="button" class="btn btn-save" onclick="confirmSaveAddress()">Save & Continue</button>
                 </div>
             </form>
         </c:if>
     </div>
 </div>
 
+<script>
+    function confirmSaveAddress() {
+        const addr = document.getElementById('returnAddress').value.trim();
+        if(!addr) {
+            showModal("Validation Error", "Return address is required.", "error");
+            return;
+        }
+
+        showConfirm(
+            "Confirm Save",
+            "Are you sure you want to save this return address?",
+            function() {
+                // Submit the form
+                const form = document.querySelector('input[name="action"][value="saveReturnAddress"]').form;
+                if(form) form.submit();
+            }
+        );
+    }
+</script>
+
 </body>
 </html>
-

@@ -1,4 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%-- Include global modal for popup messages --%>
+<jsp:include page="../../assets/jsp/global_modal.jsp" />
 
 <div id="refundModal" class="modal-overlay">
     <div class="modal-content" style="width: 500px;">
@@ -110,13 +112,19 @@
         if (decision === 'reject') {
             const reason = document.getElementById('merchantReason').value.trim();
             if (!reason) {
-                alert("Please provide a reason for rejection.");
+                // Use global modal instead of native alert
+                showModal("Action Required", "Please provide a reason for rejection.", "error");
                 return;
             }
         }
 
-        if (confirm("Proceed with " + decision + "?")) {
-            document.getElementById('refundForm').submit();
-        }
+        // Use global modal confirm instead of native confirm
+        showConfirm(
+            "Confirm Action",
+            "Proceed with " + decision + "?",
+            function() {
+                document.getElementById('refundForm').submit();
+            }
+        );
     }
 </script>
