@@ -290,7 +290,16 @@
                 <span>Orders</span>
             </a>
 
-            <%-- Wallet moved to header bar (avatar left area) to keep sidebar focused --%>
+            <a class="menu-item ${active == 'wallet' ? 'active-view' : ''}"
+               href="${pageContext.request.contextPath}/public/wallet/wallet.jsp">
+                <span class="pg-mi" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                </span>
+                <span>Wallet</span>
+            </a>
         </div>
 
         <div class="menu-group">

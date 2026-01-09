@@ -123,7 +123,7 @@
                                                                 pgIsMerchantUser; %>
                                                                 <% if (__showMerchantTop) { %>
                                                                     <a class="pg-merchant-wallet"
-                                                                        href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp#wallet"
+                                                                        href="${pageContext.request.contextPath}/public/wallet/wallet.jsp"
                                                                         title="Wallet">Wallet</a>
                                                                     <span class="pg-merchant-username"
                                                                         title="<%= __pgUsername %>">

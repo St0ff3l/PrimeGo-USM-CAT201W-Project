@@ -218,6 +218,15 @@
                         </div>
                         <div class="txn-left-sub">
                             <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
+                            
+                            <!-- 显示管理员备注 -->
+                            <c:if test="${not empty txn.remarks}">
+                                <br>
+                                <span style="color: #666; font-style: italic; font-size: 0.85rem;">
+                                    <i class="ri-message-2-line" style="vertical-align: middle;"></i> 
+                                    Admin: "${txn.remarks}"
+                                </span>
+                            </c:if>
                         </div>
                     </div>
                     <div class="txn-right">

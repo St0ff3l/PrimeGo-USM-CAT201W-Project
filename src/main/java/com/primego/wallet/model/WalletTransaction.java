@@ -11,6 +11,7 @@ public class WalletTransaction {
     private String transactionType; // "TOPUP", "WITHDRAW"
     private String receiptImage;    // 仅充值时有，提现为null
     private Timestamp createdAt;
+    private String remarks;         // 管理员备注
 
     // 无参构造器
     public WalletTransaction() {}
@@ -45,4 +46,7 @@ public class WalletTransaction {
 
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
 }

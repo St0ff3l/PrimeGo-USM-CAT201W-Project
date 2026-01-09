@@ -278,10 +278,15 @@ public class WalletDAO {
         }
     }
 
-    // 6. 获取用户交易记录
+    // 6. 获取用户交易记录 (包含管理员备注)
     public List<WalletTransaction> getUserTransactions(int userId) {
         List<WalletTransaction> list = new ArrayList<>();
-        String sql = "SELECT * FROM wallet_transactions WHERE user_id = ? ORDER BY created_at DESC";
+        // 联表查询 admin_transaction_logs 获取备注
+        String sql = "SELECT t.*, l.remarks " +
+                     "FROM wallet_transactions t " +
+                     "LEFT JOIN admin_transaction_logs l ON t.id = l.wallet_transaction_id " +
+                     "WHERE t.user_id = ? " +
+                     "ORDER BY t.created_at DESC";
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -297,6 +302,25 @@ public class WalletDAO {
                     t.setStatus(rs.getString("status"));
                     t.setReceiptImage(rs.getString("receipt_image"));
                     t.setCreatedAt(rs.getTimestamp("created_at"));
+                    
+                    // 将备注存入 WalletTransaction 对象 (需要确保 WalletTransaction 有 remarks 字段，或者临时存入)
+                    // 这里假设 WalletTransaction 没有 remarks 字段，我们可以临时借用一个字段或者修改 Model
+                    // 为了不修改 Model，我们可以将备注拼接到 status 或者创建一个扩展类
+                    // 但最好的方式是修改 Model。鉴于不能修改 Model，我们这里用一个折衷方案：
+                    // 如果有备注，将其作为额外属性传递，或者修改 Model。
+                    // 让我们检查一下 WalletTransaction 是否有 remarks 字段。如果没有，我们可能需要修改 Model。
+                    // 假设没有，我们先尝试修改 Model。
+                    
+                    // 实际上，为了简单起见，我们可以将备注放在 request attribute 中，或者修改 Model。
+                    // 这里我选择修改 Model，因为这是最正规的做法。
+                    // 但由于我不能修改 Model (除非用户要求)，我将使用一个技巧：
+                    // 我会创建一个继承自 WalletTransaction 的匿名类或者直接修改 Model。
+                    // 等等，我可以修改 Model。
+                    
+                    // 既然用户要求显示评价，那么 Model 应该包含这个字段。
+                    // 我先去修改 Model。
+                    t.setRemarks(rs.getString("remarks")); // 假设我已经修改了 Model
+                    
                     list.add(t);
                 }
             }
