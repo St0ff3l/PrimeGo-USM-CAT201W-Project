@@ -93,8 +93,8 @@
 
 <div class="glass-panel">
     <div class="back-row">
-        <a href="${pageContext.request.contextPath}/index.jsp" class="back-btn" title="Back to Home">
-            <span>←</span><span class="back-text">Back Home</span>
+        <a href="${pageContext.request.contextPath}/profile" class="back-btn" title="Back to Profile">
+            <span>←</span><span class="back-text">Back Profile</span>
         </a>
     </div>
 
