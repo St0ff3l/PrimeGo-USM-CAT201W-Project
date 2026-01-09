@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.primego.wallet.model.AdminTransactionLog;
+
 public class WalletDAO {
 
     // 辅助方法：获取连接
@@ -17,6 +19,55 @@ public class WalletDAO {
             e.printStackTrace();
             return null;
         }
+    }
+
+    // 0. 记录管理员操作日志
+    public boolean addAdminLog(AdminTransactionLog log) {
+        String sql = "INSERT INTO admin_transaction_logs (admin_id, wallet_transaction_id, action_type, previous_status, current_status, remarks) VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, log.getAdminId());
+            statement.setInt(2, log.getWalletTransactionId());
+            statement.setString(3, log.getActionType());
+            statement.setString(4, log.getPreviousStatus());
+            statement.setString(5, log.getCurrentStatus());
+            statement.setString(6, log.getRemarks());
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // 0.1 获取已处理的交易记录 (History)
+    public List<AdminTransactionLog> getProcessedTransactions() {
+        List<AdminTransactionLog> list = new ArrayList<>();
+        // 联表查询，获取管理员名字
+        String sql = "SELECT l.*, u.username as admin_name " +
+                     "FROM admin_transaction_logs l " +
+                     "LEFT JOIN users u ON l.admin_id = u.id " +
+                     "ORDER BY l.created_at DESC";
+        
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet rs = statement.executeQuery()) {
+            while (rs.next()) {
+                AdminTransactionLog log = new AdminTransactionLog();
+                log.setId(rs.getInt("id"));
+                log.setAdminId(rs.getInt("admin_id"));
+                log.setWalletTransactionId(rs.getInt("wallet_transaction_id"));
+                log.setActionType(rs.getString("action_type"));
+                log.setPreviousStatus(rs.getString("previous_status"));
+                log.setCurrentStatus(rs.getString("current_status"));
+                log.setRemarks(rs.getString("remarks"));
+                log.setCreatedAt(rs.getTimestamp("created_at"));
+                log.setAdminName(rs.getString("admin_name"));
+                list.add(log);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     // 1. 保存充值请求
@@ -186,6 +237,31 @@ public class WalletDAO {
             e.printStackTrace();
         }
         return list;
+    }
+
+    // 4.1 获取所有交易记录 (用于 History 显示详情)
+    public WalletTransaction getTransactionById(int id) {
+        String sql = "SELECT * FROM wallet_transactions WHERE id = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    WalletTransaction t = new WalletTransaction();
+                    t.setId(rs.getInt("id"));
+                    t.setUserId(rs.getInt("user_id"));
+                    t.setAmount(rs.getBigDecimal("amount"));
+                    t.setTransactionType(rs.getString("transaction_type"));
+                    t.setStatus(rs.getString("status"));
+                    t.setReceiptImage(rs.getString("receipt_image"));
+                    t.setCreatedAt(rs.getTimestamp("created_at"));
+                    return t;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     // 5. 更新状态
