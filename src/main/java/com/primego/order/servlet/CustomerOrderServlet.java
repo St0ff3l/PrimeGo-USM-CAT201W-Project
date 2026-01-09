@@ -61,7 +61,13 @@ public class CustomerOrderServlet extends HttpServlet {
 
         // === 默认逻辑：显示订单列表 ===
         String status = req.getParameter("status");
-        if (status != null && !status.isEmpty() && !"ALL".equals(status)) {
+
+        // ⭐ 核心修改：处理 RETURNS 过滤器
+        if ("RETURNS".equals(status)) {
+            // 查询所有售后相关的订单 (包含被拒绝的 SHIPPED 订单)
+            req.setAttribute("orderList", orderDAO.getReturnOrdersByUserId(userId));
+            req.setAttribute("currentStatus", "RETURNS");
+        } else if (status != null && !status.isEmpty() && !"ALL".equals(status)) {
             req.setAttribute("orderList", orderDAO.getOrdersByUserIdAndStatus(userId, status));
             req.setAttribute("currentStatus", status);
         } else {
@@ -102,6 +108,37 @@ public class CustomerOrderServlet extends HttpServlet {
         if ("processRefundRequest".equals(action) || "requestRefund".equals(action)) {
             handleReturnRequest(req);
             resp.sendRedirect(req.getContextPath() + "/customer/orders?status=" + status);
+            return;
+        }
+
+        // 🟢 处理买家确认退货寄出
+        if ("confirmReturnShipped".equals(action)) {
+            String orderIdStr = req.getParameter("orderId");
+            String returnTrackingNumber = req.getParameter("returnTrackingNumber");
+
+            if (orderIdStr != null) {
+                try {
+                    int orderId = Integer.parseInt(orderIdStr);
+
+                    if (returnTrackingNumber == null || returnTrackingNumber.trim().isEmpty()) {
+                        session.setAttribute("message", "Please enter return tracking number.");
+                        session.setAttribute("messageType", "error");
+                    } else {
+                        orderDAO.buyerConfirmShipped(orderId, returnTrackingNumber.trim());
+                        session.setAttribute("message", "Return shipment submitted. Waiting for merchant to receive.");
+                        session.setAttribute("messageType", "success");
+                    }
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                    session.setAttribute("message", "Invalid order id.");
+                    session.setAttribute("messageType", "error");
+                }
+            } else {
+                session.setAttribute("message", "Missing order id.");
+                session.setAttribute("messageType", "error");
+            }
+            // 重定向回 Returns 列表
+            resp.sendRedirect(req.getContextPath() + "/customer/orders?status=RETURNS");
             return;
         }
 
@@ -168,6 +205,7 @@ public class CustomerOrderServlet extends HttpServlet {
 
         String orderIdStr = req.getParameter("orderId");
         String reason = req.getParameter("reason");
+        String refundType = req.getParameter("refundType");
 
         if (orderIdStr == null) {
             session.setAttribute("message", "Missing order id.");
@@ -201,7 +239,7 @@ public class CustomerOrderServlet extends HttpServlet {
                 return;
             }
 
-            boolean success = orderDAO.requestRefund(orderId, reason, user.getId());
+            boolean success = orderDAO.requestRefund(orderId, reason, user.getId(), refundType);
             if (success) {
                 session.setAttribute("message", "Return request submitted successfully!");
                 session.setAttribute("messageType", "success");

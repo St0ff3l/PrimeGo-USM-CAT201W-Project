@@ -350,4 +350,35 @@ public class WalletDAO {
         }
         return list;
     }
+
+    // ==========================================
+    // ⭐ 新增：退款处理 (平台托管模式)
+    // 说明：下单时用户已扣款(PURCHASE)，商家只有在用户确认收货时才入账(SALES)。
+    // 因此退款时不应再扣商家，只需要把钱退回给用户(REFUND_IN)。
+    // ==========================================
+    public boolean refundFromEscrowToCustomer(int customerId, BigDecimal amount) {
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            if (conn == null) return false;
+            conn.setAutoCommit(false);
+
+            // 直接给用户入账
+            String sqlCustomer = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'REFUND_IN', 'APPROVED')";
+            try (PreparedStatement ps = conn.prepareStatement(sqlCustomer)) {
+                ps.setInt(1, customerId);
+                ps.setBigDecimal(2, amount);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) {}
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+        }
+    }
 }

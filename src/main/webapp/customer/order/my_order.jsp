@@ -97,7 +97,7 @@
         <a href="${pageContext.request.contextPath}/customer/orders?status=PAID" class="order-tab ${param.status == 'PAID' ? 'active' : ''}">To Ship</a>
         <a href="${pageContext.request.contextPath}/customer/orders?status=SHIPPED" class="order-tab ${param.status == 'SHIPPED' ? 'active' : ''}">To Receive</a>
         <a href="${pageContext.request.contextPath}/customer/orders?status=COMPLETED" class="order-tab ${param.status == 'COMPLETED' ? 'active' : ''}">Completed</a>
-        <a href="${pageContext.request.contextPath}/customer/orders?status=RETURN_REQUESTED" class="order-tab ${param.status == 'RETURN_REQUESTED' ? 'active' : ''}">Returns</a>
+        <a href="${pageContext.request.contextPath}/customer/orders?status=RETURNS" class="order-tab ${param.status == 'RETURNS' ? 'active' : ''}">Returns</a>
         <a href="${pageContext.request.contextPath}/customer/orders?status=CANCELLED" class="order-tab ${param.status == 'CANCELLED' ? 'active' : ''}">Cancelled</a>
     </div>
 
@@ -141,16 +141,26 @@
                                 <span style="font-size: 0.85rem; color: #888;">Placed on: ${order.createdAt}</span>
                             </div>
                             <div style="text-align: right;">
-                                <span style="padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: 600;
-                                    ${order.orderStatus == 'COMPLETED' ? 'background: #d4edda; color: #155724;' :
-                                      order.orderStatus == 'PENDING' ? 'background: #fff3cd; color: #856404;' :
-                                      order.orderStatus == 'SHIPPED' ? 'background: #dbeafe; color: #1e40af;' :
-                                      order.orderStatus == 'RETURN_REQUESTED' ? 'background: #ffeaa7; color: #d35400;' :
-                                      order.orderStatus == 'REFUNDED' ? 'background: #fab1a0; color: #c0392b;' :
-                                      order.orderStatus == 'CANCELLED' ? 'background: #f8d7da; color: #721c24;' :
-                                      'background: #e2e3e5; color: #383d41;'}">
-                                        ${order.orderStatus.replace('_', ' ')}
-                                </span>
+                                    <%-- Status Badge Display Logic --%>
+                                <c:choose>
+                                    <c:when test="${(order.orderStatus == 'SHIPPED' || order.orderStatus == 'COMPLETED') && order.rejectionCount > 0}">
+                                        <span style="padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; background: #ffeaa7; color: #d35400;">
+                                            Rejected (Action Required)
+                                        </span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span style="padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: 600;
+                                            ${order.orderStatus == 'COMPLETED' ? 'background: #d4edda; color: #155724;' :
+                                              order.orderStatus == 'PENDING' ? 'background: #fff3cd; color: #856404;' :
+                                              order.orderStatus == 'SHIPPED' ? 'background: #dbeafe; color: #1e40af;' :
+                                              order.orderStatus == 'RETURN_REQUESTED' ? 'background: #ffeaa7; color: #d35400;' :
+                                              order.orderStatus == 'REFUNDED' ? 'background: #fab1a0; color: #c0392b;' :
+                                              order.orderStatus == 'CANCELLED' ? 'background: #f8d7da; color: #721c24;' :
+                                              'background: #e2e3e5; color: #383d41;'}">
+                                                ${order.orderStatus.replace('_', ' ')}
+                                        </span>
+                                    </c:otherwise>
+                                </c:choose>
 
                                 <c:if test="${not empty order.trackingNumber}">
                                     <div style="margin-top: 8px; font-size: 0.85rem; color: #555;">
@@ -195,54 +205,117 @@
                                 <span style="font-size: 0.9rem; color: #666;">Total Amount</span>
                                 <div style="font-size: 1.3rem; color: #e68a00; font-weight: bold; margin-bottom: 10px;">$${order.totalAmount}</div>
 
-                                <div style="display: flex; gap: 10px; justify-content: flex-end">
+                                    <%-- ⭐⭐⭐ 核心操作按钮区域 (已完整集成) ⭐⭐⭐ --%>
+                                <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: flex-start; flex-wrap: wrap;">
 
-                                    <%-- PAID -> CANCELLED --%>
+                                        <%-- 1. 待发货：允许取消 --%>
                                     <c:if test="${order.orderStatus == 'PAID'}">
                                         <form action="${pageContext.request.contextPath}/customer/orders" method="post">
                                             <input type="hidden" name="action" value="cancelOrder">
                                             <input type="hidden" name="orderId" value="${order.ordersId}">
                                             <input type="hidden" name="status" value="${param.status}">
-                                            <button type="submit"
-                                                    onclick="return confirm('Cancel this order?')"
+                                            <button type="submit" onclick="return confirm('Cancel this order?')"
                                                     style="background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600;">
                                                 <i class="ri-close-circle-line"></i> Cancel Order
                                             </button>
                                         </form>
                                     </c:if>
 
-                                    <%-- SHIPPED -> RETURN_REQUESTED (7 days) --%>
-                                    <c:if test="${canReturn}">
-                                        <button onclick="openRefundModal('${order.ordersId}')"
-                                                style="background: transparent; border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600;">
-                                            <i class="ri-refund-line"></i> Return (7 Days)
-                                        </button>
-                                    </c:if>
+                                        <%-- 2. 售后/退款处理逻辑 --%>
+                                    <c:choose>
+                                        <%-- A: 商家同意退货 -> 等待买家发货 (显示 WhatsApp 和 '我已寄出') --%>
+                                        <c:when test="${order.refundStatus == 'WAITING_RETURN'}">
+                                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; max-width: 420px;">
+                                                <div style="font-size:0.8rem; color:#e67e22; background:#fff3cd; padding:5px 10px; border-radius:5px;">
+                                                    Merchant agreed. Please return item.
+                                                </div>
 
-                                    <%-- SHIPPED -> COMPLETED --%>
-                                    <c:if test="${order.orderStatus == 'SHIPPED'}">
-                                        <form action="${pageContext.request.contextPath}/customer/orders" method="post">
-                                            <input type="hidden" name="action" value="confirmReceipt">
-                                            <input type="hidden" name="orderId" value="${order.ordersId}">
-                                            <input type="hidden" name="status" value="${param.status}">
-                                            <button type="submit"
-                                                    onclick="return confirm('Confirm that you have received the order?')"
-                                                    style="background: #2d3436; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                                <i class="ri-check-double-line"></i> Confirm Receipt
+                                                <c:if test="${not empty order.returnAddress}">
+                                                    <div style="font-size:0.85rem; color:#444; background:#f8f9fa; padding:10px; border-radius:8px; width:100%;">
+                                                        <strong>Return Address:</strong>
+                                                        <div style="margin-top:4px; white-space: pre-wrap;">${order.returnAddress}</div>
+                                                    </div>
+                                                </c:if>
+
+                                                <form action="${pageContext.request.contextPath}/customer/orders" method="post" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                                                    <input type="hidden" name="action" value="confirmReturnShipped">
+                                                    <input type="hidden" name="orderId" value="${order.ordersId}">
+
+                                                    <input type="text" name="returnTrackingNumber" placeholder="Return tracking no." required
+                                                           style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 10px; min-width: 220px;" />
+
+                                                    <button type="submit" onclick="return confirm('Submit return tracking number and mark as shipped?')"
+                                                            style="background: #2d3436; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                                                        I Have Shipped
+                                                    </button>
+                                                </form>
+
+                                                <a href="https://wa.me/60123456789?text=Arranging return for Order ${order.ordersId}" target="_blank"
+                                                   style="background: #25D366; color: white; padding: 8px 15px; border-radius: 10px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="ri-whatsapp-line"></i> Contact to Ship
+                                                </a>
+                                            </div>
+                                        </c:when>
+
+                                        <%-- B: 买家已寄出 -> 等待商家收货 --%>
+                                        <c:when test="${order.refundStatus == 'RETURN_SHIPPED'}">
+                                            <button disabled style="background: #dbeafe; color: #1e40af; border: none; padding: 8px 15px; border-radius: 10px; cursor: not-allowed; font-weight: 600;">
+                                                <i class="ri-truck-line"></i> Return Shipped - Wait Merchant
                                             </button>
-                                        </form>
-                                    </c:if>
+                                        </c:when>
 
-                                    <%-- RETURN_REQUESTED state --%>
-                                    <c:if test="${order.orderStatus == 'RETURN_REQUESTED'}">
-                                        <button disabled style="background: #eee; color: #888; border: none; padding: 8px 15px; border-radius: 10px; cursor: not-allowed; font-size: 0.85rem;">
-                                            <i class="ri-time-line"></i> Wait for Approval
-                                        </button>
-                                    </c:if>
+                                        <%-- C: 商家审核中 (刚申请) --%>
+                                        <c:when test="${order.orderStatus == 'RETURN_REQUESTED'}">
+                                            <button disabled style="background: #eee; color: #888; border: none; padding: 8px 15px; border-radius: 10px; cursor: not-allowed; font-size: 0.85rem;">
+                                                <i class="ri-time-line"></i> Wait for Approval
+                                            </button>
+                                        </c:when>
+
+                                        <%-- D: 拒绝次数 >= 2 -> 强制联系 WhatsApp --%>
+                                        <c:when test="${order.rejectionCount >= 2}">
+                                            <a href="https://wa.me/60123456789?text=Order%20ID%3A%20${order.ordersId}.%20My%20return%20was%20rejected%20twice."
+                                               target="_blank"
+                                               style="background: #25D366; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                                <i class="ri-whatsapp-line"></i> Contact Support
+                                            </a>
+                                            <div style="width: 100%; text-align: right; font-size: 0.8rem; color: #c0392b; margin-top: 5px;">
+                                                Reason: ${order.merchantRejectReason}
+                                            </div>
+                                        </c:when>
+
+                                        <%-- E: 状态是 SHIPPED (未发起售后 或 被拒过1次) -> 允许申请 + 确认收货 --%>
+                                        <c:when test="${order.orderStatus == 'SHIPPED'}">
+                                            <c:if test="${canReturn}">
+                                                <button type="button"
+                                                        onclick="openRefundModal('${order.ordersId}')"
+                                                        style="background: transparent; border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="ri-refund-line"></i>
+                                                        ${order.rejectionCount > 0 ? 'Apply Again' : 'Request Refund'}
+                                                </button>
+
+                                                <c:if test="${order.rejectionCount > 0}">
+                                                    <div style="width: 100%; text-align: right; font-size: 0.8rem; color: #e67e22; margin-top: 5px;">
+                                                        Rejected once: ${order.merchantRejectReason}
+                                                    </div>
+                                                </c:if>
+                                            </c:if>
+
+                                            <form action="${pageContext.request.contextPath}/customer/orders" method="post" style="display:inline;">
+                                                <input type="hidden" name="action" value="confirmReceipt">
+                                                <input type="hidden" name="orderId" value="${order.ordersId}">
+                                                <input type="hidden" name="status" value="${param.status}">
+                                                <button type="submit" onclick="return confirm('Confirm receipt?')"
+                                                        style="background: #2d3436; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600; margin-left: 5px;">
+                                                    <i class="ri-check-double-line"></i> Confirm Receipt
+                                                </button>
+                                            </form>
+                                        </c:when>
+                                    </c:choose>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </c:forEach>
             </div>
         </c:otherwise>
@@ -260,6 +333,12 @@
             <input type="hidden" name="action" value="processRefundRequest">
             <input type="hidden" name="orderId" id="refundOrderId">
             <input type="hidden" name="status" value="${param.status}">
+
+            <label style="font-size: 0.9rem; color: #666; font-weight: 500;">Refund Type:</label>
+            <select name="refundType" class="form-control" style="margin-bottom: 12px;">
+                <option value="MONEY_ONLY">Refund only (no return)</option>
+                <option value="RETURN_AND_REFUND">Return & refund</option>
+            </select>
 
             <label style="font-size: 0.9rem; color: #666; font-weight: 500;">Return Reason (Optional):</label>
             <textarea name="reason" class="form-textarea" rows="4" placeholder="e.g. Item not as described..."></textarea>

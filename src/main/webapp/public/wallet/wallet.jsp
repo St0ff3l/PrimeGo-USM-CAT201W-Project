@@ -231,7 +231,7 @@
                     </div>
                     <div class="txn-right">
                         <c:choose>
-                            <c:when test="${txn.transactionType == 'TOPUP' || txn.transactionType == 'SALES'}">
+                            <c:when test="${txn.transactionType == 'TOPUP' || txn.transactionType == 'SALES' || txn.transactionType == 'REFUND_IN'}">
                                 <span class="txn-amount-plus">+ RM ${txn.amount}</span>
                             </c:when>
                             <c:otherwise>

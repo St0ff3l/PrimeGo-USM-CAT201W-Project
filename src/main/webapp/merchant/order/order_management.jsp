@@ -20,7 +20,7 @@
     int shippedCount = 0;
     int completedCount = 0;
     int cancelledCount = 0;
-    int returnCount = 0; // ⭐ 新增：售后/退款单数量
+    int returnCount = 0; // ⭐ 新增：售后/退款单数量（含被拒绝的 SHIPPED）
 
     List<Order> ordersForCount = (List<Order>) request.getAttribute("orders");
     request.setAttribute("orders", ordersForCount);
@@ -28,16 +28,23 @@
     if (ordersForCount != null) {
         for (Order o : ordersForCount) {
             String st = o.getOrderStatus();
+            // ⭐ 获取拒绝次数
+            int rCount = o.getRejectionCount();
+
             if ("PAID".equalsIgnoreCase(st)) {
                 toShipCount++;
             } else if ("SHIPPED".equalsIgnoreCase(st)) {
-                shippedCount++;
+                // ⭐ 关键修改：如果是 SHIPPED 且被拒绝过，算作 Return 类；否则算正常 Shipped
+                if (rCount > 0) {
+                    returnCount++;
+                } else {
+                    shippedCount++;
+                }
             } else if ("COMPLETED".equalsIgnoreCase(st)) {
                 completedCount++;
             } else if ("CANCELLED".equalsIgnoreCase(st)) {
                 cancelledCount++;
             } else if ("RETURN_REQUESTED".equalsIgnoreCase(st) || "REFUNDED".equalsIgnoreCase(st)) {
-                // ⭐ 新增：统计售后单
                 returnCount++;
             }
         }
@@ -132,6 +139,8 @@
         /* ⭐ 新增状态样式 */
         .status-return { background: #ffeaa7; color: #d35400; }
         .status-refunded { background: #fab1a0; color: #c0392b; }
+        /* ⭐ 新增：拒绝状态样式 */
+        .status-rejected { background: #ffeaa7; color: #d35400; border: 1px solid #d35400; }
 
         .address-box {
             background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;
@@ -259,7 +268,11 @@
             </c:if>
 
             <c:forEach var="order" items="${orders}">
-                <div class="order-card" data-status="${order.orderStatus}">
+                <%-- ⭐ 1. 增加 data-rejection-count 属性，供 JS 筛选用 --%>
+                <div class="order-card"
+                     data-status="${order.orderStatus}"
+                     data-rejection-count="${order.rejectionCount}"
+                     data-refund-status="${order.refundStatus}">
 
                     <div class="order-header">
                         <div>
@@ -267,17 +280,65 @@
                             <div class="order-date"><i class="ri-time-line"></i> ${order.createdAt}</div>
                         </div>
                         <div>
-                            <span class="status-badge
-                                ${order.orderStatus == 'PAID' ? 'status-paid' :
-                                  order.orderStatus == 'SHIPPED' ? 'status-shipped' :
-                                  order.orderStatus == 'COMPLETED' ? 'status-completed' :
-                                  order.orderStatus == 'RETURN_REQUESTED' ? 'status-return' :
-                                  order.orderStatus == 'REFUNDED' ? 'status-refunded' :
-                                  order.orderStatus == 'CANCELLED' ? 'status-cancelled' : 'status-pending'}">
-                                    ${order.orderStatus.replace('_', ' ')}
-                            </span>
+                            <%-- ✅ Right-top status: prefer refund sub-status when exists --%>
+                            <c:choose>
+                                <c:when test="${order.rejectionCount > 0 && order.refundStatus == 'REJECTED'}">
+                                    <span class="status-badge status-rejected">Refund Rejected</span>
+                                </c:when>
+                                <c:when test="${order.refundStatus == 'WAITING_RETURN'}">
+                                    <span class="status-badge status-return">Waiting Customer Return</span>
+                                </c:when>
+                                <c:when test="${order.refundStatus == 'RETURN_SHIPPED'}">
+                                    <span class="status-badge status-return">Return Shipped</span>
+                                </c:when>
+                                <c:when test="${order.refundStatus == 'APPROVED'}">
+                                    <span class="status-badge status-refunded">Refund Approved</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <%-- fallback to order status --%>
+                                    <c:choose>
+                                        <c:when test="${order.orderStatus == 'SHIPPED' && order.rejectionCount > 0}">
+                                            <span class="status-badge status-rejected">Rejected (Action Required)</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="status-badge
+                                                ${order.orderStatus == 'PAID' ? 'status-paid' :
+                                                  order.orderStatus == 'SHIPPED' ? 'status-shipped' :
+                                                  order.orderStatus == 'COMPLETED' ? 'status-completed' :
+                                                  order.orderStatus == 'RETURN_REQUESTED' ? 'status-return' :
+                                                  order.orderStatus == 'REFUNDED' ? 'status-refunded' :
+                                                  order.orderStatus == 'CANCELLED' ? 'status-cancelled' : 'status-pending'}">
+                                                ${order.orderStatus.replace('_', ' ')}
+                                            </span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                     </div>
+
+                    <%-- ✅ Show return flow info directly on card (no need to open modal) --%>
+                    <c:if test="${order.refundType == 'RETURN_AND_REFUND' && (order.refundStatus == 'WAITING_RETURN' || order.refundStatus == 'RETURN_SHIPPED')}">
+                        <div style="background:#f8f9fa; padding: 12px; border-radius: 10px; margin: 0 0 15px 0;">
+                            <div style="font-weight: 700; color:#2d3436; margin-bottom: 6px;">
+                                <i class="ri-loop-left-line"></i> Return & Refund Progress
+                            </div>
+
+                            <c:if test="${not empty order.returnAddress}">
+                                <div style="font-size: 0.9rem; color:#444; margin-bottom: 8px;">
+                                    <strong>Return Address:</strong>
+                                    <div style="white-space: pre-wrap; margin-top: 4px;">${order.returnAddress}</div>
+                                </div>
+                            </c:if>
+
+                            <c:if test="${not empty order.returnTrackingNumber}">
+                                <div style="font-size: 0.9rem; color:#444;">
+                                    <strong>Customer Return Tracking No:</strong>
+                                    <span style="font-weight:700;">${order.returnTrackingNumber}</span>
+                                </div>
+                            </c:if>
+                        </div>
+                    </c:if>
 
                     <div style="margin-bottom: 15px;">
                         <c:forEach var="item" items="${order.orderItems}">
@@ -310,6 +371,21 @@
                         </div>
                     </c:if>
 
+                    <%-- ⭐ 3. 如果有拒绝记录，显示拒绝理由（如果字段为空也给个占位） --%>
+                    <c:if test="${order.rejectionCount > 0}">
+                        <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
+                            <strong>Rejection Reason:</strong>
+                            <c:choose>
+                                <c:when test="${not empty order.merchantRejectReason}">
+                                    <c:out value="${order.merchantRejectReason}"/>
+                                </c:when>
+                                <c:otherwise>
+                                    (No reason provided)
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+                    </c:if>
+
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
                         <div>
                             <span style="color: #666; font-size: 0.9rem;">Total:</span>
@@ -324,9 +400,9 @@
                         </c:if>
 
                             <%-- ⭐ 处理售后按钮 --%>
-                        <c:if test="${order.orderStatus == 'RETURN_REQUESTED'}">
+                        <c:if test="${order.orderStatus == 'RETURN_REQUESTED' || order.refundStatus == 'WAITING_RETURN' || order.refundStatus == 'RETURN_SHIPPED'}">
                             <button type="button" class="btn-handle-refund"
-                                    onclick="openRefundModal('${order.ordersId}', '${order.refundReason != null ? order.refundReason.replace('\'', '\\\'') : ''}')">
+                                    onclick="openRefundModal('${order.ordersId}', '${order.refundReason}', '${order.refundStatus}', '${order.refundType}', '${order.returnTrackingNumber}')">
                                 <i class="ri-customer-service-2-line"></i> Handle Refund
                             </button>
                         </c:if>
@@ -363,36 +439,8 @@
     </div>
 </div>
 
-<div id="refundModal" class="modal-overlay">
-    <div class="modal-content" style="width: 500px;">
-        <h3 style="margin-bottom: 10px; color: #d35400;">Handle Refund Request</h3>
-
-        <form action="${pageContext.request.contextPath}/merchant/order/order_management" method="post" id="refundForm">
-            <input type="hidden" name="action" value="processRefund">
-            <input type="hidden" id="refundModalOrderId" name="orderId" value="">
-            <input type="hidden" id="refundDecision" name="decision" value=""> <%-- approve or reject --%>
-
-            <div class="form-group">
-                <label style="color: #666;">Customer's Reason:</label>
-                <div id="displayCustomerReason" style="background: #f8f9fa; padding: 10px; border-radius: 8px; font-style: italic; color: #555;">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Your Response / Rejection Reason</label>
-                <textarea name="merchantReason" id="merchantReason" class="form-textarea" placeholder="If rejecting, please explain why (e.g. item damaged by user)..."></textarea>
-            </div>
-
-            <div class="modal-actions" style="justify-content: space-between;">
-                <button type="button" class="btn-cancel" onclick="closeRefundModal()">Cancel</button>
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" class="btn-reject" onclick="submitRefund('reject')">Reject</button>
-                    <button type="button" class="btn-approve" onclick="submitRefund('approve')">Approve Refund</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
+<%-- ✅ 统一使用共享退款弹窗（包含 openRefundModal/submitRefund 等 JS） --%>
+<jsp:include page="../layout/order_merchant_refund.jsp" />
 
 <script>
     // --- Ship Modal ---
@@ -402,35 +450,6 @@
     }
     function closeShipModal() {
         document.getElementById('shipModal').style.display = 'none';
-    }
-
-    // --- ⭐ Refund Modal ---
-    function openRefundModal(orderId, customerReason) {
-        document.getElementById('refundModalOrderId').value = orderId;
-        document.getElementById('displayCustomerReason').innerText = customerReason || "No specific reason provided.";
-        document.getElementById('merchantReason').value = ""; // clear previous input
-        document.getElementById('refundModal').style.display = 'flex';
-    }
-
-    function closeRefundModal() {
-        document.getElementById('refundModal').style.display = 'none';
-    }
-
-    function submitRefund(decision) {
-        document.getElementById('refundDecision').value = decision;
-
-        // 简单的客户端校验
-        if (decision === 'reject') {
-            const reason = document.getElementById('merchantReason').value.trim();
-            if (!reason) {
-                alert("Please provide a reason for rejection.");
-                return;
-            }
-        }
-
-        if (confirm("Are you sure you want to " + decision.toUpperCase() + " this refund?")) {
-            document.getElementById('refundForm').submit();
-        }
     }
 
     // --- Filtering Logic ---
@@ -444,8 +463,10 @@
         const cards = document.querySelectorAll('.order-card');
         cards.forEach(card => {
             const st = (card.getAttribute('data-status') || '').toUpperCase();
+            const rs = (card.getAttribute('data-refund-status') || '').toUpperCase();
+            let rCount = parseInt(card.getAttribute('data-rejection-count') || '0', 10);
+            if (Number.isNaN(rCount)) rCount = 0;
 
-            // 默认隐藏 PENDING
             if (st === 'PENDING') {
                 card.style.display = 'none';
                 return;
@@ -454,11 +475,19 @@
             let show = true;
             if (filter === 'all') show = true;
             else if (filter === 'to_ship') show = (st === 'PAID');
-            else if (filter === 'shipped') show = (st === 'SHIPPED');
+            else if (filter === 'shipped') show = (st === 'SHIPPED' && rCount === 0);
             else if (filter === 'completed') show = (st === 'COMPLETED');
             else if (filter === 'cancelled') show = (st === 'CANCELLED');
-            // ⭐ return 过滤器：显示申请中 OR 已退款
-            else if (filter === 'return') show = (st === 'RETURN_REQUESTED' || st === 'REFUNDED');
+            else if (filter === 'return') {
+                // ✅ include refund sub-status flow
+                show = (
+                        st === 'RETURN_REQUESTED' ||
+                        st === 'REFUNDED' ||
+                        (st === 'SHIPPED' && rCount > 0) ||
+                        rs === 'WAITING_RETURN' ||
+                        rs === 'RETURN_SHIPPED'
+                );
+            }
 
             card.style.display = show ? 'block' : 'none';
         });
@@ -469,21 +498,18 @@
         card.addEventListener('click', () => {
             setActiveMetric(filter);
             applyOrderFilter(filter);
-            // Optional: Update URL without reload to keep state on refresh
             const url = new URL(window.location);
             url.searchParams.set('filter', filter);
             window.history.pushState({}, '', url);
         });
     });
 
-    // Close modals on outside click
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = "none";
         }
     }
 
-    // Initial Load
     const INITIAL_FILTER = '<%= initialFilter %>';
     setActiveMetric(INITIAL_FILTER);
     applyOrderFilter(INITIAL_FILTER);
@@ -491,3 +517,5 @@
 
 </body>
 </html>
+
+

@@ -17,8 +17,18 @@ public class Order {
     private int rejectionCount;
     private String merchantRejectReason;
 
+    // ⭐ 新增：售后的子状态 (PENDING, REJECTED, APPROVED)
+    private String refundStatus;
+
+    // ⭐ 新增：退款类型 (MONEY_ONLY / RETURN_AND_REFUND)
+    private String refundType;
+
     // ⭐ 新增: 快递单号 (对应数据库新增的 Tracking_Number 字段)
     private String trackingNumber;
+
+    // ⭐ 退货退款扩展：商家退货地址 & 买家寄回单号
+    private String returnAddress;
+    private String returnTrackingNumber;
 
     // 包含订单项列表
     private List<OrderItem> orderItems;
@@ -50,5 +60,16 @@ public class Order {
     public void setRejectionCount(int rejectionCount) { this.rejectionCount = rejectionCount; }
     public String getMerchantRejectReason() { return merchantRejectReason; }
     public void setMerchantRejectReason(String merchantRejectReason) { this.merchantRejectReason = merchantRejectReason; }
-}
 
+    public String getRefundStatus() { return refundStatus; }
+    public void setRefundStatus(String refundStatus) { this.refundStatus = refundStatus; }
+
+    public String getRefundType() { return refundType; }
+    public void setRefundType(String refundType) { this.refundType = refundType; }
+
+    public String getReturnAddress() { return returnAddress; }
+    public void setReturnAddress(String returnAddress) { this.returnAddress = returnAddress; }
+
+    public String getReturnTrackingNumber() { return returnTrackingNumber; }
+    public void setReturnTrackingNumber(String returnTrackingNumber) { this.returnTrackingNumber = returnTrackingNumber; }
+}

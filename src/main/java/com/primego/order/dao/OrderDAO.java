@@ -161,12 +161,18 @@ public class OrderDAO {
 
     public List<Order> getOrdersByUserId(int userId) {
         List<Order> orderList = new ArrayList<>();
-        String sql = "SELECT * FROM Orders WHERE Customer_Id = ? ORDER BY Orders_Created_At DESC";
+        String sql = "SELECT o.*, " +
+                "r.Refund_Reason, r.Rejection_Count, r.Merchant_Reject_Reason, r.Refund_Status, r.Refund_Type, " +
+                "r.Return_Address, r.Return_Tracking_Number " +
+                "FROM Orders o " +
+                "LEFT JOIN Refunds r ON o.Orders_Id = r.Orders_Id " +
+                "WHERE o.Customer_Id = ? ORDER BY o.Orders_Created_At DESC";
         try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Order order = mapRowToOrder(rs);
+                    mapRefundFields(order, rs);
                     order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
                     orderList.add(order);
                 }
@@ -180,17 +186,44 @@ public class OrderDAO {
     /**
      * Get orders by user ID and status
      */
+    /**
+     * 根据状态查询订单 (已修改：查询 SHIPPED 时排除掉售后纠纷订单)
+     */
     public List<Order> getOrdersByUserIdAndStatus(int userId, String status) {
         List<Order> orderList = new ArrayList<>();
-        String sql = "SELECT * FROM Orders WHERE Customer_Id = ? AND Orders_Order_Status = ? ORDER BY Orders_Created_At DESC";
-        try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT o.*, ");
+        sql.append("r.Refund_Reason, r.Rejection_Count, r.Merchant_Reject_Reason, r.Refund_Status, r.Refund_Type, ");
+        sql.append("r.Return_Address, r.Return_Tracking_Number ");
+        sql.append("FROM Orders o ");
+        sql.append("LEFT JOIN Refunds r ON o.Orders_Id = r.Orders_Id ");
+        sql.append("WHERE o.Customer_Id = ? AND o.Orders_Order_Status = ? ");
+
+        // ⭐⭐⭐ 核心修改：如果是查询 SHIPPED (To Receive) 列表，排除掉有拒绝记录的订单 ⭐⭐⭐
+        // 这样“被拒绝但回退为 SHIPPED”的订单就不会出现在 To Receive 里，只会出现在 Returns 里
+        if ("SHIPPED".equals(status)) {
+            sql.append("AND (r.Rejection_Count IS NULL OR r.Rejection_Count = 0) ");
+        }
+
+        sql.append("ORDER BY o.Orders_Created_At DESC");
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
             ps.setInt(1, userId);
             ps.setString(2, status);
+
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Order order = mapRowToOrder(rs);
+
+                    // ✅ 统一映射 Refunds 字段（包含 Return_Address / Return_Tracking_Number）
+                    mapRefundFields(order, rs);
+
                     order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
                     orderList.add(order);
+
                 }
             }
         } catch (SQLException e) {
@@ -204,12 +237,18 @@ public class OrderDAO {
      */
     public Order getOrderById(int orderId) {
         Order order = null;
-        String sql = "SELECT * FROM Orders WHERE Orders_Id = ?";
+        String sql = "SELECT o.*, " +
+                "r.Refund_Reason, r.Rejection_Count, r.Merchant_Reject_Reason, r.Refund_Status, r.Refund_Type, " +
+                "r.Return_Address, r.Return_Tracking_Number " +
+                "FROM Orders o " +
+                "LEFT JOIN Refunds r ON o.Orders_Id = r.Orders_Id " +
+                "WHERE o.Orders_Id = ?";
         try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, orderId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     order = mapRowToOrder(rs);
+                    mapRefundFields(order, rs);
                     order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
                 }
             }
@@ -222,9 +261,14 @@ public class OrderDAO {
     public List<Order> getOrdersByMerchantId(int merchantId) {
         List<Order> orderList = new ArrayList<>();
         // DISTINCT 确保同一个订单如果包含多个该商家的商品，只显示一次
-        String sql = "SELECT DISTINCT o.* FROM Orders o " +
+        // ✅ 注意：mapRefundFields 需要 Refund_Reason/Refund_Status/Refund_Type 等字段都在 ResultSet 里
+        String sql = "SELECT DISTINCT o.*, " +
+                "r.Refund_Reason, r.Rejection_Count, r.Merchant_Reject_Reason, r.Refund_Status, r.Refund_Type, " +
+                "r.Return_Address, r.Return_Tracking_Number " +
+                "FROM Orders o " +
                 "JOIN Order_Item oi ON o.Orders_Id = oi.Orders_Id " +
                 "JOIN Product p ON oi.Product_Id = p.Product_Id " +
+                "LEFT JOIN Refunds r ON o.Orders_Id = r.Orders_Id " +
                 "WHERE p.merchant_id = ? " +
                 "ORDER BY o.Orders_Created_At DESC";
         try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -232,6 +276,7 @@ public class OrderDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Order order = mapRowToOrder(rs);
+                    mapRefundFields(order, rs);
                     order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
                     orderList.add(order);
                 }
@@ -301,7 +346,13 @@ public class OrderDAO {
     }
 
 
+    // 🟢 [修改] 用户申请退款
     public boolean requestRefund(int orderId, String reason, int userId) {
+        return requestRefund(orderId, reason, userId, "MONEY_ONLY");
+    }
+
+    // 🟢 [新增] 用户申请退款 + 退款类型
+    public boolean requestRefund(int orderId, String reason, int userId, String refundType) {
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
@@ -315,17 +366,26 @@ public class OrderDAO {
             }
 
             // 2. 插入或更新 Refunds 表
-            // 逻辑：如果不存在则插入；如果已存在(比如之前被拒绝过)，则重置状态为 PENDING，更新理由，但保留 Rejection_Count
-            String refundSql = "INSERT INTO Refunds (Orders_Id, User_Id, Refund_Reason, Refund_Amount, Refund_Status) " +
-                    "VALUES (?, ?, ?, (SELECT Orders_Total_Amount FROM Orders WHERE Orders_Id = ?), 'PENDING') " +
+            String rt = (refundType == null || refundType.trim().isEmpty()) ? "MONEY_ONLY" : refundType.trim();
+            if (!"MONEY_ONLY".equals(rt) && !"RETURN_AND_REFUND".equals(rt)) {
+                rt = "MONEY_ONLY";
+            }
+
+            // ⭐ 注意：Refund_Type 是 enum 且 NOT NULL，这里必须显式写入
+            String refundSql = "INSERT INTO Refunds (Orders_Id, Customer_Id, Refund_Type, Refund_Reason, Refund_Amount, Refund_Status) " +
+                    "VALUES (?, ?, ?, ?, (SELECT Orders_Total_Amount FROM Orders WHERE Orders_Id = ?), 'PENDING') " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "Refund_Status = 'PENDING', Refund_Reason = VALUES(Refund_Reason), Merchant_Reject_Reason = NULL";
+                    "Refund_Status = 'PENDING', " +
+                    "Refund_Type = VALUES(Refund_Type), " +
+                    "Refund_Reason = VALUES(Refund_Reason), " +
+                    "Merchant_Reject_Reason = NULL";
 
             try (PreparedStatement ps = conn.prepareStatement(refundSql)) {
                 ps.setInt(1, orderId);
-                ps.setInt(2, userId); // 需要传入 UserId
-                ps.setString(3, reason);
-                ps.setInt(4, orderId); // 用于子查询获取金额
+                ps.setInt(2, userId);
+                ps.setString(3, rt);
+                ps.setString(4, reason);
+                ps.setInt(5, orderId);
                 ps.executeUpdate();
             }
 
@@ -411,6 +471,97 @@ public class OrderDAO {
         }
     }
 
+    // 🟢 [新增] 商家同意退货 (写入退货地址 + 状态 WAITING_RETURN)
+    public boolean agreeReturn(int orderId, String returnAddress) {
+        String addr = (returnAddress == null) ? null : returnAddress.trim();
+        if (addr == null || addr.isEmpty()) {
+            addr = null;
+        }
+
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1) 更新 Refunds
+            String sql = "UPDATE Refunds SET Refund_Status = 'WAITING_RETURN', Return_Address = ? WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, addr);
+                ps.setInt(2, orderId);
+                if (ps.executeUpdate() <= 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            // 2) 保持 Orders 处于售后状态，确保两端列表都能看到
+            String orderSql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED' WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
+                ps.setInt(1, orderId);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) {}
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+        }
+    }
+
+    // 🟡 兼容旧调用：不传地址
+    public boolean agreeReturn(int orderId) {
+        return agreeReturn(orderId, null);
+    }
+
+    // 🟢 [新增] 买家确认已发货 (写入寄回单号 + 状态 RETURN_SHIPPED)
+    public boolean buyerConfirmShipped(int orderId, String returnTrackingNumber) {
+        String trk = (returnTrackingNumber == null) ? null : returnTrackingNumber.trim();
+        if (trk == null || trk.isEmpty()) {
+            trk = null;
+        }
+
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1) 更新 Refunds
+            String sql = "UPDATE Refunds SET Refund_Status = 'RETURN_SHIPPED', Return_Tracking_Number = ? WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, trk);
+                ps.setInt(2, orderId);
+                if (ps.executeUpdate() <= 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            // 2) 保持 Orders 处于售后状态
+            String orderSql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED' WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
+                ps.setInt(1, orderId);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) {}
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+        }
+    }
+
+    // 🟡 兼容旧调用：不传单号
+    public boolean buyerConfirmShipped(int orderId) {
+        return buyerConfirmShipped(orderId, null);
+    }
 
 
 
@@ -419,6 +570,43 @@ public class OrderDAO {
 
 
 
+    // 🟢 [新增] 专门用于查询 "售后/退款" 列表
+    // 逻辑：查询 (状态是 申请中/已退款) 或者 (状态是 SHIPPED 且 拒绝次数 > 0)
+    public List<Order> getReturnOrdersByUserId(int userId) {
+        List<Order> orderList = new ArrayList<>();
+        String sql = "SELECT o.*, " +
+                "r.Refund_Reason, r.Rejection_Count, r.Merchant_Reject_Reason, r.Refund_Status, r.Refund_Type, " +
+                "r.Return_Address, r.Return_Tracking_Number " +
+                "FROM Orders o " +
+                "LEFT JOIN Refunds r ON o.Orders_Id = r.Orders_Id " +
+                "WHERE o.Customer_Id = ? " +
+                "AND (" +
+                "  o.Orders_Order_Status IN ('RETURN_REQUESTED', 'REFUNDED') " +
+                "  OR (o.Orders_Order_Status = 'SHIPPED' AND r.Rejection_Count > 0)" +
+                "  OR r.Refund_Status IN ('WAITING_RETURN', 'RETURN_SHIPPED')" +
+                ") " +
+                "ORDER BY o.Orders_Created_At DESC";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Order order = mapRowToOrder(rs);
+                    mapRefundFields(order, rs);
+                    order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
+                    orderList.add(order);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return orderList;
+    }
+
+    // =========================================================================
+    // ↓↓↓↓↓ 私有方法 ↓↓↓↓↓
+    // =========================================================================
 
     private Order mapRowToOrder(ResultSet rs) throws SQLException {
         Order order = new Order();
@@ -437,13 +625,26 @@ public class OrderDAO {
 
         try {
             order.setCompletedAt(rs.getTimestamp("completed_at"));
-        } catch (SQLException e) { /* 忽略列不存在的情况 */ }
+        } catch (SQLException e) {
+            /* 忽略列不存在的情况 */
+        }
 
-        try {
-            order.setRefundReason(rs.getString("refund_reason"));
-        } catch (SQLException e) { /* 忽略列不存在的情况 */ }
+        // ❌ 注意：不再从 Orders 表读取 refund_reason（已迁移到 Refunds 表）
 
         return order;
+    }
+
+    // 🟢 [新增辅助方法] 映射 Refunds 表的字段 (普通查询没 JOIN Refunds 时不会报错)
+    private void mapRefundFields(Order order, ResultSet rs) {
+        // ✅ Each column is optional depending on which query SELECTs it.
+        // Read them independently so one missing column won't break the rest.
+        try { order.setRefundReason(rs.getString("Refund_Reason")); } catch (Exception ignored) {}
+        try { order.setRejectionCount(rs.getInt("Rejection_Count")); } catch (Exception ignored) {}
+        try { order.setMerchantRejectReason(rs.getString("Merchant_Reject_Reason")); } catch (Exception ignored) {}
+        try { order.setRefundStatus(rs.getString("Refund_Status")); } catch (Exception ignored) {}
+        try { order.setRefundType(rs.getString("Refund_Type")); } catch (Exception ignored) {}
+        try { order.setReturnAddress(rs.getString("Return_Address")); } catch (Exception ignored) {}
+        try { order.setReturnTrackingNumber(rs.getString("Return_Tracking_Number")); } catch (Exception ignored) {}
     }
 
     public int countTotalTransactions() {
@@ -462,12 +663,16 @@ public class OrderDAO {
 
     public List<Order> getOrdersByStatusForAdmin(String status) {
         List<Order> orderList = new ArrayList<>();
-        String sql = "SELECT * FROM Orders WHERE Orders_Order_Status = ? ORDER BY Orders_Created_At DESC";
+        String sql = "SELECT o.*, r.Rejection_Count, r.Merchant_Reject_Reason, r.Refund_Status " +
+                "FROM Orders o " +
+                "LEFT JOIN Refunds r ON o.Orders_Id = r.Orders_Id " +
+                "WHERE o.Orders_Order_Status = ? ORDER BY o.Orders_Created_At DESC";
         try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Order order = mapRowToOrder(rs);
+                    mapRefundFields(order, rs);
                     // For dashboard summary, we might not need items to improve performance,
                     // but let's include them for completeness if needed in modal detail
                     // order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
