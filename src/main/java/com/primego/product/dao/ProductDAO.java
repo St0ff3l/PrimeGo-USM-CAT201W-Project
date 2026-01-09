@@ -421,24 +421,7 @@ public class ProductDAO {
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                ProductDTO product = new ProductDTO();
-                product.setProductId(rs.getInt("Product_Id"));
-                product.setMerchantId(rs.getInt("Merchant_Id"));
-                product.setCategoryId(rs.getInt("Category_Id"));
-                product.setProductName(rs.getString("Product_Name"));
-                product.setProductDescription(rs.getString("Product_Description"));
-                product.setProductPrice(rs.getBigDecimal("Product_Price"));
-                product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
-                product.setProductStatus(rs.getString("Product_Status"));
-                product.setAuditStatus(rs.getString("Audit_Status"));
-                product.setAuditMessage(rs.getString("Audit_Message"));
-                product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
-                product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
-
-                product.setCategoryName(rs.getString("Category_Name"));
-                product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-                product.setMerchantName(rs.getString("Merchant_Name"));
-
+                ProductDTO product = mapRowToProductDTO(rs);
                 products.add(product);
             }
         } catch (SQLException e) {
@@ -446,6 +429,52 @@ public class ProductDAO {
         }
 
         return products;
+    }
+
+    public List<ProductDTO> getReviewedProducts() {
+        List<ProductDTO> products = new ArrayList<>();
+        String sql = "SELECT p.*, c.Category_Name, u.username as Merchant_Name, " +
+                "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
+                "FROM Product p " +
+                "LEFT JOIN Category c ON p.Category_Id = c.Category_Id " +
+                "LEFT JOIN users u ON p.Merchant_Id = u.id " +
+                "WHERE p.Audit_Status != 'PENDING' " +
+                "ORDER BY p.Product_Updated_At DESC";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                ProductDTO product = mapRowToProductDTO(rs);
+                products.add(product);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return products;
+    }
+
+    private ProductDTO mapRowToProductDTO(ResultSet rs) throws SQLException {
+        ProductDTO product = new ProductDTO();
+        product.setProductId(rs.getInt("Product_Id"));
+        product.setMerchantId(rs.getInt("Merchant_Id"));
+        product.setCategoryId(rs.getInt("Category_Id"));
+        product.setProductName(rs.getString("Product_Name"));
+        product.setProductDescription(rs.getString("Product_Description"));
+        product.setProductPrice(rs.getBigDecimal("Product_Price"));
+        product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
+        product.setProductStatus(rs.getString("Product_Status"));
+        product.setAuditStatus(rs.getString("Audit_Status"));
+        product.setAuditMessage(rs.getString("Audit_Message"));
+        product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
+        product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
+
+        product.setCategoryName(rs.getString("Category_Name"));
+        product.setPrimaryImageUrl(rs.getString("Primary_Image"));
+        product.setMerchantName(rs.getString("Merchant_Name"));
+        return product;
     }
 
     public boolean updateProductAuditByAdmin(int productId, String auditStatus, String auditMessage) {

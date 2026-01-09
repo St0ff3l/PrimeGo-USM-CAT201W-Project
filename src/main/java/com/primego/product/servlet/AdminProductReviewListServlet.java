@@ -33,8 +33,18 @@ public class AdminProductReviewListServlet extends HttpServlet {
             return;
         }
 
-        List<ProductDTO> pendingProducts = productDAO.getProductsPendingReview();
-        req.setAttribute("pendingProducts", pendingProducts);
+        String filter = req.getParameter("filter");
+        List<ProductDTO> products;
+
+        if ("history".equals(filter)) {
+            products = productDAO.getReviewedProducts();
+            req.setAttribute("currentFilter", "history");
+        } else {
+            products = productDAO.getProductsPendingReview();
+            req.setAttribute("currentFilter", "pending");
+        }
+
+        req.setAttribute("products", products);
 
         req.getRequestDispatcher("/admin/product/review_list.jsp").forward(req, resp);
     }
