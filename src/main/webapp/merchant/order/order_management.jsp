@@ -8,22 +8,21 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <%
-    // 权限检查 (双重保险)
+    // 权限检查
     User user = (User) session.getAttribute("user");
     if (user == null || !"MERCHANT".equals(user.getRole().toString())) {
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
 
-    // 统计数字（用于顶部 4 个按钮）
+    // 统计数字
     int toShipCount = 0;
     int shippedCount = 0;
     int completedCount = 0;
     int cancelledCount = 0;
+    int returnCount = 0; // ⭐ 新增：售后/退款单数量
 
     List<Order> ordersForCount = (List<Order>) request.getAttribute("orders");
-    // 让 JSTL/EL 一定能拿到 orders（避免只显示按钮但没有订单）
-    // 如果 servlet 正常 forward，这里就是同一个对象
     request.setAttribute("orders", ordersForCount);
 
     if (ordersForCount != null) {
@@ -37,25 +36,18 @@
                 completedCount++;
             } else if ("CANCELLED".equalsIgnoreCase(st)) {
                 cancelledCount++;
+            } else if ("RETURN_REQUESTED".equalsIgnoreCase(st) || "REFUNDED".equalsIgnoreCase(st)) {
+                // ⭐ 新增：统计售后单
+                returnCount++;
             }
         }
     }
 
-    // 支持从 dashboard 通过 ?filter=xxx 直接跳到对应分类
     String initialFilter = request.getParameter("filter");
     if (initialFilter == null || initialFilter.trim().isEmpty()) {
         initialFilter = "all";
     } else {
         initialFilter = initialFilter.trim().toLowerCase();
-    }
-
-    // 只允许这些值，防止意外值导致页面异常
-    if (!("all".equals(initialFilter)
-            || "to_ship".equals(initialFilter)
-            || "shipped".equals(initialFilter)
-            || "completed".equals(initialFilter)
-            || "cancelled".equals(initialFilter))) {
-        initialFilter = "all";
     }
 %>
 
@@ -70,13 +62,15 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
     <style>
-        /* 复用 Merchant Dashboard 的核心样式 */
         :root {
             --bg-color: #F3F6F9;
             --primary: #FF9500;
             --text-dark: #2d3436;
             --text-gray: #636e72;
             --card-radius: 16px;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f1c40f;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -98,13 +92,8 @@
             align-items: start;
         }
 
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
+        .main-content { display: flex; flex-direction: column; gap: 25px; }
 
-        /* 玻璃拟态卡片样式 */
         .glass-panel {
             background: rgba(255, 255, 255, 0.55);
             backdrop-filter: blur(25px);
@@ -115,7 +104,6 @@
             padding: 25px;
         }
 
-        /* 订单卡片样式 */
         .order-card {
             background: white;
             border-radius: 12px;
@@ -125,132 +113,87 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
             transition: transform 0.2s;
         }
+        /* ⭐ 不同状态给不同颜色的边框，增强识别度 */
+        .order-card[data-status="RETURN_REQUESTED"] { border-left-color: var(--danger); }
+        .order-card[data-status="REFUNDED"] { border-left-color: var(--text-gray); }
 
-        .order-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-        }
+        .order-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
 
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-
+        .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         .order-id { font-weight: 700; font-size: 1.1rem; color: var(--text-dark); }
         .order-date { font-size: 0.85rem; color: var(--text-gray); }
 
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
         .status-paid { background: #fff3cd; color: #856404; }
         .status-shipped { background: #d1e7dd; color: #0f5132; }
         .status-completed { background: #d4edda; color: #155724; }
         .status-pending { background: #f8d7da; color: #721c24; }
         .status-cancelled { background: #e2e3e5; color: #41464b; }
+        /* ⭐ 新增状态样式 */
+        .status-return { background: #ffeaa7; color: #d35400; }
+        .status-refunded { background: #fab1a0; color: #c0392b; }
 
-        /* 地址部分重点样式 */
         .address-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-size: 0.9rem;
-            color: #444;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
+            background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;
+            font-size: 0.9rem; color: #444; display: flex; gap: 10px; align-items: flex-start;
         }
-        .address-icon {
-            color: var(--primary);
-            font-size: 1.2rem;
-            margin-top: 2px;
-        }
+        .address-icon { color: var(--primary); font-size: 1.2rem; margin-top: 2px; }
 
-        /* 按钮样式 */
         .btn-ship {
-            background: var(--text-dark);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: 0.3s;
+            background: var(--text-dark); color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: 0.3s;
         }
-        .btn-ship:hover {
-            background: var(--primary);
-            transform: translateY(-2px);
-        }
+        .btn-ship:hover { background: var(--primary); transform: translateY(-2px); }
 
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 0.95rem;
-            border-bottom: 1px dashed #eee;
+        /* ⭐ 处理退款按钮 */
+        .btn-handle-refund {
+            background: white; border: 1px solid var(--danger); color: var(--danger);
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;
+            display: flex; align-items: center; gap: 5px; transition: 0.3s;
         }
+        .btn-handle-refund:hover { background: var(--danger); color: white; }
+
+        .item-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.95rem; border-bottom: 1px dashed #eee; }
         .item-row:last-child { border-bottom: none; }
 
-        /* ⭐ 新增：弹窗样式 */
+        /* Modal Styles */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;
         }
         .modal-content {
-            background: white; padding: 30px; border-radius: 16px; width: 400px;
+            background: white; padding: 30px; border-radius: 16px; width: 450px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: popIn 0.3s ease;
         }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
-        .form-control {
-            width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-size: 1rem;
-        }
+        .form-control { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-size: 1rem; }
+        .form-textarea { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-size: 0.95rem; resize: vertical; min-height: 80px;}
+
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
         .btn-cancel { background: #eee; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-        .btn-confirm { background: #FF9500; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
 
-        /* 顶部 4 个分类按钮（和 dashboard 一致风格，但做成可筛选） */
+        .btn-approve { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-reject { background: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
         .metrics-bar {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 14px;
-            margin: 0 0 20px 0;
+            /* ⭐ 自动适应宽度，适配增加的按钮 */
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 14px; margin: 0 0 20px 0;
         }
         .metric-card {
-            background: white;
-            border-radius: 14px;
-            padding: 14px 16px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            border: 1px solid #f1f2f6;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            user-select: none;
+            background: white; border-radius: 14px; padding: 14px 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid #f1f2f6; cursor: pointer;
+            transition: all 0.2s ease; user-select: none;
         }
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            border-color: rgba(255,149,0,0.15);
-        }
-        .metric-card.active {
-            border-color: rgba(255,149,0,0.8);
-            box-shadow: 0 10px 24px rgba(255,149,0,0.18);
-        }
+        .metric-card:hover { transform: translateY(-2px); border-color: rgba(255,149,0,0.15); }
+        .metric-card.active { border-color: rgba(255,149,0,0.8); box-shadow: 0 10px 24px rgba(255,149,0,0.18); }
         .metric-val { font-size: 1.6rem; font-weight: 800; color: var(--text-dark); line-height: 1.1; }
         .metric-label { font-size: 0.9rem; color: var(--text-gray); margin-top: 4px; }
-
-        @media (max-width: 900px) {
-            .metrics-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
     </style>
 </head>
 <body>
@@ -268,15 +211,10 @@
         <div class="glass-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="font-size: 1.5rem; color: var(--text-dark);">Order Management</h2>
-                <div style="font-size: 0.9rem; color: var(--text-gray);">
-                    Manage shipments and view customer details
-                </div>
             </div>
 
-            <!-- 分类按钮：All(不含 PENDING) / To Ship / Shipped / Completed / Cancelled -->
             <div class="metrics-bar" id="orderMetrics">
                 <div class="metric-card active" data-filter="all" role="button" tabindex="0">
-                    <!-- All 不显示 PENDING，所以这里用 (total - pending) 计算 -->
                     <%
                         int allNonPendingCount = 0;
                         if (ordersForCount != null) {
@@ -289,7 +227,7 @@
                         }
                     %>
                     <div class="metric-val"><%= allNonPendingCount %></div>
-                    <div class="metric-label">All</div>
+                    <div class="metric-label">All Orders</div>
                 </div>
                 <div class="metric-card" data-filter="to_ship" role="button" tabindex="0">
                     <div class="metric-val"><%= toShipCount %></div>
@@ -303,77 +241,52 @@
                     <div class="metric-val"><%= completedCount %></div>
                     <div class="metric-label">Completed</div>
                 </div>
+                <div class="metric-card" data-filter="return" role="button" tabindex="0">
+                    <div class="metric-val" style="color: <%= returnCount > 0 ? "#e74c3c" : "inherit" %>"><%= returnCount %></div>
+                    <div class="metric-label">Returns</div>
+                </div>
                 <div class="metric-card" data-filter="cancelled" role="button" tabindex="0">
                     <div class="metric-val"><%= cancelledCount %></div>
                     <div class="metric-label">Cancelled</div>
                 </div>
             </div>
 
-            <%-- If orders is not set, this page was likely accessed directly instead of via the servlet. --%>
-            <c:if test="${orders == null}">
-                <div class="glass-panel" style="margin-bottom: 20px; border-left: 5px solid #ff9500;">
-                    <div style="display:flex; gap:12px; align-items:flex-start;">
-                        <i class="ri-information-line" style="font-size: 1.3rem; color: #ff9500; margin-top: 2px;"></i>
-                        <div>
-                            <div style="font-weight: 700; margin-bottom: 6px;">Orders didn’t load</div>
-                            <div style="color: #666; font-size: 0.95rem; line-height: 1.5;">
-                                You’re opening this JSP directly, so the backend didn’t fetch orders.
-                                Please enter this page via the Orders menu (servlet) or click
-                                <a href="${pageContext.request.contextPath}/merchant/order/order_management" style="color:#ff9500; font-weight: 600;">reload orders</a>.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </c:if>
-
             <c:if test="${empty orders}">
                 <div style="text-align: center; padding: 50px; color: #999;">
                     <i class="ri-inbox-line" style="font-size: 3rem; margin-bottom: 10px; display: block;"></i>
-                    No orders found yet.
+                    No orders found.
                 </div>
             </c:if>
 
             <c:forEach var="order" items="${orders}">
-                <div class="order-card"
-                     data-status="${order.orderStatus}">
+                <div class="order-card" data-status="${order.orderStatus}">
 
                     <div class="order-header">
                         <div>
                             <div class="order-id">Order #${order.ordersId}</div>
-                            <div class="order-date">
-                                <i class="ri-time-line" style="vertical-align: middle;"></i>
-                                    ${order.createdAt}
-                            </div>
+                            <div class="order-date"><i class="ri-time-line"></i> ${order.createdAt}</div>
                         </div>
                         <div>
                             <span class="status-badge
                                 ${order.orderStatus == 'PAID' ? 'status-paid' :
                                   order.orderStatus == 'SHIPPED' ? 'status-shipped' :
                                   order.orderStatus == 'COMPLETED' ? 'status-completed' :
+                                  order.orderStatus == 'RETURN_REQUESTED' ? 'status-return' :
+                                  order.orderStatus == 'REFUNDED' ? 'status-refunded' :
                                   order.orderStatus == 'CANCELLED' ? 'status-cancelled' : 'status-pending'}">
-                                    ${order.orderStatus}
+                                    ${order.orderStatus.replace('_', ' ')}
                             </span>
                         </div>
                     </div>
 
                     <div style="margin-bottom: 15px;">
-                        <h4 style="font-size: 0.9rem; color: #888; margin-bottom: 8px;">Items Ordered</h4>
                         <c:forEach var="item" items="${order.orderItems}">
-                            <div class="item-row" data-item-qty="${item.quantity}">
+                            <div class="item-row">
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <div style="width: 30px; height: 30px; background: #eee; border-radius: 5px; overflow: hidden;">
-                                        <c:choose>
-                                            <c:when test="${empty item.productImageUrl}">
-                                                <img src="${pageContext.request.contextPath}/assets/images/product-placeholder.svg"
-                                                     style="width: 100%; height: 100%; object-fit: cover;"
-                                                     onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/images/product-placeholder.svg'">
-                                            </c:when>
-                                            <c:otherwise>
-                                                <img src="${pageContext.request.contextPath}/${item.productImageUrl}"
-                                                     style="width: 100%; height: 100%; object-fit: cover;"
-                                                     onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/images/product-placeholder.svg'">
-                                            </c:otherwise>
-                                        </c:choose>
+                                        <img src="${pageContext.request.contextPath}/${not empty item.productImageUrl ? item.productImageUrl : 'assets/images/product-placeholder.svg'}"
+                                             style="width: 100%; height: 100%; object-fit: cover;"
+                                             onerror="this.src='${pageContext.request.contextPath}/assets/images/product-placeholder.svg'">
                                     </div>
                                     <span>${item.productName} <span style="color: #999;">x${item.quantity}</span></span>
                                 </div>
@@ -385,42 +298,48 @@
                     <div class="address-box">
                         <i class="ri-map-pin-user-fill address-icon"></i>
                         <div>
-                            <div style="font-weight: 600; margin-bottom: 3px; color: var(--text-dark);">Shipping Address</div>
-                            <div style="line-height: 1.4; word-break: break-all;">
-                                    ${order.address}
-                            </div>
+                            <div style="font-weight: 600; margin-bottom: 3px;">Shipping Address</div>
+                            <div style="line-height: 1.4;">${order.address}</div>
                         </div>
                     </div>
 
+                        <%-- ⭐ 如果用户填写了退款理由，在这里显示一下，方便快速查看 --%>
+                    <c:if test="${not empty order.refundReason}">
+                        <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
+                            <strong>Customer's Reason:</strong> ${order.refundReason}
+                        </div>
+                    </c:if>
+
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
                         <div>
-                            <span style="color: #666; font-size: 0.9rem;">Total Earnings:</span>
-                            <span style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
-                                $${order.totalAmount}
-                            </span>
+                            <span style="color: #666; font-size: 0.9rem;">Total:</span>
+                            <span style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">$${order.totalAmount}</span>
                         </div>
 
+                            <%-- 发货按钮 --%>
                         <c:if test="${order.orderStatus == 'PAID'}">
                             <button type="button" class="btn-ship" onclick="openShipModal('${order.ordersId}')">
                                 <i class="ri-truck-line"></i> Ship Order
                             </button>
                         </c:if>
 
+                            <%-- ⭐ 处理售后按钮 --%>
+                        <c:if test="${order.orderStatus == 'RETURN_REQUESTED'}">
+                            <button type="button" class="btn-handle-refund"
+                                    onclick="openRefundModal('${order.ordersId}', '${order.refundReason != null ? order.refundReason.replace('\'', '\\\'') : ''}')">
+                                <i class="ri-customer-service-2-line"></i> Handle Refund
+                            </button>
+                        </c:if>
+
                         <c:if test="${order.orderStatus == 'SHIPPED'}">
                             <div style="text-align:right;">
-                                <span style="color: #0f5132; font-weight: 500; font-size: 0.9rem; display:block;">
-                                    <i class="ri-check-line"></i> Shipped
-                                </span>
-                                <span style="font-size: 0.8rem; color: #666;">
-                                    Tracking: ${order.trackingNumber}
-                                </span>
+                                <span style="color: #0f5132; font-weight: 500; font-size: 0.9rem;"><i class="ri-check-line"></i> Shipped</span>
+                                <div style="font-size: 0.8rem; color: #666;">Trk: ${order.trackingNumber}</div>
                             </div>
                         </c:if>
                     </div>
-
                 </div>
             </c:forEach>
-
         </div>
     </main>
 </div>
@@ -429,16 +348,13 @@
     <div class="modal-content">
         <h3 style="margin-bottom: 15px;">Ship Order</h3>
         <p style="margin-bottom: 20px; color: #666;">Enter tracking number to confirm shipment.</p>
-
         <form action="${pageContext.request.contextPath}/merchant/order/order_management" method="post">
             <input type="hidden" name="action" value="shipOrder">
-            <input type="hidden" id="modalOrderId" name="orderId" value="">
-
+            <input type="hidden" id="shipModalOrderId" name="orderId" value="">
             <div class="form-group">
                 <label>Tracking Number</label>
                 <input type="text" name="trackingNumber" class="form-control" placeholder="e.g. JNT-12345678" required>
             </div>
-
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeShipModal()">Cancel</button>
                 <button type="submit" class="btn-confirm">Confirm Ship</button>
@@ -447,23 +363,77 @@
     </div>
 </div>
 
+<div id="refundModal" class="modal-overlay">
+    <div class="modal-content" style="width: 500px;">
+        <h3 style="margin-bottom: 10px; color: #d35400;">Handle Refund Request</h3>
+
+        <form action="${pageContext.request.contextPath}/merchant/order/order_management" method="post" id="refundForm">
+            <input type="hidden" name="action" value="processRefund">
+            <input type="hidden" id="refundModalOrderId" name="orderId" value="">
+            <input type="hidden" id="refundDecision" name="decision" value=""> <%-- approve or reject --%>
+
+            <div class="form-group">
+                <label style="color: #666;">Customer's Reason:</label>
+                <div id="displayCustomerReason" style="background: #f8f9fa; padding: 10px; border-radius: 8px; font-style: italic; color: #555;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Your Response / Rejection Reason</label>
+                <textarea name="merchantReason" id="merchantReason" class="form-textarea" placeholder="If rejecting, please explain why (e.g. item damaged by user)..."></textarea>
+            </div>
+
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button type="button" class="btn-cancel" onclick="closeRefundModal()">Cancel</button>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn-reject" onclick="submitRefund('reject')">Reject</button>
+                    <button type="button" class="btn-approve" onclick="submitRefund('approve')">Approve Refund</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    // --- Ship Modal ---
     function openShipModal(orderId) {
-        document.getElementById('modalOrderId').value = orderId;
+        document.getElementById('shipModalOrderId').value = orderId;
         document.getElementById('shipModal').style.display = 'flex';
     }
-
     function closeShipModal() {
         document.getElementById('shipModal').style.display = 'none';
     }
 
-    // 点击背景关闭
-    document.getElementById('shipModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeShipModal();
-        }
-    });
+    // --- ⭐ Refund Modal ---
+    function openRefundModal(orderId, customerReason) {
+        document.getElementById('refundModalOrderId').value = orderId;
+        document.getElementById('displayCustomerReason').innerText = customerReason || "No specific reason provided.";
+        document.getElementById('merchantReason').value = ""; // clear previous input
+        document.getElementById('refundModal').style.display = 'flex';
+    }
 
+    function closeRefundModal() {
+        document.getElementById('refundModal').style.display = 'none';
+    }
+
+    function submitRefund(decision) {
+        document.getElementById('refundDecision').value = decision;
+
+        // 简单的客户端校验
+        if (decision === 'reject') {
+            const reason = document.getElementById('merchantReason').value.trim();
+            if (!reason) {
+                alert("Please provide a reason for rejection.");
+                return;
+            }
+        }
+
+        if (confirm("Are you sure you want to " + decision.toUpperCase() + " this refund?")) {
+            document.getElementById('refundForm').submit();
+        }
+    }
+
+    // --- Filtering Logic ---
     function setActiveMetric(filter) {
         document.querySelectorAll('#orderMetrics .metric-card').forEach(card => {
             card.classList.toggle('active', card.getAttribute('data-filter') === filter);
@@ -475,7 +445,7 @@
         cards.forEach(card => {
             const st = (card.getAttribute('data-status') || '').toUpperCase();
 
-            // 任何视图都不显示 PENDING
+            // 默认隐藏 PENDING
             if (st === 'PENDING') {
                 card.style.display = 'none';
                 return;
@@ -487,29 +457,33 @@
             else if (filter === 'shipped') show = (st === 'SHIPPED');
             else if (filter === 'completed') show = (st === 'COMPLETED');
             else if (filter === 'cancelled') show = (st === 'CANCELLED');
+            // ⭐ return 过滤器：显示申请中 OR 已退款
+            else if (filter === 'return') show = (st === 'RETURN_REQUESTED' || st === 'REFUNDED');
 
             card.style.display = show ? 'block' : 'none';
         });
     }
 
-    // bind metric interactions
     document.querySelectorAll('#orderMetrics .metric-card').forEach(card => {
         const filter = card.getAttribute('data-filter');
-        const handler = () => {
+        card.addEventListener('click', () => {
             setActiveMetric(filter);
             applyOrderFilter(filter);
-        };
-
-        card.addEventListener('click', handler);
-        card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handler();
-            }
+            // Optional: Update URL without reload to keep state on refresh
+            const url = new URL(window.location);
+            url.searchParams.set('filter', filter);
+            window.history.pushState({}, '', url);
         });
     });
 
-    // initial: show requested filter (excluding PENDING)
+    // Close modals on outside click
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = "none";
+        }
+    }
+
+    // Initial Load
     const INITIAL_FILTER = '<%= initialFilter %>';
     setActiveMetric(INITIAL_FILTER);
     applyOrderFilter(INITIAL_FILTER);
@@ -517,5 +491,3 @@
 
 </body>
 </html>
-
-

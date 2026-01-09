@@ -300,21 +300,122 @@ public class OrderDAO {
         }
     }
 
-    // 🟢 新增方法：处理退款申请
-    public boolean requestRefund(int orderId, String reason) {
-        String sql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED', refund_reason = ? WHERE Orders_Id = ?";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, reason);
-            ps.setInt(2, orderId);
+    public boolean requestRefund(int orderId, String reason, int userId) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false); // 开启事务
 
-            return ps.executeUpdate() > 0;
+            // 1. 更新 Orders 表状态
+            String orderSql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED' WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
+                ps.setInt(1, orderId);
+                ps.executeUpdate();
+            }
+
+            // 2. 插入或更新 Refunds 表
+            // 逻辑：如果不存在则插入；如果已存在(比如之前被拒绝过)，则重置状态为 PENDING，更新理由，但保留 Rejection_Count
+            String refundSql = "INSERT INTO Refunds (Orders_Id, User_Id, Refund_Reason, Refund_Amount, Refund_Status) " +
+                    "VALUES (?, ?, ?, (SELECT Orders_Total_Amount FROM Orders WHERE Orders_Id = ?), 'PENDING') " +
+                    "ON DUPLICATE KEY UPDATE " +
+                    "Refund_Status = 'PENDING', Refund_Reason = VALUES(Refund_Reason), Merchant_Reject_Reason = NULL";
+
+            try (PreparedStatement ps = conn.prepareStatement(refundSql)) {
+                ps.setInt(1, orderId);
+                ps.setInt(2, userId); // 需要传入 UserId
+                ps.setString(3, reason);
+                ps.setInt(4, orderId); // 用于子查询获取金额
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
         } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) {}
             e.printStackTrace();
             return false;
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
         }
     }
+
+
+    // 🟢 [修改] 商家拒绝退款
+    public boolean rejectRefund(int orderId, String merchantReason) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. 更新 Refunds 表：状态=REJECTED, 次数+1, 记录拒绝理由
+            String refundSql = "UPDATE Refunds SET Refund_Status = 'REJECTED', " +
+                    "Rejection_Count = Rejection_Count + 1, " +
+                    "Merchant_Reject_Reason = ? " +
+                    "WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(refundSql)) {
+                ps.setString(1, merchantReason);
+                ps.setInt(2, orderId);
+                ps.executeUpdate();
+            }
+
+            // 2. ⭐⭐ 关键修改：状态回退为 SHIPPED (而不是 COMPLETED) ⭐⭐
+            // 这样用户在前端才能再次看到 "Apply Again" 按钮 (因为前端判断 if status == SHIPPED)
+            String orderSql = "UPDATE Orders SET Orders_Order_Status = 'SHIPPED' WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
+                ps.setInt(1, orderId);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) {}
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+        }
+    }
+
+
+    // 🟢 [新增] 商家同意退款 (仅更新状态，钱在 WalletDAO 扣)
+    public boolean approveRefundStatus(int orderId) {
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. 更新 Refunds 表
+            String refundSql = "UPDATE Refunds SET Refund_Status = 'APPROVED' WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(refundSql)) {
+                ps.setInt(1, orderId);
+                ps.executeUpdate();
+            }
+
+            // 2. 更新 Orders 表
+            String orderSql = "UPDATE Orders SET Orders_Order_Status = 'REFUNDED' WHERE Orders_Id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
+                ps.setInt(1, orderId);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) {}
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+        }
+    }
+
+
+
+
+
+
 
 
 

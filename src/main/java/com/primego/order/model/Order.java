@@ -14,6 +14,8 @@ public class Order {
     private Timestamp createdAt;
     private Timestamp completedAt;
     private String refundReason;
+    private int rejectionCount;
+    private String merchantRejectReason;
 
     // ⭐ 新增: 快递单号 (对应数据库新增的 Tracking_Number 字段)
     private String trackingNumber;
@@ -44,4 +46,9 @@ public class Order {
     public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
     public List<OrderItem> getOrderItems() { return orderItems; }
     public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
+    public int getRejectionCount() { return rejectionCount; }
+    public void setRejectionCount(int rejectionCount) { this.rejectionCount = rejectionCount; }
+    public String getMerchantRejectReason() { return merchantRejectReason; }
+    public void setMerchantRejectReason(String merchantRejectReason) { this.merchantRejectReason = merchantRejectReason; }
 }
+
