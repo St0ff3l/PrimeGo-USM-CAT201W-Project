@@ -5,6 +5,7 @@
 <%@ page import="com.primego.wallet.model.WalletTransaction" %>
 <%@ page import="com.primego.user.model.User" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 
 <%
     User user = (User) session.getAttribute("user");
@@ -15,15 +16,28 @@
     }
 
     String role = (user.getRole() != null) ? user.getRole().toString() : "";
-    // 安全检查：非管理员跳转到个人钱包或拒绝访问
     if (!"ADMIN".equals(role)) {
         response.sendRedirect("my_wallet.jsp");
         return;
     }
 
     WalletDAO dao = new WalletDAO();
-    List<WalletTransaction> pendingList = dao.getPendingTransactions();
-    request.setAttribute("pendingList", pendingList);
+    List<WalletTransaction> allPending = dao.getPendingTransactions();
+    String filterType = request.getParameter("type");
+    List<WalletTransaction> displayList = new ArrayList<>();
+
+    if (filterType != null && !filterType.isEmpty()) {
+        for (WalletTransaction txn : allPending) {
+            if (txn.getTransactionType() != null &&
+                    txn.getTransactionType().equalsIgnoreCase(filterType)) {
+                displayList.add(txn);
+            }
+        }
+    } else {
+        displayList = allPending;
+    }
+
+    request.setAttribute("pendingList", displayList);
 %>
 
 <!DOCTYPE html>
@@ -33,7 +47,6 @@
     <title>Admin Approval - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <!-- 复用原有样式 -->
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
         body { background: linear-gradient(to bottom, #f0f2f5, #e0e5ec); min-height:100vh; color:#333; overflow-x: hidden; }
@@ -43,10 +56,11 @@
         .back-btn:hover { width:130px; border-radius:20px; background:rgba(0,0,0,.05); color:#2d3436; }
         .back-text { max-width:0; opacity:0; margin-left:0; transition:all .3s ease; font-size:.9rem; font-weight:600; white-space:nowrap; overflow:hidden; }
         .back-btn:hover .back-text { max-width:100px; opacity:1; margin-left:8px; }
-        .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; }
+        .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
         .balance-label { font-size:.9rem; color:#666; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:5px; }
         .role-badge { padding:8px 20px; border-radius:999px; font-size:.85rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.8px; box-shadow:0 8px 18px rgba(0,0,0,0.18); }
         .badge-admin { background:linear-gradient(135deg,#ff5e55,#d92e25); }
+
         .txn-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
         .txn-title { font-size:1.6rem; font-weight:700; color:#2d3436; }
         .txn-list { display:flex; flex-direction:column; gap:18px; }
@@ -57,6 +71,30 @@
         .admin-action-btn { padding:8px 14px; border-radius:999px; border:none; color:#fff; font-size:.85rem; font-weight:600; cursor:pointer; text-decoration: none; display: inline-block;}
         .btn-approve { background: #2ecc71; }
         .btn-reject { background: #e74c3c; }
+
+        .action-buttons { display: flex; gap: 20px; margin-bottom: 30px; }
+        .btn-filter {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 12px 24px; border-radius: 50px; font-weight: 600;
+            text-decoration: none; transition: all 0.3s ease; font-size: 1rem;
+        }
+        .btn-filter-topup {
+            background-color: #2ecc71; color: #fff;
+            border: 2px solid #2ecc71;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        .btn-filter-topup:hover, .btn-filter-topup.active {
+            background-color: #27ae60; border-color: #27ae60; transform: translateY(-2px);
+        }
+        .btn-filter-withdraw {
+            background-color: transparent; color: #e74c3c;
+            border: 2px solid #e74c3c;
+        }
+        .btn-filter-withdraw:hover, .btn-filter-withdraw.active {
+            background-color: #e74c3c; color: #fff;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2); transform: translateY(-2px);
+        }
+        .btn-filter.inactive { opacity: 0.5; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -93,14 +131,39 @@
         </div>
     </div>
 
+    <!-- 筛选按钮组 -->
+    <div class="action-buttons">
+        <a href="?type=TOPUP"
+           class="btn-filter btn-filter-topup ${param.type == 'TOPUP' ? 'active' : (not empty param.type ? 'inactive' : '')}">
+            Top Up Requests
+        </a>
+
+        <a href="?type=WITHDRAW"
+           class="btn-filter btn-filter-withdraw ${param.type == 'WITHDRAW' ? 'active' : (not empty param.type ? 'inactive' : '')}">
+            Withdraw Requests
+        </a>
+    </div>
+
     <div class="txn-header-row">
-        <div class="txn-title">Approval Queue</div>
+        <div class="txn-title">
+            <c:choose>
+                <c:when test="${param.type == 'TOPUP'}">Top Up Queue</c:when>
+                <c:when test="${param.type == 'WITHDRAW'}">Withdrawal Queue</c:when>
+                <c:otherwise>All Requests</c:otherwise>
+            </c:choose>
+        </div>
     </div>
 
     <div class="txn-list">
+        <!-- 检查列表是否为空 -->
         <c:if test="${empty pendingList}">
-            <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No pending requests.</p></div>
+            <div class="txn-item" style="color: #888; justify-content: center; padding: 40px; flex-direction: column; text-align: center;">
+                <i class="ri-inbox-line" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                <p>No pending requests found.</p>
+            </div>
         </c:if>
+
+        <!-- 循环列表 -->
         <c:forEach var="txn" items="${pendingList}">
             <div class="txn-item">
                 <div>
@@ -110,23 +173,27 @@
                     </div>
                     <div class="txn-left-sub">
                         User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
+
+                        <!-- 如果是充值记录且有图片，显示查看按钮 -->
                         <c:if test="${txn.transactionType == 'TOPUP' && not empty txn.receiptImage}">
                             <br>
-                            <a href="${pageContext.request.contextPath}/assets/images/Recharge_Photos/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
+                            <a href="${pageContext.request.contextPath}/assets/images/Recharge_Photos/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none; margin-top: 5px; display: inline-block;">
                                 <i class="ri-image-line"></i> View Receipt
                             </a>
                         </c:if>
                     </div>
                 </div>
                 <div class="txn-right">
-                    <span style="font-size: 1.2rem; margin-right: 15px;">RM ${txn.amount}</span>
+                    <span style="font-size: 1.2rem; margin-right: 15px; color: ${txn.transactionType == 'TOPUP' ? '#2ecc71' : '#e74c3c'};">
+                        ${txn.transactionType == 'TOPUP' ? '+' : '-'} RM ${txn.amount}
+                    </span>
                     <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline;">
                         <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="reject">
-                        <button type="submit" class="admin-action-btn btn-reject">Reject</button>
+                        <button type="submit" class="admin-action-btn btn-reject" onclick="return confirm('Reject this request?')">Reject</button>
                     </form>
                     <form action="${pageContext.request.contextPath}/WalletAdminServlet" method="post" style="display:inline; margin-left:5px;">
                         <input type="hidden" name="id" value="${txn.id}"><input type="hidden" name="action" value="approve">
-                        <button type="submit" class="admin-action-btn btn-approve">Approve</button>
+                        <button type="submit" class="admin-action-btn btn-approve" onclick="return confirm('Approve this request?')">Approve</button>
                     </form>
                 </div>
             </div>
