@@ -1,6 +1,5 @@
 package com.primego.user.servlet;
 
-import com.primego.order.dao.OrderDAO;
 import com.primego.user.dao.ProfileDAO;
 import com.primego.user.dao.UserDAO;
 import com.primego.user.model.CustomerProfile;
@@ -16,9 +15,10 @@ import java.io.IOException;
 
 @WebServlet("/profile")
 public class ProfileServlet extends HttpServlet {
+
     private ProfileDAO profileDAO = new ProfileDAO();
     private UserDAO userDAO = new UserDAO();
-    private OrderDAO orderDAO = new OrderDAO();
+    // ❌ 已删除 OrderDAO，不再需要处理订单
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -34,18 +34,11 @@ public class ProfileServlet extends HttpServlet {
         switch (user.getRole()) {
             case CUSTOMER:
                 req.setAttribute("profile", profileDAO.getCustomerProfile(userId));
-                // Fetch addresses for the new Addresses tab
+                // Fetch addresses for the Addresses tab
                 req.setAttribute("addresses", new com.primego.user.dao.AddressDAO().getAddressesByUserId(userId));
 
-                // Handle Order Filtering
-                String status = req.getParameter("status");
-                if (status != null && !status.isEmpty() && !"ALL".equals(status)) {
-                    req.setAttribute("orderList", orderDAO.getOrdersByUserIdAndStatus(userId, status));
-                    req.setAttribute("currentStatus", status);
-                } else {
-                    req.setAttribute("orderList", orderDAO.getOrdersByUserId(userId));
-                    req.setAttribute("currentStatus", "ALL");
-                }
+                // ❌ 已删除：获取订单的逻辑 (Handle Order Filtering)
+                // 现在的订单列表由 CustomerOrderServlet (/customer/orders) 负责处理
 
                 req.getRequestDispatcher("/customer/user/customer_profile.jsp").forward(req, resp);
                 break;
@@ -71,6 +64,7 @@ public class ProfileServlet extends HttpServlet {
         User user = (User) session.getAttribute("user");
         String action = req.getParameter("action");
 
+        // 1. 更新个人资料
         if ("updateCustomerProfile".equals(action)) {
             String newUsername = req.getParameter("username");
 
@@ -84,7 +78,7 @@ public class ProfileServlet extends HttpServlet {
             String phoneNumber = req.getParameter("phoneNumber");
             String phone = (phoneAreaCode + " " + phoneNumber).trim();
 
-            // 1. Update Username (in users table)
+            // Update Username (in users table)
             boolean usernameUpdated = true;
             if (newUsername != null && !newUsername.trim().isEmpty() && !newUsername.equals(user.getUsername())) {
                 if (userDAO.updateUsername(user.getId(), newUsername)) {
@@ -94,7 +88,7 @@ public class ProfileServlet extends HttpServlet {
                 }
             }
 
-            // 2. Update Profile Details (in customer_profiles table)
+            // Update Profile Details (in customer_profiles table)
             CustomerProfile profile = new CustomerProfile(
                     user.getId(),
                     fullName,
@@ -115,7 +109,9 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("message", "Failed to update profile details.");
                 req.setAttribute("messageType", "error");
             }
-        } else if ("changePassword".equals(action)) {
+        }
+        // 2. 修改密码
+        else if ("changePassword".equals(action)) {
             String oldPassword = req.getParameter("oldPassword");
             String newPassword = req.getParameter("newPassword");
             String confirmPassword = req.getParameter("confirmPassword");
@@ -140,7 +136,9 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("message", "New passwords do not match.");
                 req.setAttribute("messageType", "error");
             }
-        } else if ("updatePin".equals(action)) {
+        }
+        // 3. 更新/设置支付 PIN
+        else if ("updatePin".equals(action)) {
             String pin1 = req.getParameter("pin1");
             String pin2 = req.getParameter("pin2");
             String pin3 = req.getParameter("pin3");
@@ -197,41 +195,9 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("messageType", "error");
             }
         }
-        // ⭐⭐⭐ 新增：处理确认收货请求 ⭐⭐⭐
-        else if ("confirmReceipt".equals(action)) {
-            String orderIdStr = req.getParameter("orderId");
-            if (orderIdStr != null) {
-                try {
-                    int orderId = Integer.parseInt(orderIdStr);
-                    
-                    // 1. 获取订单详情
-                    com.primego.order.model.Order order = orderDAO.getOrderById(orderId);
-                    
-                    if (order != null && "SHIPPED".equals(order.getOrderStatus())) {
-                        // 2. 获取商家 ID (从订单的第一个商品获取，因为订单已按商家拆分)
-                        if (!order.getOrderItems().isEmpty()) {
-                            int productId = order.getOrderItems().get(0).getProductId();
-                            com.primego.product.model.ProductDTO product = new com.primego.product.dao.ProductDAO().getProductById(productId);
-                            
-                            if (product != null) {
-                                int merchantId = product.getMerchantId();
-                                
-                                // 3. 给商家打款 (SALES)
-                                new com.primego.wallet.dao.WalletDAO().creditMerchantBalance(merchantId, order.getTotalAmount());
-                                
-                                // 4. 更新订单状态为 COMPLETED
-                                orderDAO.updateOrderStatus(orderId, "COMPLETED");
-                            }
-                        }
-                    }
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                }
-            }
-            // 使用重定向返回，并带上 tab=orders 参数，确保页面刷新后停留在订单页
-            resp.sendRedirect(req.getContextPath() + "/profile?tab=orders");
-            return; // 结束执行，防止下面的 doGet 被调用
-        }
+
+        // ❌ 已删除：confirmReceipt (确认收货) 逻辑
+        // 该逻辑已移动至 CustomerOrderServlet
 
         doGet(req, resp); // Reload page
     }

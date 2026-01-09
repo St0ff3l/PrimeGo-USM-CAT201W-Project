@@ -12,6 +12,8 @@ public class Order {
     private String paymentStatus;  // UNPAID, PAID
     private String address;
     private Timestamp createdAt;
+    private Timestamp completedAt;
+    private String refundReason;
 
     // ⭐ 新增: 快递单号 (对应数据库新增的 Tracking_Number 字段)
     private String trackingNumber;
@@ -34,11 +36,12 @@ public class Order {
     public void setAddress(String address) { this.address = address; }
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
-
-    // ⭐ 新增 Getter 和 Setter
+    public Timestamp getCompletedAt() { return completedAt; }
+    public void setCompletedAt(Timestamp completedAt) { this.completedAt = completedAt; }
+    public String getRefundReason() { return refundReason; }
+    public void setRefundReason(String refundReason) { this.refundReason = refundReason; }
     public String getTrackingNumber() { return trackingNumber; }
     public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
-
     public List<OrderItem> getOrderItems() { return orderItems; }
     public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
 }

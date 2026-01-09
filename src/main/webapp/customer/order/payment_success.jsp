@@ -96,7 +96,7 @@
 
     <a href="<%= request.getContextPath() %>/index.jsp" class="btn btn-primary">Continue Shopping</a>
 
-    <a href="${pageContext.request.contextPath}/profile?tab=orders" class="btn btn-outline">View My Orders</a>
+    <a href="${pageContext.request.contextPath}/customer/orders?status=ALL" class="btn btn-outline">View My Orders</a>
 </div>
 
 </body>

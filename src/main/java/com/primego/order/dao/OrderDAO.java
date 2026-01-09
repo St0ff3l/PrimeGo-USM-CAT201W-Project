@@ -281,9 +281,14 @@ public class OrderDAO {
     }
 
     public boolean updateOrderStatus(int orderId, String newStatus) {
+        // 🟢 修改逻辑：如果是完成订单，同时更新 completed_at 时间
         String sql = "UPDATE Orders SET Orders_Order_Status = ? WHERE Orders_Id = ?";
+        if ("COMPLETED".equals(newStatus)) {
+            sql = "UPDATE Orders SET Orders_Order_Status = ?, completed_at = NOW() WHERE Orders_Id = ?";
+        }
+
         try (Connection conn = DBUtil.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, newStatus);
             ps.setInt(2, orderId);
@@ -294,6 +299,25 @@ public class OrderDAO {
             return false;
         }
     }
+
+    // 🟢 新增方法：处理退款申请
+    public boolean requestRefund(int orderId, String reason) {
+        String sql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED', refund_reason = ? WHERE Orders_Id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, reason);
+            ps.setInt(2, orderId);
+
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+
 
     private Order mapRowToOrder(ResultSet rs) throws SQLException {
         Order order = new Order();
@@ -309,6 +333,15 @@ public class OrderDAO {
         } catch (SQLException e) {
             order.setTrackingNumber(null);
         }
+
+        try {
+            order.setCompletedAt(rs.getTimestamp("completed_at"));
+        } catch (SQLException e) { /* 忽略列不存在的情况 */ }
+
+        try {
+            order.setRefundReason(rs.getString("refund_reason"));
+        } catch (SQLException e) { /* 忽略列不存在的情况 */ }
+
         return order;
     }
 

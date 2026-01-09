@@ -10,289 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
           rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/customer_profile.css">
     <style>
-        /* Inherit basic styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-            color: #333;
-            display: flex;
-        }
-
-        /* Background Blobs - Orange Theme */
-        .background-blob {
-            position: fixed;
-            border-radius: 50%;
-            z-index: -1;
-            opacity: 1;
-            filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
-        }
-
-        .blob-red {
-            width: 750px;
-            height: 650px;
-            top: -200px;
-            left: -200px;
-            transform: rotate(-10deg);
-            background: #ffffff;
-            box-shadow: none;
-        }
-
-        .blob-yellow {
-            width: 900px;
-            height: 700px;
-            top: -250px;
-            right: -100px;
-            transform: rotate(30deg);
-            background: #ffffff;
-            box-shadow: none;
-        }
-
-        .blob-orange {
-            width: 1800px;
-            height: 950px;
-            bottom: -650px;
-            left: -600px;
-            transform: rotate(-10deg);
-            background: linear-gradient(145deg, #ffad33, #e68a00);
-            box-shadow: inset 15px 15px 50px rgba(255, 255, 255, 0.5), inset -40px -40px 80px rgba(160, 82, 45, 0.3);
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255, 255, 255, 0.6);
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-        }
-
-        .sidebar h2 {
-            color: #e68a00;
-            margin-bottom: 40px;
-            font-size: 1.5rem;
-            text-align: center;
-        }
-
-        .nav-item {
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: 0.3s;
-            color: #555;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: linear-gradient(45deg, #FF9500, #FFCC00);
-            color: white;
-            box-shadow: 0 5px 15px rgba(255, 149, 0, 0.3);
-        }
-
-        .nav-item span {
-            margin-left: 10px;
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-        }
-
-        .btn-logout {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            text-align: center;
-            background: #333;
-            color: white;
-            text-decoration: none;
-            border-radius: 15px;
-            transition: 0.3s;
-        }
-
-        .btn-logout:hover {
-            background: #555;
-        }
-
-        /* Main Content */
-        .main-content {
-            margin-left: 250px;
-            flex-grow: 1;
-            padding: 40px;
-            width: calc(100% - 250px);
-        }
-
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .header-section h1 {
-            color: #e68a00;
-            font-size: 2.5rem;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 10px 30px;
-            border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            display: inline-block;
-        }
-
-        /* Tab Content */
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Glass Panel Style */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            margin-bottom: 30px;
-        }
-
-        /* Avatar Card Styles */
-        .avatar-card {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-        }
-
-        .avatar-circle {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, #FF9500, #FFCC00);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 10px 20px rgba(255, 149, 0, 0.3);
-        }
-
-        .user-details h2 {
-            margin-bottom: 5px;
-            color: #2d3436;
-        }
-
-        .user-details p {
-            color: #636e72;
-            margin-bottom: 5px;
-        }
-
-        .user-details .role-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background: #fff3e0;
-            color: #e68a00;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-top: 5px;
-        }
-
-        /* Order Status Grid */
-        .order-status-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            text-align: center;
-        }
-
-        .status-item {
-            padding: 20px;
-            border-radius: 15px;
-            transition: 0.3s;
-            cursor: pointer;
-        }
-
-        .status-item:hover {
-            background: rgba(255, 255, 255, 0.5);
-            transform: translateY(-5px);
-        }
-
-        .status-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .status-label {
-            font-weight: 600;
-            color: #555;
-        }
-
-        .status-count {
-            display: inline-block;
-            background: #ff3b30;
-            color: white;
-            border-radius: 10px;
-            padding: 2px 8px;
-            font-size: 0.8rem;
-            margin-left: 5px;
-            vertical-align: middle;
-        }
-
-        .btn-edit {
-            padding: 10px 25px;
-            background: #e68a00;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.3s;
-            margin-top: 15px;
-        }
-
-        .btn-edit:hover {
-            background: #d35400;
-        }
+        /* Page-specific styles only (moved shared layout styles to customer_profile.css) */
 
         /* PIN Input Styles */
         .pin-container {
@@ -308,7 +28,6 @@
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.5);
             background: rgba(255, 255, 255, 0.8);
-            /* Slightly more opaque */
             backdrop-filter: blur(10px);
             text-align: center;
             font-size: 1.2rem;
@@ -317,16 +36,13 @@
             outline: none;
             transition: 0.3s;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            /* Added Shadow */
         }
 
         .pin-digit:focus {
             background: rgba(255, 255, 255, 1);
             box-shadow: 0 0 0 3px rgba(230, 138, 0, 0.2), 0 8px 20px rgba(230, 138, 0, 0.15);
-            /* Enhanced Focus Shadow */
             border-color: #e68a00;
             transform: translateY(-2px);
-            /* Subtle lift on focus */
         }
 
         /* Order Tabs */
@@ -368,35 +84,9 @@
 <div class="background-blob blob-yellow"></div>
 <div class="background-blob blob-orange"></div>
 
-<div class="sidebar">
-    <h2>My Account</h2>
-    <div class="nav-item active" onclick="switchTab('profile', this)">
-        <i class="ri-user-line"></i><span>Profile Info</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('orders', this)">
-        <i class="ri-shopping-bag-3-line"></i><span>My Orders</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('addresses', this)">
-        <i class="ri-map-pin-line"></i><span>Addresses</span>
-    </div>
-    <div class="nav-item"
-         onclick="window.location.href='${pageContext.request.contextPath}/public/wallet/wallet.jsp'">
-        <i class="ri-wallet-line"></i><span>Wallet</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('settings', this)">
-        <i class="ri-settings-3-line"></i><span>Settings</span>
-    </div>
-
-    <div class="sidebar-footer">
-        <a href="${pageContext.request.contextPath}/index.jsp" class="btn-logout"
-           style="margin-bottom: 10px; background: #555;">
-            <i class="ri-home-4-line" style="margin-right: 5px;"></i>Back to Home
-        </a>
-        <a href="${pageContext.request.contextPath}/logout" class="btn-logout">
-            <i class="ri-logout-box-line" style="margin-right: 5px;"></i>Logout
-        </a>
-    </div>
-</div>
+<jsp:include page="/common/layout/customer_profile_sidebar.jsp">
+    <jsp:param name="active" value="profile" />
+</jsp:include>
 
 <div class="main-content">
 
@@ -449,7 +139,6 @@
                 width: 100%;
                 padding: 12px 20px;
                 border-radius: 25px;
-                /* Fully rounded */
                 border: 1px solid rgba(255, 255, 255, 0.5);
                 background: rgba(255, 255, 255, 0.6);
                 backdrop-filter: blur(10px);
@@ -459,13 +148,11 @@
                 color: #333;
                 font-size: 0.9rem;
                 appearance: none;
-                /* Removes default arrow for selects on some browsers */
             }
 
             .form-input:focus {
                 background: rgba(255, 255, 255, 0.9);
                 box-shadow: 0 0 0 3px rgba(230, 138, 0, 0.2);
-                /* Orange glow */
                 border-color: #e68a00;
             }
 
@@ -584,11 +271,11 @@
         <div class="glass-panel">
             <h3 style="margin-bottom: 20px; color: #e68a00;">My Orders</h3>
             <div class="order-status-grid">
-                <div class="status-item" onclick="window.location.href='${pageContext.request.contextPath}/profile?tab=orders&status=PAID'">
+                <div class="status-item" onclick="window.location.href='${pageContext.request.contextPath}/customer/orders?status=PAID'">
                     <i class="ri-box-3-line status-icon"></i>
                     <span class="status-label">To Ship</span>
                 </div>
-                <div class="status-item" onclick="window.location.href='${pageContext.request.contextPath}/profile?tab=orders&status=SHIPPED'">
+                <div class="status-item" onclick="window.location.href='${pageContext.request.contextPath}/customer/orders?status=SHIPPED'">
                     <i class="ri-truck-line status-icon"></i>
                     <span class="status-label">To Receive</span>
                 </div>
@@ -798,109 +485,12 @@
             <a href="${pageContext.request.contextPath}/profile?tab=orders&status=CANCELLED" class="order-tab ${currentStatus == 'CANCELLED' ? 'active' : ''}">Cancelled</a>
         </div>
 
-        <c:choose>
-            <%-- Case 1: 没有订单 --%>
-            <c:when test="${empty orderList}">
-                <div class="glass-panel" style="text-align: center; padding: 40px;">
-                    <div style="font-size: 3rem; color: #ddd; margin-bottom: 10px;">
-                        <i class="ri-shopping-cart-line"></i>
-                    </div>
-                    <p style="color: #666; font-size: 1.1rem;">You haven't placed any orders yet.</p>
-                    <a href="${pageContext.request.contextPath}/index.jsp" class="btn-edit"
-                       style="display: inline-block; text-decoration: none; margin-top: 20px;">
-                        Start Shopping
-                    </a>
-                </div>
-            </c:when>
-
-            <%-- Case 2: 有订单，遍历显示 --%>
-            <c:otherwise>
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                    <c:forEach var="order" items="${orderList}">
-
-                        <div class="glass-panel" style="padding: 25px; border-left: 5px solid #e68a00;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px;">
-                                <div>
-                                    <h3 style="color: #2d3436; font-size: 1.1rem;">Order #${order.ordersId}</h3>
-                                    <span style="font-size: 0.85rem; color: #888;">
-                                            Placed on: ${order.createdAt}
-                                        </span>
-                                </div>
-                                <div style="text-align: right;">
-                                        <span style="padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: 600;
-                                            ${order.orderStatus == 'COMPLETED' ? 'background: #d4edda; color: #155724;' :
-                                              order.orderStatus == 'PENDING' ? 'background: #fff3cd; color: #856404;' :
-                                              order.orderStatus == 'CANCELLED' ? 'background: #f8d7da; color: #721c24;' :
-                                              'background: #e2e3e5; color: #383d41;'}">
-                                                ${order.orderStatus}
-                                        </span>
-
-                                        <%-- ⭐ 新增：显示快递单号 --%>
-                                    <c:if test="${not empty order.trackingNumber}">
-                                        <div style="margin-top: 8px; font-size: 0.85rem; color: #555;">
-                                            <i class="ri-truck-line" style="vertical-align: middle;"></i>
-                                            Tracking: <strong>${order.trackingNumber}</strong>
-                                        </div>
-                                    </c:if>
-                                </div>
-                            </div>
-
-                            <div style="background: rgba(255,255,255,0.5); border-radius: 10px; padding: 10px; margin-bottom: 15px;">
-                                <c:forEach var="item" items="${order.orderItems}">
-                                    <a href="${pageContext.request.contextPath}/customer/product/product_detail.jsp?id=${item.productId}"
-                                       style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: inherit; padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.05); transition: 0.2s;"
-                                       onmouseover="this.style.background='rgba(255,255,255,0.8)'"
-                                       onmouseout="this.style.background='transparent'">
-
-                                        <img src="${pageContext.request.contextPath}/${not empty item.productImageUrl ? item.productImageUrl : 'assets/images/no-image.png'}"
-                                             alt="${item.productName}"
-                                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
-
-                                        <div style="flex: 1;">
-                                            <div style="font-weight: 600; font-size: 0.95rem; color: #333;">${item.productName}</div>
-                                            <div style="font-size: 0.8rem; color: #888;">x${item.quantity}</div>
-                                        </div>
-
-                                        <div style="font-weight: 600; color: #e68a00;">
-                                            $${item.subtotal}
-                                        </div>
-                                    </a>
-                                </c:forEach>
-                            </div>
-
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;">
-
-                                <div style="max-width: 60%;">
-                                    <span style="color: #666; font-size: 0.9rem;">Shipping to:</span>
-                                    <div style="font-size: 0.9rem; color: #333; font-weight: 500; margin-top: 5px; line-height: 1.4; white-space: normal; word-wrap: break-word;">
-                                            ${order.address}
-                                    </div>
-                                </div>
-
-                                <div style="text-align: right;">
-                                    <span style="font-size: 0.9rem; color: #666;">Total Amount</span>
-                                    <div style="font-size: 1.3rem; color: #e68a00; font-weight: bold; margin-bottom: 10px;">
-                                        $${order.totalAmount}
-                                    </div>
-
-                                    <c:if test="${order.orderStatus == 'SHIPPED' || order.orderStatus == 'PAID'}">
-                                        <form action="${pageContext.request.contextPath}/profile" method="post">
-                                            <input type="hidden" name="action" value="confirmReceipt">
-                                            <input type="hidden" name="orderId" value="${order.ordersId}">
-                                            <button type="submit"
-                                                    onclick="return confirm('Confirm that you have received the order?')"
-                                                    style="background: #2d3436; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                                <i class="ri-check-double-line"></i> Confirm Receipt
-                                            </button>
-                                        </form>
-                                    </c:if>
-                                </div>
-                            </div>
-                        </div>
-                    </c:forEach>
-                </div>
-            </c:otherwise>
-        </c:choose>
+        <div class="glass-panel" style="text-align: center;">
+            <p style="color: #666; margin-bottom: 15px;">For the full order list, open the standalone My Orders page.</p>
+            <a class="btn-edit" style="display: inline-block; text-decoration: none;" href="${pageContext.request.contextPath}/customer/orders?status=${empty currentStatus ? 'ALL' : currentStatus}">
+                Go to My Orders
+            </a>
+        </div>
     </div>
 
     <div id="settings" class="tab-content">
@@ -1027,8 +617,10 @@
 <script>
     function switchTab(tabId, element) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
+        const tabEl = document.getElementById(tabId);
+        if (tabEl) tabEl.classList.add('active');
 
+        // Sidebar items are links now; don't rely on onclick attributes.
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if (element) element.classList.add('active');
     }
@@ -1038,10 +630,11 @@
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab');
         if (tab) {
-            const navItem = document.querySelector(".nav-item[onclick*='" + tab + "']");
-            if (navItem) switchTab(tab, navItem);
+            // Only switch content panels; sidebar highlighting is handled by server-side include param.
+            switchTab(tab, null);
         }
     };
+
     function moveToNext(input, className) {
         if (input.value.length >= 1) {
             let next = input.nextElementSibling;
