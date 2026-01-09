@@ -1,5 +1,10 @@
 <%@ page import="com.primego.user.model.User" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.primego.order.dao.OrderDAO" %>
+<%@ page import="com.primego.order.model.Order" %>
+<%@ page import="com.primego.product.dao.ProductDAO" %>
+<%@ page import="com.primego.product.model.ProductDTO" %>
+<%@ page import="java.util.List" %>
 <%
     // ==========================================
     // 1. 权限检查
@@ -22,6 +27,72 @@
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
+
+    // ==========================================
+    // 2. Dashboard 数据（参照数据库 Orders / Order_Item / Product）
+    // ==========================================
+    int toShipCount = 0;      // Orders_Order_Status = 'PAID'
+    int shippedCount = 0;     // Orders_Order_Status = 'SHIPPED'
+    int completedCount = 0;   // Orders_Order_Status = 'COMPLETED'
+
+    int lowStockCount = 0;    // Product_Stock_Quantity <= LOW_STOCK_THRESHOLD
+    final int LOW_STOCK_THRESHOLD = 5;
+
+    // Low stock product info (id/name/stock) for dashboard list
+    class LowStockItem {
+        final int productId;
+        final String name;
+        final int stock;
+        LowStockItem(int productId, String name, int stock) {
+            this.productId = productId;
+            this.name = name;
+            this.stock = stock;
+        }
+    }
+
+    java.util.List<LowStockItem> lowStockItems = new java.util.ArrayList<>();
+
+    try {
+        OrderDAO orderDAO = new OrderDAO();
+        List<Order> orders = orderDAO.getOrdersByMerchantId(user.getId());
+        for (Order o : orders) {
+            String st = o.getOrderStatus();
+            if ("PAID".equalsIgnoreCase(st)) {
+                toShipCount++;
+            } else if ("SHIPPED".equalsIgnoreCase(st)) {
+                shippedCount++;
+            } else if ("COMPLETED".equalsIgnoreCase(st)) {
+                completedCount++;
+            }
+        }
+
+        ProductDAO productDAO = new ProductDAO();
+        List<ProductDTO> products = productDAO.getProductsByMerchantId(user.getId());
+        for (ProductDTO p : products) {
+            if (p.getProductStockQuantity() <= LOW_STOCK_THRESHOLD) {
+                lowStockCount++;
+
+                String name = (p.getProductName() != null) ? p.getProductName().trim() : "";
+                if (!name.isEmpty()) {
+                    lowStockItems.add(new LowStockItem(p.getProductId(), name, p.getProductStockQuantity()));
+                }
+            }
+        }
+    } catch (Exception e) {
+        // dashboard 上不阻断页面渲染
+        e.printStackTrace();
+    }
+
+    // Prepare display list (avoid too-long list)
+    final int LOW_STOCK_PREVIEW_LIMIT = 5;
+    java.util.List<LowStockItem> lowStockPreview;
+    if (lowStockItems.isEmpty()) {
+        lowStockPreview = java.util.Collections.emptyList();
+    } else {
+        int limit = Math.min(LOW_STOCK_PREVIEW_LIMIT, lowStockItems.size());
+        lowStockPreview = lowStockItems.subList(0, limit);
+    }
+    boolean hasMoreLowStock = lowStockItems.size() > LOW_STOCK_PREVIEW_LIMIT;
 %>
 
 <!DOCTYPE html>
@@ -50,6 +121,12 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        /* Ensure page can scroll (defensive override for background/layout styles) */
+        html, body {
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
 
         body {
             background-color: var(--bg-color);
@@ -137,11 +214,25 @@
 
         .todo-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f1f2f6; }
         .todo-item:last-child { border-bottom: none; }
-        .todo-left { display: flex; gap: 15px; align-items: center; }
+        .todo-left { display: flex; gap: 15px; align-items: center; flex: 1; }
         .todo-icon { width: 40px; height: 40px; background: #FFF4E6; color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .todo-text { flex: 1 1 auto; min-width: 0; }
         .todo-text h4 { font-size: 1rem; margin-bottom: 2px; }
         .todo-text p { font-size: 0.85rem; color: #b2bec3; }
         .todo-action { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+        /* Stock warning row: stack content so the low-stock list can use full panel width */
+        .todo-item.stock-warning {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .todo-item.stock-warning .todo-left {
+            width: 100%;
+            align-items: flex-start;
+        }
+        .todo-item.stock-warning .todo-text {
+            width: 100%;
+        }
 
         /* Data */
         .data-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px; }
@@ -163,6 +254,87 @@
         .btn-small { padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: none; cursor: pointer; margin-right: 5px; }
         .btn-edit { background: #dfe6e9; color: var(--text-dark); }
         .btn-del { background: #ffeaa7; color: #d35400; }
+
+        /* Low stock mini cards inside Stock Warning */
+        .low-stock-list {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: none;
+            width: 100%;
+        }
+
+        .low-stock-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            width: 100%;
+        }
+
+        .low-stock-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .low-stock-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: none;
+            text-decoration: none;
+        }
+
+        .low-stock-meta {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+        }
+
+        .low-stock-stock {
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .low-stock-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+
+        .btn-restock-mini {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: #111;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: transform 0.2s ease, background 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-restock-mini:hover {
+            background: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .stock-zero { color: #ef4444; }
 
         @media (max-width: 1024px) {
             .layout-container { grid-template-columns: 80px 1fr; }
@@ -197,102 +369,94 @@
                         </div>
                     </div>
                 </div>
-                <button class="shop-btn" onclick="location.href='${pageContext.request.contextPath}/search_result.jsp?seller_id=<%= user.getId() %>'">View My Shop</button>
+                <button class="shop-btn" onclick="location.href='${pageContext.request.contextPath}/merchant/product/product_management.jsp'">Manage Products</button>
             </div>
 
             <div class="metrics-bar" style="margin-bottom: 30px;">
-                <div class="metric-card">
-                    <div class="metric-val">12</div>
-                    <div class="metric-label">To Pay</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val">5</div>
+                <div class="metric-card" onclick="location.href='${pageContext.request.contextPath}/merchant/order/order_management?filter=to_ship'" style="cursor:pointer;">
+                    <div class="metric-val"><%= toShipCount %></div>
                     <div class="metric-label">To Ship</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-val">2</div>
-                    <div class="metric-label">Refunds</div>
+                <div class="metric-card" onclick="location.href='${pageContext.request.contextPath}/merchant/order/order_management?filter=shipped'" style="cursor:pointer;">
+                    <div class="metric-val"><%= shippedCount %></div>
+                    <div class="metric-label">Shipped</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-val">RM 4.5k</div>
-                    <div class="metric-label">Month Revenue</div>
+                <div class="metric-card" onclick="location.href='${pageContext.request.contextPath}/merchant/order/order_management?filter=completed'" style="cursor:pointer;">
+                    <div class="metric-val"><%= completedCount %></div>
+                    <div class="metric-label">Completed</div>
+                </div>
+                <div class="metric-card" onclick="location.href='${pageContext.request.contextPath}/merchant/order/order_management?filter=all'" style="cursor:pointer;">
+                    <div class="metric-val"><%= lowStockCount %></div>
+                    <div class="metric-label">Low Stock</div>
                 </div>
             </div>
 
             <div class="todo-section">
                 <div class="panel">
                     <div class="panel-header">
-                        <div class="panel-title">Live Data</div>
-                        <select style="padding: 5px; border: 1px solid #ddd; border-radius: 8px;">
-                            <option>Today</option>
-                            <option>Yesterday</option>
-                        </select>
+                        <div class="panel-title">Quick Actions</div>
                     </div>
 
-                    <div class="data-grid">
-                        <div class="data-box">
-                            <h5>Visitors</h5>
-                            <h3>842</h3>
-                            <div class="trend up"><i class="ri-arrow-up-line"></i> 12%</div>
-                        </div>
-                        <div class="data-box">
-                            <h5>Orders</h5>
-                            <h3>32</h3>
-                            <div class="trend up"><i class="ri-arrow-up-line"></i> 5%</div>
-                        </div>
-                        <div class="data-box">
-                            <h5>Conversion</h5>
-                            <h3>3.8%</h3>
-                            <div class="trend down"><i class="ri-arrow-down-line"></i> 0.4%</div>
-                        </div>
-                        <div class="data-box">
-                            <h5>Revenue</h5>
-                            <h3>1,240</h3>
-                            <div class="trend up"><i class="ri-arrow-up-line"></i> 8%</div>
-                        </div>
-                    </div>
+                    <div class="todo-item stock-warning">
+                        <div class="todo-left">
+                            <div class="todo-icon"><i class="ri-error-warning-line"></i></div>
+                            <div class="todo-text">
+                                <h4>Stock Warning</h4>
+                                <p>
+                                    <%= lowStockCount %> items are low in stock (≤ <%= LOW_STOCK_THRESHOLD %>)
+                                </p>
 
-                    <div style="height: 250px;">
-                        <canvas id="revenueChart"></canvas>
+                                <% if (!lowStockPreview.isEmpty()) { %>
+                                    <div class="low-stock-list">
+                                        <% for (LowStockItem item : lowStockPreview) { %>
+                                            <div class="low-stock-item">
+                                                <div class="low-stock-left">
+                                                    <a class="low-stock-name"
+                                                       href="<%= request.getContextPath() %>/merchant/product/product_edit.jsp?id=<%= item.productId %>"
+                                                       title="Edit <%= item.name %>">
+                                                        <%= item.name %>
+                                                    </a>
+                                                    <div class="low-stock-meta">
+                                                        Stock: <span class="low-stock-stock <%= (item.stock <= 0 ? "stock-zero" : "") %>"><%= item.stock %></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="low-stock-actions">
+                                                    <a class="btn-restock-mini"
+                                                       href="<%= request.getContextPath() %>/merchant/product/product_edit.jsp?id=<%= item.productId %>">
+                                                        <i class="ri-edit-line"></i> Restock
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        <% } %>
+
+                                        <% if (hasMoreLowStock) { %>
+                                            <div style="margin-top:2px; font-size:0.85rem; color: var(--text-gray);">...and more</div>
+                                        <% } %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- 右侧总按钮：批量查看/补货 -->
+                        <!-- <a href="<%= request.getContextPath() %>/merchant/product/product_management.jsp" class="todo-action">Restock</a> -->
                     </div>
                 </div>
 
                 <div class="panel">
                     <div class="panel-header">
-                        <div class="panel-title">To-Do List</div>
+                        <div class="panel-title">Shortcuts</div>
                     </div>
 
-                    <div class="todo-item">
+                    <div class="todo-item" style="border-bottom:none;">
                         <div class="todo-left">
-                            <div class="todo-icon"><i class="ri-error-warning-line"></i></div>
+                            <div class="todo-icon"><i class="ri-add-circle-line"></i></div>
                             <div class="todo-text">
-                                <h4>Stock Warning</h4>
-                                <p>3 items are low in stock</p>
+                                <h4>Publish Product</h4>
+                                <p>Add a new product to your store</p>
                             </div>
                         </div>
-                        <a href="${pageContext.request.contextPath}/merchant/product/product_management.jsp" class="todo-action">Restock</a>
-                    </div>
-
-                    <div class="todo-item">
-                        <div class="todo-left">
-                            <div class="todo-icon"><i class="ri-message-3-line"></i></div>
-                            <div class="todo-text">
-                                <h4>Unread Messages</h4>
-                                <p>5 customers are waiting</p>
-                            </div>
-                        </div>
-                        <a href="#" class="todo-action">Reply</a>
-                    </div>
-
-                    <div class="todo-item">
-                        <div class="todo-left">
-                            <div class="todo-icon"><i class="ri-star-line"></i></div>
-                            <div class="todo-text">
-                                <h4>New Reviews</h4>
-                                <p>You got 2 new 5-star reviews!</p>
-                            </div>
-                        </div>
-                        <a href="#" class="todo-action">View</a>
+                        <a href="${pageContext.request.contextPath}/merchant/product/publish.jsp" class="todo-action">Publish</a>
                     </div>
                 </div>
             </div>

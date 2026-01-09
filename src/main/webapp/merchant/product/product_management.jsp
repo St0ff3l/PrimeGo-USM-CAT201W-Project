@@ -249,7 +249,7 @@
                 <i class="ri-search-line"></i>
                 <input type="text" id="searchInput" placeholder="Search by name, ID or category...">
             </div>
-            <select style="padding: 10px; border-radius: 10px; border: 1px solid #dfe6e9; outline: none; cursor: pointer;">
+            <select id="statusFilter" style="padding: 10px; border-radius: 10px; border: 1px solid #dfe6e9; outline: none; cursor: pointer;">
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -270,14 +270,25 @@
             } else {
                 int index = 0;
                 for (ProductDTO p : productList) {
-                    String statusClass = "ON_SALE".equals(p.getProductStatus()) ? "status-active" : "status-inactive";
-                    String statusText = "ON_SALE".equals(p.getProductStatus()) ? "Active" : "Inactive";
+                    // 缺货(<=0)的商品一律当作 inactive 显示
+                    boolean isOutOfStock = p.getProductStockQuantity() <= 0;
+
+                    boolean isOnSale = "ON_SALE".equals(p.getProductStatus());
+                    boolean isActiveForUi = isOnSale && !isOutOfStock;
+
+                    String statusClass = isActiveForUi ? "status-active" : "status-inactive";
+                    String statusText = isActiveForUi ? "Active" : "Inactive";
 
                     // 动画延迟
                     String delayStyle = String.format("animation-delay: %.1fs;", 0.2 + (index * 0.1));
+
+                    // 给前端筛选使用
+                    String statusValueForUi = isActiveForUi ? "active" : "inactive";
             %>
             <div class="product-card"
                  style="<%= delayStyle %>"
+                 data-status="<%= statusValueForUi %>"
+                 data-stock="<%= p.getProductStockQuantity() %>"
                  onclick="window.location.href='product_edit.jsp?id=<%= p.getProductId() %>'">
 
                 <span class="status-badge <%= statusClass %>">
@@ -315,21 +326,30 @@
 </div>
 
 <script>
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase();
+    function applyFilters() {
+        const term = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+        const status = document.getElementById('statusFilter')?.value || 'all';
+
         const cards = document.querySelectorAll('.product-card');
 
         cards.forEach(card => {
-            const title = card.querySelector('.card-title').innerText.toLowerCase();
-            const category = card.querySelector('.card-category').innerText.toLowerCase();
+            const title = (card.querySelector('.card-title')?.innerText || '').toLowerCase();
+            const category = (card.querySelector('.card-category')?.innerText || '').toLowerCase();
 
-            if (title.includes(term) || category.includes(term)) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
+            const matchesSearch = !term || title.includes(term) || category.includes(term);
+
+            const cardStatus = (card.getAttribute('data-status') || 'inactive').toLowerCase();
+            const matchesStatus = (status === 'all') || (status === cardStatus);
+
+            card.style.display = (matchesSearch && matchesStatus) ? 'flex' : 'none';
         });
-    });
+    }
+
+    document.getElementById('searchInput')?.addEventListener('input', applyFilters);
+    document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+
+    // initial
+    applyFilters();
 </script>
 
 </body>
