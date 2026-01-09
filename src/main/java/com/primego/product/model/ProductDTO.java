@@ -11,8 +11,20 @@ public class ProductDTO extends Product {
     // ⭐ 新增：库存数量字段，对应数据库的 Product_Stock_Quantity
     private int productStockQuantity;
 
+    // ⭐⭐ 关键新增：用于判断是否曾经通过过审核 (true=修改申请, false=新品上架)
+    private boolean hasBeenApproved;
+
     public ProductDTO() {
         super();
+    }
+
+    // ⭐⭐ 新增字段的 Getter 和 Setter
+    public boolean isHasBeenApproved() {
+        return hasBeenApproved;
+    }
+
+    public void setHasBeenApproved(boolean hasBeenApproved) {
+        this.hasBeenApproved = hasBeenApproved;
     }
 
     // ⭐ 新增：库存字段的 Getter 和 Setter

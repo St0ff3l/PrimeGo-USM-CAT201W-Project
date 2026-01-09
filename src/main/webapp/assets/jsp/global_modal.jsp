@@ -1,0 +1,109 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<style>
+  /* ===== 自定义弹窗样式 (开始) ===== */
+  .custom-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
+    z-index: 9999; display: none; opacity: 0; transition: opacity 0.3s ease;
+    justify-content: center; align-items: center;
+  }
+  .custom-modal-overlay.active { display: flex; opacity: 1; }
+
+  .custom-modal-box {
+    background: #fff; padding: 30px; width: 400px; max-width: 90%;
+    border-radius: 20px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .custom-modal-overlay.active .custom-modal-box { transform: scale(1); }
+
+  .modal-icon-wrap {
+    width: 60px; height: 60px; margin: 0 auto 15px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 30px;
+  }
+  /* 红色错误样式 */
+  .icon-error { background: #ffebee; color: #ef5350; }
+  /* 绿色成功样式 */
+  .icon-success { background: #e8f5e9; color: #66bb6a; }
+  /* 橙色警告样式 */
+  .icon-warning { background: #fff3e0; color: #ff9800; }
+
+  .modal-title { font-size: 1.2rem; font-weight: 700; color: #333; margin-bottom: 10px; }
+  .modal-message { font-size: 0.95rem; color: #666; margin-bottom: 25px; line-height: 1.5; }
+
+  .modal-btn {
+    background: #2d3436; color: #fff; border: none; padding: 10px 30px;
+    border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    outline: none;
+  }
+  .modal-btn:hover { background: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  /* ===== 自定义弹窗样式 (结束) ===== */
+</style>
+
+<div class="custom-modal-overlay" id="customModal">
+  <div class="custom-modal-box">
+    <div class="modal-icon-wrap" id="modalIconBg">
+      <i class="" id="modalIcon"></i>
+    </div>
+
+    <h3 class="modal-title" id="modalTitle">Title</h3>
+    <p class="modal-message" id="modalMessage">Message goes here.</p>
+
+    <button class="modal-btn" onclick="closeModal()">OK, Got it</button>
+  </div>
+</div>
+
+<script>
+  /* ===== 全局弹窗逻辑 ===== */
+  (function() {
+    const modalOverlay = document.getElementById('customModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalIconBg = document.getElementById('modalIconBg');
+    let onCloseCallback = null; // 用于存储关闭时的回调
+
+    // 挂载到 window 对象，使其成为全局函数
+    // type 参数支持: 'error', 'success', 'warning' (或者是旧代码的 true/false)
+    window.showModal = function(title, message, type = 'error', callback = null) {
+      modalTitle.innerText = title;
+      modalMessage.innerText = message;
+      onCloseCallback = callback;
+
+      // 重置样式
+      modalIcon.className = '';
+      modalIconBg.className = 'modal-icon-wrap';
+
+      // 根据类型设置图标和颜色
+      if (type === 'error' || type === true) {
+        modalIcon.classList.add('ri-error-warning-line');
+        modalIconBg.classList.add('icon-error');
+      } else if (type === 'success' || type === false) {
+        modalIcon.classList.add('ri-checkbox-circle-line');
+        modalIconBg.classList.add('icon-success');
+      } else if (type === 'warning') {
+        modalIcon.classList.add('ri-alert-line');
+        modalIconBg.classList.add('icon-warning');
+      }
+
+      // 显示弹窗
+      modalOverlay.classList.add('active');
+    };
+
+    // 关闭弹窗函数
+    window.closeModal = function() {
+      modalOverlay.classList.remove('active');
+      if (onCloseCallback) {
+        onCloseCallback(); // 如果有回调，执行它
+        onCloseCallback = null;
+      }
+    };
+
+    // 点击遮罩层也可以关闭
+    modalOverlay.addEventListener('click', function(e) {
+      if(e.target === modalOverlay) {
+        window.closeModal();
+      }
+    });
+  })();
+</script>

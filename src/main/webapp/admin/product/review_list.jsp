@@ -102,6 +102,18 @@
         .badge-approved { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
         .badge-rejected { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
 
+        /* ⭐ 新增的标签样式 */
+        .badge-new {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        .badge-update {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            border: 1px solid #e1bee7;
+        }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -196,15 +208,29 @@
         %>
         <tr><td colspan="7" class="empty">No products found.</td></tr>
         <%
-            } else {
-                for (ProductDTO p : products) {
-                    String badgeClass = "badge-pending";
-                    if ("APPROVED".equals(p.getAuditStatus())) badgeClass = "badge-approved";
-                    if ("REJECTED".equals(p.getAuditStatus())) badgeClass = "badge-rejected";
+        } else {
+            for (ProductDTO p : products) {
+                // 原有状态样式
+                String badgeClass = "badge-pending";
+                if ("APPROVED".equals(p.getAuditStatus())) badgeClass = "badge-approved";
+                if ("REJECTED".equals(p.getAuditStatus())) badgeClass = "badge-rejected";
+
+                // ⭐ 判断是新商品还是修改
+                boolean isModification = p.isHasBeenApproved();
+                String typeLabel = isModification ? "Modification" : "New Listing";
+                String typeClass = isModification ? "badge-update" : "badge-new";
         %>
         <tr>
             <td><%= p.getProductId() %></td>
-            <td><%= p.getProductName() %></td>
+            <td>
+                <div style="font-weight: 600;"><%= p.getProductName() %></div>
+
+                <% if ("PENDING".equals(p.getAuditStatus())) { %>
+                <span class="badge <%= typeClass %>" style="font-size: 0.75rem; margin-top: 5px;">
+                        <%= typeLabel %>
+                    </span>
+                <% } %>
+            </td>
             <td><%= p.getMerchantName() %></td>
             <td><%= p.getCategoryName() %></td>
             <td><span class="badge <%= badgeClass %>"><%= p.getAuditStatus() %></span></td>

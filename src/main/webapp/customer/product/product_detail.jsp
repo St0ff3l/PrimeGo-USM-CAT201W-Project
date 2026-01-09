@@ -388,9 +388,13 @@
 
             <div class="action-group">
                 <% if (currentUser != null) { %>
-                <a href="${pageContext.request.contextPath}/cart_action?action=add&productId=<%= product.getProductId() %>" class="btn-action btn-cart">
+                <%--
+                    ⭐ 修改点: 添加购物车改为 Button + AJAX
+                    使用 javascript:void(0) 防止页面跳转，onclick 调用 JS 函数
+                --%>
+                <button onclick="addToCart(<%= product.getProductId() %>)" class="btn-action btn-cart">
                     <i class="ri-shopping-cart-2-line"></i> Add to Cart
-                </a>
+                </button>
 
                 <a href="${pageContext.request.contextPath}/customer/order/order_confirmation.jsp?productId=<%= product.getProductId() %>" class="btn-action btn-buy">
                     Buy Now
@@ -414,7 +418,33 @@
     </div>
 </div>
 
+<jsp:include page="/assets/jsp/global_modal.jsp" />
+
 <script>
+    // ==========================================
+    // AJAX 添加购物车逻辑 (新增)
+    // ==========================================
+    function addToCart(productId) {
+        // 构建请求 URL
+        const url = '${pageContext.request.contextPath}/cart_action?action=add&productId=' + productId;
+
+        // 发送 AJAX 请求
+        fetch(url)
+            .then(response => {
+                // 如果后端 Servlet 是执行 response.sendRedirect，Fetch 会自动跟随并返回 200 OK
+                // 我们不需要解析返回的 HTML，只要状态码是 200 就代表添加成功
+                if (response.ok) {
+                    showModal("Success!", "Product successfully added to your cart.", "success");
+                } else {
+                    showModal("Oops", "Something went wrong. Please try again.", "error");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showModal("Error", "Network error. Please check your connection.", "error");
+            });
+    }
+
     // ==========================================
     // 图片轮播逻辑
     // ==========================================

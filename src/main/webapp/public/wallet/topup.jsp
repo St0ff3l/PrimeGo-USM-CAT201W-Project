@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Top Up Wallet - Manual QR</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- 图标库 -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/images_uploader.css">
 
@@ -51,16 +50,18 @@
 
         /* 左侧：二维码区域 */
         .qr-section {
-            background: #fff; border-radius: 20px; padding: 30px; text-align: center;
+            background: #fff;
+            border-radius: 20px; padding: 30px; text-align: center;
             box-shadow: 0 8px 20px rgba(0,0,0,0.05);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .qr-title { font-size: 1.1rem; font-weight: 700; color: #2d3436; margin-bottom: 5px; }
         .qr-desc { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
 
-        /* 修改：移除边框背景，适配真实图片 */
+        /* 二维码图片容器 */
         .qr-img-placeholder {
-            width: 200px; height: 200px;
+            width: 200px;
+            height: 200px;
             margin-bottom: 15px;
             display: flex; align-items: center; justify-content: center;
         }
@@ -75,35 +76,22 @@
         .input-group { margin-bottom: 20px; }
 
         input[type="number"] {
-            width: 100%; padding: 12px 16px; border-radius: 12px;
+            width: 100%;
+            padding: 12px 16px; border-radius: 12px;
             border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.6);
             font-size: 1rem; outline: none; transition: .3s;
         }
         input[type="number"]:focus { border-color: #0984e3; background: #fff; }
 
-        .upload-box {
-            border: 2px dashed #0984e3; background: rgba(9, 132, 227, 0.05);
-            border-radius: 12px; padding: 30px; text-align: center;
-            cursor: pointer; transition: .3s; position: relative;
-        }
-        .upload-box:hover { background: rgba(9, 132, 227, 0.1); }
-        .upload-icon { font-size: 2rem; color: #0984e3; margin-bottom: 10px; }
-        .upload-text { font-size: 0.9rem; color: #555; font-weight: 500; }
-        .upload-sub { font-size: 0.8rem; color: #888; }
-
-        #fileInput { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
-
+        /* 提交按钮 */
         .btn-submit {
-            width: 100%; padding: 14px; border-radius: 50px; border: none;
+            width: 100%;
+            padding: 14px; border-radius: 50px; border: none;
             background: linear-gradient(135deg, #0984e3, #74b9ff);
             color: white; font-size: 1rem; font-weight: 700; cursor: pointer;
             box-shadow: 0 8px 20px rgba(9, 132, 227, 0.3); transition: .3s;
         }
         .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(9, 132, 227, 0.4); }
-
-        #previewArea { margin-top: 15px; display: none; align-items: center; gap: 10px; background: #fff; padding: 10px; border-radius: 10px; }
-        #previewImg { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
-        #fileName { font-size: 0.85rem; color: #333; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         @media(max-width: 768px) { .topup-grid { grid-template-columns: 1fr; } }
     </style>
@@ -119,13 +107,11 @@
     </div>
 
     <div class="topup-grid">
-        <!-- 左侧：二维码 -->
         <div class="qr-section">
             <div class="qr-title">Scan to Pay</div>
             <div class="qr-desc">Use Touch'n Go / DuitNow</div>
 
             <div class="qr-img-placeholder">
-                <!-- 修复了图片路径：使用 QR code.jpg -->
                 <img src="${pageContext.request.contextPath}/assets/images/QR code.jpg" class="qr-img-real" alt="DuitNow QR">
             </div>
 
@@ -136,7 +122,6 @@
             </div>
         </div>
 
-        <!-- 右侧：表单 -->
         <div class="form-section">
             <form action="${pageContext.request.contextPath}/TopUpServlet" method="post" enctype="multipart/form-data" onsubmit="return handleSubmit(event)">
 
@@ -159,27 +144,36 @@
     </div>
 </div>
 
+<jsp:include page="/assets/jsp/global_modal.jsp" />
 <script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
 <script>
-    // Initialize the uploader
+    // 初始化上传组件
     new ImagesUploader('#receipt-uploader', {
         inputName: 'receipt'
     });
 
+    // 表单提交前的校验函数
     function handleSubmit(e) {
         const amount = document.getElementById('amount').value;
-        // Check if file is selected by checking the file input inside the uploader
         const fileInput = document.querySelector('input[name="receipt"]');
-        
+
+        // 1. 校验金额
         if(!amount) {
-            alert("Please enter amount.");
+            e.preventDefault();
+            // showModal(title, message, type)
+            // type 可以是 'error', 'success', 'warning'
+            showModal("Missing Amount", "Please enter the top-up amount before submitting.", 'error');
             return false;
         }
-        
-        if(!fileInput || fileInput.files.length === 0) {
-            alert("Please upload receipt.");
+
+        // 2. 校验文件
+        if(!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            e.preventDefault();
+            showModal("Receipt Missing", "Please upload the payment receipt so we can verify your transaction.", 'error');
             return false;
         }
+
+        // 验证通过
         return true;
     }
 </script>

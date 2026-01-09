@@ -16,6 +16,7 @@ public class ProductDAO {
 
     public List<ProductDTO> getProductsByMerchantId(int merchantId) {
         List<ProductDTO> products = new ArrayList<>();
+        // ⭐ SQL: 确保 SELECT p.* 包含了 Has_Been_Approved
         String sql = "SELECT p.*, c.Category_Name, " +
                 "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
                 "FROM Product p " +
@@ -30,23 +31,7 @@ public class ProductDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    ProductDTO product = new ProductDTO();
-                    product.setProductId(rs.getInt("Product_Id"));
-                    product.setMerchantId(rs.getInt("Merchant_Id"));
-                    product.setCategoryId(rs.getInt("Category_Id"));
-                    product.setProductName(rs.getString("Product_Name"));
-                    product.setProductDescription(rs.getString("Product_Description"));
-                    product.setProductPrice(rs.getBigDecimal("Product_Price"));
-                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
-                    product.setProductStatus(rs.getString("Product_Status"));
-                    product.setAuditStatus(rs.getString("Audit_Status"));
-                    product.setAuditMessage(rs.getString("Audit_Message"));
-                    product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
-                    product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
-
-                    product.setCategoryName(rs.getString("Category_Name"));
-                    product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-
+                    ProductDTO product = mapRowToProductDTO(rs);
                     products.add(product);
                 }
             }
@@ -70,21 +55,7 @@ public class ProductDAO {
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                ProductDTO product = new ProductDTO();
-                product.setProductId(rs.getInt("Product_Id"));
-                product.setMerchantId(rs.getInt("Merchant_Id"));
-                product.setCategoryId(rs.getInt("Category_Id"));
-                product.setProductName(rs.getString("Product_Name"));
-                product.setProductDescription(rs.getString("Product_Description"));
-                product.setProductPrice(rs.getBigDecimal("Product_Price"));
-                product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
-                product.setProductStatus(rs.getString("Product_Status"));
-                product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
-                product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
-
-                product.setCategoryName(rs.getString("Category_Name"));
-                product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-
+                ProductDTO product = mapRowToProductDTO(rs);
                 products.add(product);
             }
         } catch (SQLException e) {
@@ -109,21 +80,7 @@ public class ProductDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    ProductDTO product = new ProductDTO();
-                    product.setProductId(rs.getInt("Product_Id"));
-                    product.setMerchantId(rs.getInt("Merchant_Id"));
-                    product.setCategoryId(rs.getInt("Category_Id"));
-                    product.setProductName(rs.getString("Product_Name"));
-                    product.setProductDescription(rs.getString("Product_Description"));
-                    product.setProductPrice(rs.getBigDecimal("Product_Price"));
-                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
-                    product.setProductStatus(rs.getString("Product_Status"));
-                    product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
-                    product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
-
-                    product.setCategoryName(rs.getString("Category_Name"));
-                    product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-
+                    ProductDTO product = mapRowToProductDTO(rs);
                     products.add(product);
                 }
             }
@@ -151,21 +108,7 @@ public class ProductDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    ProductDTO product = new ProductDTO();
-                    product.setProductId(rs.getInt("Product_Id"));
-                    product.setMerchantId(rs.getInt("Merchant_Id"));
-                    product.setCategoryId(rs.getInt("Category_Id"));
-                    product.setProductName(rs.getString("Product_Name"));
-                    product.setProductDescription(rs.getString("Product_Description"));
-                    product.setProductPrice(rs.getBigDecimal("Product_Price"));
-                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
-                    product.setProductStatus(rs.getString("Product_Status"));
-                    product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
-                    product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
-
-                    product.setCategoryName(rs.getString("Category_Name"));
-                    product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-
+                    ProductDTO product = mapRowToProductDTO(rs);
                     products.add(product);
                 }
             }
@@ -218,21 +161,7 @@ public class ProductDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    ProductDTO product = new ProductDTO();
-                    product.setProductId(rs.getInt("Product_Id"));
-                    product.setMerchantId(rs.getInt("Merchant_Id"));
-                    product.setCategoryId(rs.getInt("Category_Id"));
-                    product.setProductName(rs.getString("Product_Name"));
-                    product.setProductDescription(rs.getString("Product_Description"));
-                    product.setProductPrice(rs.getBigDecimal("Product_Price"));
-                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
-                    product.setProductStatus(rs.getString("Product_Status"));
-                    product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
-                    product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
-
-                    product.setCategoryName(rs.getString("Category_Name"));
-                    product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-
+                    ProductDTO product = mapRowToProductDTO(rs);
                     products.add(product);
                 }
             }
@@ -258,26 +187,7 @@ public class ProductDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    product = new ProductDTO();
-                    product.setProductId(rs.getInt("Product_Id"));
-                    product.setMerchantId(rs.getInt("Merchant_Id"));
-                    product.setCategoryId(rs.getInt("Category_Id"));
-                    product.setProductName(rs.getString("Product_Name"));
-                    product.setProductDescription(rs.getString("Product_Description"));
-                    product.setProductPrice(rs.getBigDecimal("Product_Price"));
-                    product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
-                    product.setProductStatus(rs.getString("Product_Status"));
-                    product.setAuditStatus(rs.getString("Audit_Status"));
-                    product.setAuditMessage(rs.getString("Audit_Message"));
-                    product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
-                    product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
-
-                    // ⭐ 确保这里能读取到 WhatsApp
-                    product.setContactWhatsapp(rs.getString("Contact_Whatsapp"));
-
-                    product.setCategoryName(rs.getString("Category_Name"));
-                    product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-                    product.setMerchantName(rs.getString("Merchant_Name"));
+                    product = mapRowToProductDTO(rs);
                 }
             }
         } catch (SQLException e) {
@@ -346,7 +256,7 @@ public class ProductDAO {
     }
 
     // ==========================================
-    // ⭐ 更新方法 (已修复，加入了 WhatsApp 字段)
+    // 更新方法
     // ==========================================
 
     public boolean updateProduct(Product product) {
@@ -372,11 +282,11 @@ public class ProductDAO {
 
             // ⭐ 参数索引顺延
             pstmt.setString(7, product.getProductStatus());
-            
+
             // ⭐ 新增 Audit 字段
             pstmt.setString(8, product.getAuditStatus());
             pstmt.setString(9, product.getAuditMessage());
-            
+
             pstmt.setInt(10, product.getProductId());
             pstmt.setInt(11, product.getMerchantId());
 
@@ -464,6 +374,7 @@ public class ProductDAO {
         return products;
     }
 
+    // ⭐ 统一的映射逻辑 (复用代码)
     private ProductDTO mapRowToProductDTO(ResultSet rs) throws SQLException {
         ProductDTO product = new ProductDTO();
         product.setProductId(rs.getInt("Product_Id"));
@@ -479,19 +390,47 @@ public class ProductDAO {
         product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
         product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
 
+        // ⭐ 读取 Contact_Whatsapp
+        try {
+            product.setContactWhatsapp(rs.getString("Contact_Whatsapp"));
+        } catch (SQLException e) {
+            // 忽略
+        }
+
+        // ⭐⭐ 关键新增：读取 Has_Been_Approved
+        try {
+            product.setHasBeenApproved(rs.getBoolean("Has_Been_Approved"));
+        } catch (SQLException e) {
+            // 防止旧数据库表没加这列报错
+            product.setHasBeenApproved(false);
+        }
+
         product.setCategoryName(rs.getString("Category_Name"));
         product.setPrimaryImageUrl(rs.getString("Primary_Image"));
-        product.setMerchantName(rs.getString("Merchant_Name"));
+
+        try {
+            product.setMerchantName(rs.getString("Merchant_Name"));
+        } catch (SQLException e) {
+            // ignore
+        }
+
         return product;
     }
 
+    // ⭐ 修改后的管理员审核更新逻辑
     public boolean updateProductAuditByAdmin(int productId, String auditStatus, String auditMessage) {
         String newProductStatus = "OFF_SALE";
+        String extraUpdate = "";
+
         if ("APPROVED".equals(auditStatus)) {
             newProductStatus = "ON_SALE";
+            // ⭐⭐ 关键新增：如果批准了，将 Has_Been_Approved 设为 1
+            extraUpdate = ", Has_Been_Approved = 1 ";
         }
 
-        String sql = "UPDATE Product SET Audit_Status = ?, Audit_Message = ?, Product_Status = ?, Product_Updated_At = NOW() WHERE Product_Id = ?";
+        String sql = "UPDATE Product SET Audit_Status = ?, Audit_Message = ?, Product_Status = ?, Product_Updated_At = NOW()"
+                + extraUpdate
+                + " WHERE Product_Id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
