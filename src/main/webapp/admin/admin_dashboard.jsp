@@ -489,6 +489,12 @@
                     <span>💰 Funds Approval</span>
                 </a>
 
+                <!-- NEW: Merchant Create -->
+                <a class="nav-item" style="text-decoration:none;"
+                    href="${pageContext.request.contextPath}/admin/merchant/create">
+                    <span>🏪 Merchant Create</span>
+                </a>
+
                 <div class="sidebar-footer">
                     <a href="${pageContext.request.contextPath}/index.jsp" class="btn-logout"
                         style="margin-bottom: 10px; background: #555;">Back to Home</a>
@@ -614,8 +620,7 @@
                                             </td>
                                             <td>${u.createdAt}</td>
                                             <td>
-                                                <button
-                                                    style="padding: 5px 10px; border: 1px solid #ddd; background: white; border-radius: 5px; cursor: pointer;">Edit</button>
+
                                                 <button
                                                     onclick="viewUserDetails('${u.id}', '${u.username}', '${u.role}', ${u.status}, '${u.createdAt}')"
                                                     style="padding: 5px 10px; border: 1px solid #0984e3; background: #e3f2fd; color: #0984e3; border-radius: 5px; cursor: pointer; margin-left: 5px;">Detail</button>
@@ -709,6 +714,31 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Global Message Modal (Success Dialog) -->
+            <c:if test="${not empty sessionScope.globalMessage}">
+                <div id="globalMessageModal" class="modal-overlay" style="display: flex;">
+                    <div class="modal-content" style="text-align: center; width: 350px;">
+                        <button class="close-btn" onclick="closeGlobalModal()">&times;</button>
+                        <div style="margin-bottom: 15px;">
+                            <i class="ri-checkbox-circle-fill" style="font-size: 3rem; color: #2ecc71;"></i>
+                        </div>
+                        <h2 style="margin-bottom: 10px; color: #333;">Success!</h2>
+                        <p style="color: #666; font-size: 1rem; margin-bottom: 20px;">${sessionScope.globalMessage}</p>
+                        <button onclick="closeGlobalModal()"
+                            style="padding: 10px 25px; background: #2ecc71; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.3s;">
+                            OK, Got it
+                        </button>
+                    </div>
+                </div>
+                <script>
+                    function closeGlobalModal() {
+                        document.getElementById('globalMessageModal').style.display = 'none';
+                    }
+                </script>
+                <c:remove var="globalMessage" scope="session" />
+                <c:remove var="globalMessageType" scope="session" />
+            </c:if>
 
             <!-- Transactions Detail Modal -->
             <div id="transactionsModal" class="modal-overlay">

@@ -3,6 +3,8 @@ package com.primego.user.dao;
 import com.primego.common.util.DBUtil;
 import com.primego.common.util.PasswordUtil;
 import com.primego.user.model.Role;
+import com.primego.user.model.MerchantProfile;
+
 import com.primego.user.model.User;
 
 import java.sql.Connection;
@@ -103,6 +105,62 @@ public class UserDAO {
                 }
             }
             throw e; // Rethrow exception to be handled by caller
+        } finally {
+            DBUtil.close(conn);
+        }
+    }
+
+    public void createMerchant(User user, MerchantProfile profile) throws SQLException {
+        String insertUserSql = "INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, ?)";
+        String insertMerchantSql = "INSERT INTO merchant_profiles (user_id, store_name, contact_info) VALUES (?, ?, ?)";
+
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            // 1. Insert into users table
+            int userId = -1;
+            try (PreparedStatement stmt = conn.prepareStatement(insertUserSql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, user.getUsername());
+                stmt.setString(2, PasswordUtil.hashPassword(user.getPassword()));
+                stmt.setString(3, Role.MERCHANT.toString());
+                stmt.setInt(4, user.getStatus());
+
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0) {
+                    throw new SQLException("Creating merchant user failed, no rows affected.");
+                }
+
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        userId = generatedKeys.getInt(1);
+                    } else {
+                        throw new SQLException("Creating merchant user failed, no ID obtained.");
+                    }
+                }
+            }
+
+            // 2. Insert into merchant_profiles table
+            try (PreparedStatement stmt = conn.prepareStatement(insertMerchantSql)) {
+                stmt.setInt(1, userId);
+                stmt.setString(2, profile.getStoreName());
+                stmt.setString(3, profile.getContactInfo());
+                stmt.executeUpdate();
+            }
+
+            conn.commit();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            throw e;
         } finally {
             DBUtil.close(conn);
         }
