@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <!-- 图标库 -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/images_uploader.css">
 
     <style>
         /* ===== 全局样式 ===== */
@@ -146,17 +147,7 @@
 
                 <div class="input-group">
                     <label>2. Upload Receipt</label>
-                    <div class="upload-box">
-                        <i class="ri-upload-cloud-2-line upload-icon"></i>
-                        <div class="upload-text">Click to upload Receipt</div>
-                        <div class="upload-sub">JPG, PNG, PDF (Max 2MB)</div>
-                        <input type="file" name="receipt" id="fileInput" accept="image/*,.pdf" onchange="showPreview(this)" required>
-                    </div>
-
-                    <div id="previewArea">
-                        <img id="previewImg" src="" alt="Preview">
-                        <span id="fileName">filename.jpg</span>
-                    </div>
+                    <div id="receipt-uploader"></div>
                 </div>
 
                 <button type="submit" class="btn-submit">Submit for Approval</button>
@@ -168,27 +159,25 @@
     </div>
 </div>
 
+<script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
 <script>
-    function showPreview(input) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('previewImg').src = e.target.result;
-                document.getElementById('fileName').innerText = input.files[0].name;
-                document.getElementById('previewArea').style.display = 'flex';
-                document.querySelector('.upload-box').style.borderColor = '#2ecc71';
-                document.querySelector('.upload-text').innerText = "File Selected";
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
+    // Initialize the uploader
+    new ImagesUploader('#receipt-uploader', {
+        inputName: 'receipt'
+    });
 
     function handleSubmit(e) {
         const amount = document.getElementById('amount').value;
-        const file = document.getElementById('fileInput').value;
-
-        if(!amount || !file) {
-            alert("Please enter amount and upload receipt.");
+        // Check if file is selected by checking the file input inside the uploader
+        const fileInput = document.querySelector('input[name="receipt"]');
+        
+        if(!amount) {
+            alert("Please enter amount.");
+            return false;
+        }
+        
+        if(!fileInput || fileInput.files.length === 0) {
+            alert("Please upload receipt.");
             return false;
         }
         return true;

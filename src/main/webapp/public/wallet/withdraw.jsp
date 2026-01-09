@@ -24,6 +24,7 @@
     <title>Withdraw Funds - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/images_uploader.css">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
         body { min-height:100vh; display:flex; justify-content:center; align-items:center; color:#333; position: relative; }
@@ -198,22 +199,20 @@
 
         <div class="form-group">
             <label class="form-label">Upload QR Code (DuitNow / TnG)</label>
-
-            <label for="file-upload" class="upload-container">
-                <i class="ri-cloud-upload-line upload-icon"></i>
-                <div id="upload-placeholder">
-                    <div class="upload-text-main">Click to upload QR Code</div>
-                    <div class="upload-text-sub">JPG, PNG, JPEG (Max 2MB)</div>
-                </div>
-                <div id="file-name-display" class="file-name-display"></div>
-            </label>
-            <!-- 隐藏的 input，通过 id="file-upload" 与上面的 label 关联 -->
-            <input id="file-upload" type="file" name="receiptImage" accept="image/*" required onchange="handleFileSelect(event)">
+            <div id="qr-uploader"></div>
         </div>
 
         <button type="submit" class="btn-submit">Confirm Withdraw</button>
     </form>
 </div>
+
+<script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
+<script>
+    // Initialize the uploader
+    new ImagesUploader('#qr-uploader', {
+        inputName: 'receiptImage'
+    });
+</script>
 
 </body>
 </html>
