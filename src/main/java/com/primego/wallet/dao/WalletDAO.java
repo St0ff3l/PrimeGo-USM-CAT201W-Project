@@ -42,12 +42,11 @@ public class WalletDAO {
     // 0.1 获取已处理的交易记录 (History)
     public List<AdminTransactionLog> getProcessedTransactions() {
         List<AdminTransactionLog> list = new ArrayList<>();
-        // 联表查询，获取管理员名字
         String sql = "SELECT l.*, u.username as admin_name " +
-                     "FROM admin_transaction_logs l " +
-                     "LEFT JOIN users u ON l.admin_id = u.id " +
-                     "ORDER BY l.created_at DESC";
-        
+                "FROM admin_transaction_logs l " +
+                "LEFT JOIN users u ON l.admin_id = u.id " +
+                "ORDER BY l.created_at DESC";
+
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet rs = statement.executeQuery()) {
@@ -103,12 +102,14 @@ public class WalletDAO {
     }
 
     // ==========================================
-    // ⭐ 核心修复 1：余额计算 (包含 SALES 和 PURCHASE)
+    // ⭐ 核心修复 1：余额计算 (包含退款逻辑 REFUND_IN 和 REFUND_OUT)
     // ==========================================
     public BigDecimal getBalance(int userId) {
+        // 收入类：TOPUP, SALES, REFUND_IN
+        // 支出类：WITHDRAW, PURCHASE, REFUND_OUT
         String sql = "SELECT " +
-                "(SUM(CASE WHEN transaction_type IN ('TOPUP', 'SALES') THEN amount ELSE 0 END) - " +
-                " SUM(CASE WHEN transaction_type IN ('WITHDRAW', 'PURCHASE') THEN amount ELSE 0 END)) as balance " +
+                "(SUM(CASE WHEN transaction_type IN ('TOPUP', 'SALES', 'REFUND_IN') THEN amount ELSE 0 END) - " +
+                " SUM(CASE WHEN transaction_type IN ('WITHDRAW', 'PURCHASE', 'REFUND_OUT') THEN amount ELSE 0 END)) as balance " +
                 "FROM wallet_transactions WHERE user_id = ? AND status = 'APPROVED'";
 
         try (Connection connection = getConnection();
@@ -127,11 +128,11 @@ public class WalletDAO {
         return BigDecimal.ZERO;
     }
 
-    // 辅助方法：事务内部使用
+    // 辅助方法：事务内部使用 (同样更新了 SQL)
     public BigDecimal getBalance(Connection conn, int userId) throws SQLException {
         String sql = "SELECT " +
-                "(SUM(CASE WHEN transaction_type IN ('TOPUP', 'SALES') THEN amount ELSE 0 END) - " +
-                " SUM(CASE WHEN transaction_type IN ('WITHDRAW', 'PURCHASE') THEN amount ELSE 0 END)) as balance " +
+                "(SUM(CASE WHEN transaction_type IN ('TOPUP', 'SALES', 'REFUND_IN') THEN amount ELSE 0 END) - " +
+                " SUM(CASE WHEN transaction_type IN ('WITHDRAW', 'PURCHASE', 'REFUND_OUT') THEN amount ELSE 0 END)) as balance " +
                 "FROM wallet_transactions WHERE user_id = ? AND status = 'APPROVED'";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -144,6 +145,49 @@ public class WalletDAO {
             }
         }
         return BigDecimal.ZERO;
+    }
+
+    // ==========================================
+    // ⭐ 新增：退款处理 (商家 -> 用户)
+    // ==========================================
+    public boolean refundToCustomer(int merchantId, int customerId, BigDecimal amount) {
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false); // 开启事务
+
+            // 1. 检查商家余额是否充足
+            BigDecimal merchantBalance = getBalance(conn, merchantId);
+            if (merchantBalance.compareTo(amount) < 0) {
+                // 余额不足，回滚并返回失败
+                throw new SQLException("Insufficient merchant balance for refund.");
+            }
+
+            // 2. 商家扣款 (记为 REFUND_OUT)
+            String sqlMerchant = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'REFUND_OUT', 'APPROVED')";
+            try (PreparedStatement ps = conn.prepareStatement(sqlMerchant)) {
+                ps.setInt(1, merchantId);
+                ps.setBigDecimal(2, amount);
+                ps.executeUpdate();
+            }
+
+            // 3. 用户入账 (记为 REFUND_IN)
+            String sqlCustomer = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'REFUND_IN', 'APPROVED')";
+            try (PreparedStatement ps = conn.prepareStatement(sqlCustomer)) {
+                ps.setInt(1, customerId);
+                ps.setBigDecimal(2, amount);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) {}
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+        }
     }
 
     // ==========================================
@@ -185,13 +229,11 @@ public class WalletDAO {
     // ⭐ 核心修复 2：支付订单 (正确标记为 PURCHASE 并给商家加钱)
     // ==========================================
     public void payOrder(Connection conn, int userId, int merchantId, BigDecimal orderAmount) throws SQLException {
-        // 1. 检查余额
         BigDecimal currentBalance = getBalance(conn, userId);
         if (currentBalance.compareTo(orderAmount) < 0) {
             throw new SQLException("Insufficient wallet balance. Current: " + currentBalance + ", Required: " + orderAmount);
         }
 
-        // 2. 用户扣款 -> 记为 PURCHASE (之前可能写错了成 WITHDRAW)
         String sqlDebit = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'PURCHASE', 'APPROVED')";
         try (PreparedStatement pstmt = conn.prepareStatement(sqlDebit)) {
             pstmt.setInt(1, userId);
@@ -200,7 +242,6 @@ public class WalletDAO {
             if (rows == 0) throw new SQLException("Failed to deduct user balance.");
         }
 
-        // 3. 商家入账 -> 记为 SALES
         String sqlCredit = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'SALES', 'APPROVED')";
         try (PreparedStatement pstmt = conn.prepareStatement(sqlCredit)) {
             pstmt.setInt(1, merchantId);
@@ -210,9 +251,8 @@ public class WalletDAO {
         }
     }
 
-    // 兼容旧代码的方法重载 (默认商家ID=2，请根据实际情况修改)
     public void payOrder(Connection conn, int userId, BigDecimal orderAmount) throws SQLException {
-        payOrder(conn, userId, 2, orderAmount);
+        payOrder(conn, userId, 2, orderAmount); // 默认商家ID，如有需要请修改
     }
 
     // 4. 获取待审核列表
@@ -239,7 +279,7 @@ public class WalletDAO {
         return list;
     }
 
-    // 4.1 获取所有交易记录 (用于 History 显示详情)
+    // 4.1 获取所有交易记录
     public WalletTransaction getTransactionById(int id) {
         String sql = "SELECT * FROM wallet_transactions WHERE id = ?";
         try (Connection connection = getConnection();
@@ -278,15 +318,14 @@ public class WalletDAO {
         }
     }
 
-    // 6. 获取用户交易记录 (包含管理员备注)
+    // 6. 获取用户交易记录
     public List<WalletTransaction> getUserTransactions(int userId) {
         List<WalletTransaction> list = new ArrayList<>();
-        // 联表查询 admin_transaction_logs 获取备注
         String sql = "SELECT t.*, l.remarks " +
-                     "FROM wallet_transactions t " +
-                     "LEFT JOIN admin_transaction_logs l ON t.id = l.wallet_transaction_id " +
-                     "WHERE t.user_id = ? " +
-                     "ORDER BY t.created_at DESC";
+                "FROM wallet_transactions t " +
+                "LEFT JOIN admin_transaction_logs l ON t.id = l.wallet_transaction_id " +
+                "WHERE t.user_id = ? " +
+                "ORDER BY t.created_at DESC";
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -302,25 +341,7 @@ public class WalletDAO {
                     t.setStatus(rs.getString("status"));
                     t.setReceiptImage(rs.getString("receipt_image"));
                     t.setCreatedAt(rs.getTimestamp("created_at"));
-                    
-                    // 将备注存入 WalletTransaction 对象 (需要确保 WalletTransaction 有 remarks 字段，或者临时存入)
-                    // 这里假设 WalletTransaction 没有 remarks 字段，我们可以临时借用一个字段或者修改 Model
-                    // 为了不修改 Model，我们可以将备注拼接到 status 或者创建一个扩展类
-                    // 但最好的方式是修改 Model。鉴于不能修改 Model，我们这里用一个折衷方案：
-                    // 如果有备注，将其作为额外属性传递，或者修改 Model。
-                    // 让我们检查一下 WalletTransaction 是否有 remarks 字段。如果没有，我们可能需要修改 Model。
-                    // 假设没有，我们先尝试修改 Model。
-                    
-                    // 实际上，为了简单起见，我们可以将备注放在 request attribute 中，或者修改 Model。
-                    // 这里我选择修改 Model，因为这是最正规的做法。
-                    // 但由于我不能修改 Model (除非用户要求)，我将使用一个技巧：
-                    // 我会创建一个继承自 WalletTransaction 的匿名类或者直接修改 Model。
-                    // 等等，我可以修改 Model。
-                    
-                    // 既然用户要求显示评价，那么 Model 应该包含这个字段。
-                    // 我先去修改 Model。
-                    t.setRemarks(rs.getString("remarks")); // 假设我已经修改了 Model
-                    
+                    // 如果有扩展字段存放备注，可以在这里 setRemarks(rs.getString("remarks"));
                     list.add(t);
                 }
             }

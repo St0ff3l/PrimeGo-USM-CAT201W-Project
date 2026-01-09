@@ -201,7 +201,7 @@ public class CustomerOrderServlet extends HttpServlet {
                 return;
             }
 
-            boolean success = orderDAO.requestRefund(orderId, reason);
+            boolean success = orderDAO.requestRefund(orderId, reason, user.getId());
             if (success) {
                 session.setAttribute("message", "Return request submitted successfully!");
                 session.setAttribute("messageType", "success");
