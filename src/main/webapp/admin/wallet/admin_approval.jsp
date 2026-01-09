@@ -175,10 +175,12 @@
                         User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
 
                         <!-- 如果是充值记录且有图片，显示查看按钮 -->
-                        <c:if test="${txn.transactionType == 'TOPUP' && not empty txn.receiptImage}">
+                        <c:if test="${not empty txn.receiptImage}">
                             <br>
-                            <a href="${pageContext.request.contextPath}/assets/images/Recharge_Photos/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none; margin-top: 5px; display: inline-block;">
-                                <i class="ri-image-line"></i> View Receipt
+                            <!-- 直接使用数据库中存储的相对路径 -->
+                            <a href="${pageContext.request.contextPath}/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none; margin-top: 5px; display: inline-block;">
+                                <i class="${txn.transactionType == 'WITHDRAW' ? 'ri-qr-code-line' : 'ri-image-line'}"></i>
+                                ${txn.transactionType == 'WITHDRAW' ? 'View QR Code' : 'View Receipt'}
                             </a>
                         </c:if>
                     </div>

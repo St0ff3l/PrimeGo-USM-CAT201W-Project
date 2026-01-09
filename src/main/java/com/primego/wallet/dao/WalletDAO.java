@@ -37,12 +37,13 @@ public class WalletDAO {
 
     // 2. 保存提现请求
     public boolean requestWithdraw(WalletTransaction transaction) {
-        String sql = "INSERT INTO wallet_transactions (user_id, amount, status, transaction_type) VALUES (?, ?, ?, 'WITHDRAW')";
+        String sql = "INSERT INTO wallet_transactions (user_id, amount, status, transaction_type, receipt_image) VALUES (?, ?, ?, 'WITHDRAW', ?)";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, transaction.getUserId());
             statement.setBigDecimal(2, transaction.getAmount());
             statement.setString(3, transaction.getStatus());
+            statement.setString(4, transaction.getReceiptImage());
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
