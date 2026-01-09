@@ -122,19 +122,19 @@ public class ProfileServlet extends HttpServlet {
                 if (validUser != null) {
                     // Update to new password
                     if (userDAO.updatePassword(user.getId(), newPassword)) {
-                        req.setAttribute("message", "Password changed successfully!");
-                        req.setAttribute("messageType", "success");
+                        req.setAttribute("settingsMessage", "Password changed successfully!");
+                        req.setAttribute("settingsMessageType", "success");
                     } else {
-                        req.setAttribute("message", "Failed to update password. Database error.");
-                        req.setAttribute("messageType", "error");
+                        req.setAttribute("settingsMessage", "Failed to update password. Database error.");
+                        req.setAttribute("settingsMessageType", "error");
                     }
                 } else {
-                    req.setAttribute("message", "Incorrect old password.");
-                    req.setAttribute("messageType", "error");
+                    req.setAttribute("settingsMessage", "Incorrect old password.");
+                    req.setAttribute("settingsMessageType", "error");
                 }
             } else {
-                req.setAttribute("message", "New passwords do not match.");
-                req.setAttribute("messageType", "error");
+                req.setAttribute("settingsMessage", "New passwords do not match.");
+                req.setAttribute("settingsMessageType", "error");
             }
         }
         // 3. 更新/设置支付 PIN
@@ -175,24 +175,24 @@ public class ProfileServlet extends HttpServlet {
 
                     if (!com.primego.common.util.PasswordUtil.checkPassword(oldPin, currentProfile.getPaymentPin())) {
                         authorized = false;
-                        req.setAttribute("message", "Incorrect current PIN.");
-                        req.setAttribute("messageType", "error");
+                        req.setAttribute("settingsMessage", "Incorrect current PIN.");
+                        req.setAttribute("settingsMessageType", "error");
                     }
                 }
 
                 if (authorized) {
                     String hashedPin = com.primego.common.util.PasswordUtil.hashPassword(newPin);
                     if (profileDAO.updatePaymentPin(user.getId(), hashedPin)) {
-                        req.setAttribute("message", "Payment PIN updated successfully!");
-                        req.setAttribute("messageType", "success");
+                        req.setAttribute("settingsMessage", "Payment PIN updated successfully!");
+                        req.setAttribute("settingsMessageType", "success");
                     } else {
-                        req.setAttribute("message", "Failed to update PIN. Database error.");
-                        req.setAttribute("messageType", "error");
+                        req.setAttribute("settingsMessage", "Failed to update PIN. Database error.");
+                        req.setAttribute("settingsMessageType", "error");
                     }
                 }
             } else {
-                req.setAttribute("message", "New PINs do not match or are incomplete.");
-                req.setAttribute("messageType", "error");
+                req.setAttribute("settingsMessage", "New PINs do not match or are incomplete.");
+                req.setAttribute("settingsMessageType", "error");
             }
         }
 

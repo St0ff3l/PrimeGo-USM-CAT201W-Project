@@ -31,8 +31,9 @@ public class LoginServlet extends HttpServlet {
 
         User user = userDAO.validateCredentials(username, password);
 
+        // From src/main/java/com/primego/user/servlet/LoginServlet.java
         if (user != null) {
-            // 2. 登录成功，创建 Session
+            // Create Session
             HttpSession session = req.getSession();
             session.setAttribute("user", user);
 
@@ -40,7 +41,7 @@ public class LoginServlet extends HttpServlet {
             if (user.getRole() == Role.MERCHANT) {
                 resp.sendRedirect(req.getContextPath() + "/merchant/merchant_dashboard.jsp");
             } else {
-                // Admin and Customer both go to index.jsp
+                // Customer goes to index.jsp
                 resp.sendRedirect(req.getContextPath() + "/index.jsp");
             }
 
