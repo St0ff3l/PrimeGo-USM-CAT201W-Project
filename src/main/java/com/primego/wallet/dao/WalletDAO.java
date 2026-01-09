@@ -95,6 +95,41 @@ public class WalletDAO {
     }
 
     // ==========================================
+    // ⭐ 新增：仅扣减用户余额 (用于下单时)
+    // ==========================================
+    public void deductUserBalance(Connection conn, int userId, BigDecimal amount) throws SQLException {
+        // 1. 检查余额
+        BigDecimal currentBalance = getBalance(conn, userId);
+        if (currentBalance.compareTo(amount) < 0) {
+            throw new SQLException("Insufficient wallet balance. Current: " + currentBalance + ", Required: " + amount);
+        }
+
+        // 2. 用户扣款 -> 记为 PURCHASE
+        String sqlDebit = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'PURCHASE', 'APPROVED')";
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlDebit)) {
+            pstmt.setInt(1, userId);
+            pstmt.setBigDecimal(2, amount);
+            int rows = pstmt.executeUpdate();
+            if (rows == 0) throw new SQLException("Failed to deduct user balance.");
+        }
+    }
+
+    // ==========================================
+    // ⭐ 新增：仅增加商家余额 (用于确认收货时)
+    // ==========================================
+    public void creditMerchantBalance(int merchantId, BigDecimal amount) {
+        String sqlCredit = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, status) VALUES (?, ?, 'SALES', 'APPROVED')";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sqlCredit)) {
+            pstmt.setInt(1, merchantId);
+            pstmt.setBigDecimal(2, amount);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ==========================================
     // ⭐ 核心修复 2：支付订单 (正确标记为 PURCHASE 并给商家加钱)
     // ==========================================
     public void payOrder(Connection conn, int userId, int merchantId, BigDecimal orderAmount) throws SQLException {

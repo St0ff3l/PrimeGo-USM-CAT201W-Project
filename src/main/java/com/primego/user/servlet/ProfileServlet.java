@@ -203,8 +203,27 @@ public class ProfileServlet extends HttpServlet {
             if (orderIdStr != null) {
                 try {
                     int orderId = Integer.parseInt(orderIdStr);
-                    // 调用 DAO 更新状态为 COMPLETED
-                    orderDAO.updateOrderStatus(orderId, "COMPLETED");
+                    
+                    // 1. 获取订单详情
+                    com.primego.order.model.Order order = orderDAO.getOrderById(orderId);
+                    
+                    if (order != null && "SHIPPED".equals(order.getOrderStatus())) {
+                        // 2. 获取商家 ID (从订单的第一个商品获取，因为订单已按商家拆分)
+                        if (!order.getOrderItems().isEmpty()) {
+                            int productId = order.getOrderItems().get(0).getProductId();
+                            com.primego.product.model.ProductDTO product = new com.primego.product.dao.ProductDAO().getProductById(productId);
+                            
+                            if (product != null) {
+                                int merchantId = product.getMerchantId();
+                                
+                                // 3. 给商家打款 (SALES)
+                                new com.primego.wallet.dao.WalletDAO().creditMerchantBalance(merchantId, order.getTotalAmount());
+                                
+                                // 4. 更新订单状态为 COMPLETED
+                                orderDAO.updateOrderStatus(orderId, "COMPLETED");
+                            }
+                        }
+                    }
                 } catch (NumberFormatException e) {
                     e.printStackTrace();
                 }

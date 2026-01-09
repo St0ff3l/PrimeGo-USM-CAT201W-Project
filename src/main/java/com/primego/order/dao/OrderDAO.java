@@ -95,10 +95,10 @@ public class OrderDAO {
                 itemStmt.close();
 
                 // ---------------------------------------------------
-                // Step C: 钱包扣款 (针对该子订单扣款，生成对应的交易流水)
+                // Step C: 钱包扣款 (只扣用户，不给商家)
                 // ---------------------------------------------------
-                // 注意：WalletDAO 中必须有 payOrder(Connection conn, ...) 方法
-                walletDAO.payOrder(conn, order.getCustomerId(), order.getTotalAmount());
+                // 修改：调用 deductUserBalance 而不是 payOrder
+                walletDAO.deductUserBalance(conn, order.getCustomerId(), order.getTotalAmount());
             }
 
             // 3. 所有订单处理完毕，提交事务
@@ -182,6 +182,24 @@ public class OrderDAO {
             }
         } catch (SQLException e) { e.printStackTrace(); }
         return orderList;
+    }
+
+    /**
+     * Get single order by ID
+     */
+    public Order getOrderById(int orderId) {
+        Order order = null;
+        String sql = "SELECT * FROM Orders WHERE Orders_Id = ?";
+        try (Connection conn = DBUtil.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    order = mapRowToOrder(rs);
+                    order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return order;
     }
 
     public List<Order> getOrdersByMerchantId(int merchantId) {
