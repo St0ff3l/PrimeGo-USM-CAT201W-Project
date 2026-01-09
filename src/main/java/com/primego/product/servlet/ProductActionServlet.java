@@ -61,7 +61,7 @@ public class ProductActionServlet extends HttpServlet {
             // 1. 获取基本信息
             int productId = Integer.parseInt(request.getParameter("productId"));
 
-            // ⭐ 关键修改：先获取数据库中的旧数据，用于对比
+            // ⭐ 关键逻辑：先获取数据库中的旧数据，用于对比
             Product oldProduct = productDAO.getProductById(productId);
             if (oldProduct == null) {
                 // 防止空指针，如果找不到商品直接返回
@@ -92,13 +92,18 @@ public class ProductActionServlet extends HttpServlet {
                 needsAudit = true;
             }
 
-            // 3. 检测是否删除了图片
+            // ⭐⭐ 3. 新增：检测商品名称是否改变
+            if (isStringChanged(oldProduct.getProductName(), name)) {
+                needsAudit = true;
+            }
+
+            // 4. 检测是否删除了图片
             String deleteIds = request.getParameter("deleteImageIds");
             if (deleteIds != null && !deleteIds.trim().isEmpty()) {
                 needsAudit = true;
             }
 
-            // 4. 检测是否上传了新图片 (需要遍历 Part)
+            // 5. 检测是否上传了新图片 (需要遍历 Part)
             Collection<Part> parts = request.getParts();
             for (Part part : parts) {
                 if (part.getName().equals("newImages") && part.getSize() > 0 && part.getSubmittedFileName() != null && !part.getSubmittedFileName().isEmpty()) {
