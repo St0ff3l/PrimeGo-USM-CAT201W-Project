@@ -344,11 +344,19 @@
 <script>
     // Prepare initial image data for the uploader/carousel
     const serverImages = [
-        <% for (int i = 0; i < imageList.size(); i++) { ProductImage img = imageList.get(i); %>
+        <% for (int i = 0; i < imageList.size(); i++) {
+               ProductImage img = imageList.get(i);
+               String rawUrl = img.getImageUrl();
+               String url = (rawUrl == null || rawUrl.trim().isEmpty())
+                       ? (request.getContextPath() + "/assets/images/product-placeholder.svg")
+                       : (request.getContextPath() + "/" + rawUrl);
+               // Basic JS string escaping for single quotes/backslashes
+               url = url.replace("\\", "\\\\").replace("'", "\\'");
+        %>
         {
             id: <%= img.getImageId() %>,
-            url: '<%= request.getContextPath() + "/" + img.getImageUrl() %>',
-            isPrimary: <%= img.isImageIsPrimary() %>
+            url: '<%= url %>',
+            isPrimary: <%= img.isImageIsPrimary() ? "true" : "false" %>
         }<%= (i < imageList.size() - 1) ? "," : "" %>
         <% } %>
     ];
@@ -394,8 +402,7 @@
         indicatorsContainer.innerHTML = '';
         serverImages.forEach((_, idx) => {
             const dot = document.createElement('div');
-            // Note: escape sequence for template literal in JSP/JS context
-            dot.className = `indicator \${idx === currentIndex ? 'active' : ''}`;
+            dot.className = 'indicator' + (idx === currentIndex ? ' active' : '');
             dot.onclick = () => { currentIndex = idx; renderCarousel(); };
             indicatorsContainer.appendChild(dot);
         });

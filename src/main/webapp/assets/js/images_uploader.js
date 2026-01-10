@@ -22,11 +22,21 @@ class ImagesUploader {
         this.sortInputName = config.sortInputName || 'imageSortOrder'; // Input name used for the sorted server image ID list
         this.placeholderImg = config.placeholderImg || ''; // Fallback image URL if a preview fails to load
 
+        // Hard limit for total tiles (server + local)
+        const n = Number(config.maxImages);
+        this.maxImages = Number.isFinite(n) && n > 0 ? Math.floor(n) : 9;
+
         this.dt = new DataTransfer();
         this.deletedIds = new Set();
 
+        // Track local (new) files so delete/reorder keeps <input type="file"> in sync
+        this.localFiles = new Map(); // key -> File
+        this._localSeq = 0;
+
         this.render();
         this.bindEvents();
+
+        this.updateCapacityUI();
     }
 
     render() {
@@ -80,45 +90,123 @@ class ImagesUploader {
     }
 
     setInitialImages(images) {
-        if (!images || images.length === 0) return;
+        if (!Array.isArray(images) || images.length === 0) return;
+
+        // Only render valid server images (must have an id and a non-empty url)
+        const valid = images.filter(img => img && img.id != null && String(img.url || '').trim() !== '');
+        if (valid.length === 0) return;
+
         this.toggleView(true);
 
-        images.forEach(img => {
-            const div = this.createPreviewItem(img.url, true);
-            div.dataset.id = img.id; // Persist the server/database ID on the preview element
+        // Respect maxImages when rendering server images
+        valid.slice(0, this.maxImages).forEach(img => {
+            const div = this.createPreviewItem(String(img.url || ''), true);
+            div.dataset.id = String(img.id);
             this.ui.preview.appendChild(div);
         });
         this.updateSortInput();
+        this.updateCapacityUI();
+    }
+
+    getTotalImageCount() {
+        return this.ui?.preview?.querySelectorAll('.iu-preview-wrapper').length || 0;
+    }
+
+    getRemainingSlots() {
+        return Math.max(0, this.maxImages - this.getTotalImageCount());
+    }
+
+    updateCapacityUI() {
+        if (!this.ui?.addBtn) return;
+        const full = this.getTotalImageCount() >= this.maxImages;
+        this.ui.addBtn.disabled = full;
+        this.ui.addBtn.style.opacity = full ? '0.5' : '';
+        this.ui.addBtn.style.pointerEvents = full ? 'none' : '';
     }
 
     handleNewFiles(files) {
-        let hasNew = false;
-        Array.from(files).forEach(file => {
-            if (file.type.startsWith('image/')) {
-                this.dt.items.add(file);
-                hasNew = true;
-                // Render a preview tile for each newly selected file
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const div = this.createPreviewItem(e.target.result, false);
-                    this.ui.preview.appendChild(div);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-        if (hasNew) {
-            this.ui.input.files = this.dt.files;
-            this.toggleView(true);
+        const picked = Array.from(files || []).filter(file => file && file.type && file.type.startsWith('image/'));
+        if (picked.length === 0) {
+            if (this.ui?.input) this.ui.input.value = '';
+            return;
         }
+
+        let remaining = this.getRemainingSlots();
+        if (remaining <= 0) {
+            // Already full; ignore new selection/drop
+            this.updateCapacityUI();
+            if (this.ui?.input) this.ui.input.value = '';
+            return;
+        }
+
+        let hasNew = false;
+
+        // Only accept up to remaining slots
+        picked.slice(0, remaining).forEach(file => {
+            // Re-check capacity in case async callbacks or external DOM changes happened
+            if (this.getRemainingSlots() <= 0) return;
+
+            const key = `local_${Date.now()}_${this._localSeq++}`;
+            this.localFiles.set(key, file);
+            hasNew = true;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Guard again at callback time (prevents "undefined"/empty tiles occupying slots)
+                if (this.getRemainingSlots() <= 0) return;
+
+                const result = e && e.target ? e.target.result : null;
+                if (typeof result !== 'string' || result.trim() === '') return;
+
+                const div = this.createPreviewItem(result, false, key);
+                this.ui.preview.appendChild(div);
+
+                // Keep UI/input state consistent as items arrive
+                this.rebuildDataTransferFromLocal();
+                this.toggleView(true);
+                this.updateCapacityUI();
+            };
+            reader.onerror = () => {
+                // If reading fails, roll back the local file so it doesn't create a phantom slot
+                this.localFiles.delete(key);
+                this.rebuildDataTransferFromLocal();
+                this.updateCapacityUI();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        if (hasNew) {
+            this.rebuildDataTransferFromLocal();
+            this.toggleView(true);
+            this.updateCapacityUI();
+        }
+
+        // Important: allow selecting the same file(s) again to trigger change
+        if (this.ui?.input) this.ui.input.value = '';
     }
 
-    createPreviewItem(src, isServerImage) {
+    createPreviewItem(src, isServerImage, localKey = null) {
         const div = document.createElement('div');
         div.className = 'iu-preview-wrapper';
         div.draggable = true; // Enable drag-and-drop sorting
 
+        if (!isServerImage && localKey) {
+            div.dataset.localKey = String(localKey);
+        }
+
+        // Ensure we always clear dragging state when drag ends (even if dropped outside)
+        div.addEventListener('dragend', () => {
+            div.classList.remove('dragging');
+            if (this.dragItem === div) this.dragItem = null;
+
+            // If user reordered, keep file input order consistent with tiles
+            this.rebuildDataTransferFromLocal();
+            this.updateSortInput();
+            this.updateCapacityUI();
+        });
+
         const img = document.createElement('img');
-        img.src = src;
+        img.src = (src == null) ? '' : String(src);
         img.className = 'iu-preview-item';
         img.alt = 'Image Preview';
 
@@ -135,14 +223,25 @@ class ImagesUploader {
 
         delBtn.onclick = (e) => {
             e.stopPropagation();
-            div.remove();
-            if (isServerImage) {
-                this.deletedIds.add(div.dataset.id);
+
+            // Track delete intent before removing tile
+            if (isServerImage && div.dataset.id != null && div.dataset.id !== '') {
+                this.deletedIds.add(String(div.dataset.id));
                 this.ui.deleteInput.value = Array.from(this.deletedIds).join(',');
             }
-            // For newly selected files we only remove the DOM tile; the backend should ignore extra files if needed
+
+            if (!isServerImage && div.dataset.localKey) {
+                this.localFiles.delete(String(div.dataset.localKey));
+            }
+
+            div.remove();
+
             if (this.ui.preview.children.length === 0) this.toggleView(false);
+
+            // Keep both hidden inputs and <input type=file> state consistent
+            this.rebuildDataTransferFromLocal();
             this.updateSortInput();
+            this.updateCapacityUI();
         };
 
         div.appendChild(img);
@@ -180,7 +279,10 @@ class ImagesUploader {
         if (this.dragItem) {
             this.dragItem.classList.remove('dragging');
             this.dragItem = null;
-            this.updateSortInput(); // Persist sort order after dropping
+
+            // Persist server order + keep local file order consistent
+            this.rebuildDataTransferFromLocal();
+            this.updateSortInput();
         }
     }
 
@@ -195,9 +297,26 @@ class ImagesUploader {
         this.ui.sortInput.value = ids.join(',');
     }
 
+    rebuildDataTransferFromLocal() {
+        if (!this.ui?.input) return;
+
+        const next = new DataTransfer();
+
+        // Use current DOM order for local files
+        this.ui.preview.querySelectorAll('.iu-preview-wrapper[data-local-key]').forEach(div => {
+            const key = div.dataset.localKey;
+            const file = this.localFiles.get(String(key));
+            if (file) next.items.add(file);
+        });
+
+        this.dt = next;
+        this.ui.input.files = this.dt.files;
+    }
+
     toggleView(hasContent) {
         this.ui.placeholder.style.display = hasContent ? 'none' : 'block';
         this.ui.preview.style.display = hasContent ? 'flex' : 'none';
         this.ui.addBtn.style.display = hasContent ? 'flex' : 'none';
+        this.updateCapacityUI();
     }
 }
