@@ -240,7 +240,7 @@
                     if (images != null && !images.isEmpty()) {
                         for (ProductImage img : images) {
                 %>
-                    <img src="${pageContext.request.contextPath}/<%= img.getImageUrl() %>" alt="product image">
+                    <img src="${pageContext.request.contextPath}/<%= img.getImageUrl() %>" alt="product image" onerror="this.onerror=null; this.src='${pageContext.request.contextPath}/assets/images/product-placeholder.svg';">
                 <%
                         }
                     } else {

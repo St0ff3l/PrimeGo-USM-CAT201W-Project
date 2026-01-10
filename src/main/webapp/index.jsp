@@ -255,14 +255,11 @@
     <div class="product-card glass-panel"
          onclick="window.location.href='<%= detailUrl %>'">
 
-      <% if (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) { %>
       <div class="product-img-container">
-        <img src="<%= request.getContextPath() + "/" + p.getPrimaryImageUrl() %>"
+        <img src="<%= (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) ? request.getContextPath() + "/" + p.getPrimaryImageUrl() : request.getContextPath() + "/assets/images/product-placeholder.svg" %>"
+             onerror="this.onerror=null; this.src='<%= request.getContextPath() %>/assets/images/product-placeholder.svg';"
              alt="<%= p.getProductName() %>">
       </div>
-      <% } else { %>
-      <div class="product-img-placeholder">📦</div>
-      <% } %>
 
       <div class="product-details">
         <h3 class="product-name"><%= p.getProductName() %></h3>

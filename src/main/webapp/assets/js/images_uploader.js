@@ -10,6 +10,7 @@ class ImagesUploader {
         this.inputName = config.inputName || 'newImages'; // 新文件的 input name
         this.deleteInputName = config.deleteInputName || 'deleteImageIds'; // 删除的 ID
         this.sortInputName = config.sortInputName || 'imageSortOrder'; // 排序后的 ID 列表
+        this.placeholderImg = config.placeholderImg || ''; // 占位图 URL
 
         this.dt = new DataTransfer();
         this.deletedIds = new Set();
@@ -105,13 +106,24 @@ class ImagesUploader {
         const div = document.createElement('div');
         div.className = 'iu-preview-wrapper';
         div.draggable = true; // 允许拖拽
-        div.innerHTML = `
-            <img src="${src}" class="iu-preview-item">
-            <div class="iu-del-btn"><i class="ri-close-line"></i></div>
-        `;
 
-        // 删除逻辑
-        div.querySelector('.iu-del-btn').onclick = (e) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'iu-preview-item';
+        img.alt = 'Image Preview';
+
+        if (this.placeholderImg) {
+            img.onerror = () => {
+                img.onerror = null;
+                img.src = this.placeholderImg;
+            };
+        }
+
+        const delBtn = document.createElement('div');
+        delBtn.className = 'iu-del-btn';
+        delBtn.innerHTML = '<i class="ri-close-line"></i>';
+
+        delBtn.onclick = (e) => {
             e.stopPropagation();
             div.remove();
             if (isServerImage) {
@@ -122,6 +134,10 @@ class ImagesUploader {
             if (this.ui.preview.children.length === 0) this.toggleView(false);
             this.updateSortInput();
         };
+
+        div.appendChild(img);
+        div.appendChild(delBtn);
+
         return div;
     }
 

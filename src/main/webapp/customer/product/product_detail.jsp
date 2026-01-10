@@ -448,6 +448,8 @@
     // ==========================================
     // 图片轮播逻辑
     // ==========================================
+    const PLACEHOLDER_IMG = '<%= request.getContextPath() %>/assets/images/product-placeholder.svg';
+
     const productImages = [
         <% for (int i = 0; i < imageList.size(); i++) {
                ProductImage img = imageList.get(i);
@@ -457,25 +459,36 @@
     ];
 
     if (productImages.length === 0) {
-        productImages.push("https://via.placeholder.com/600x600?text=No+Image");
+        productImages.push(PLACEHOLDER_IMG);
     }
 
     let currentIndex = 0;
     const mainImage = document.getElementById('mainImage');
     const indicatorsContainer = document.getElementById('indicators');
 
+    function setMainImage(src) {
+        // prevent infinite loops if placeholder also fails
+        mainImage.onerror = null;
+        mainImage.onerror = function () {
+            this.onerror = null;
+            this.src = PLACEHOLDER_IMG;
+        };
+        mainImage.src = src || PLACEHOLDER_IMG;
+    }
+
     function renderGallery() {
         mainImage.style.opacity = 0;
         setTimeout(() => {
-            mainImage.src = productImages[currentIndex];
+            setMainImage(productImages[currentIndex]);
             mainImage.style.opacity = 1;
         }, 150);
 
         indicatorsContainer.innerHTML = '';
         productImages.forEach((src, idx) => {
             const div = document.createElement('div');
-            div.className = `indicator \${idx === currentIndex ? 'active' : ''}`;
-            div.innerHTML = `<img src="\${src}" alt="Thumb">`;
+            div.className = 'indicator' + (idx === currentIndex ? ' active' : '');
+            const safeSrc = src || PLACEHOLDER_IMG;
+            div.innerHTML = '<img src="' + safeSrc + '" alt="Thumb" onerror="this.onerror=null; this.src=\'' + PLACEHOLDER_IMG + '\';">';
             div.onclick = () => { currentIndex = idx; renderGallery(); };
             indicatorsContainer.appendChild(div);
         });
@@ -489,3 +502,5 @@
 
 </body>
 </html>
+
+

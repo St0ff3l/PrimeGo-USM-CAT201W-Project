@@ -144,9 +144,12 @@
 
             <div class="item-img">
                 <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
-                <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
+                <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>"
+                     onerror="this.onerror=null; this.src='<%= request.getContextPath() %>/assets/images/product-placeholder.svg';"
+                     alt="<%= item.getProduct().getProductName() %>">
                 <% } else { %>
-                <span style="font-size: 0.8rem; color: #ccc;">No Image</span>
+                <img src="<%= request.getContextPath() %>/assets/images/product-placeholder.svg"
+                     alt="No Image">
                 <% } %>
 
                 <%-- ⭐ 图片上的 Sold Out 标记 --%>

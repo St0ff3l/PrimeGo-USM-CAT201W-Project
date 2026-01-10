@@ -237,7 +237,7 @@
     </main>
 </div>
 
-<script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/images_uploader.js?v=<%= System.currentTimeMillis() %>"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -246,7 +246,8 @@
         // 参数2: 配置 input 的 name 属性。
         // 注意：如果你后端期望同一个 name 接收多个文件，使用 'productImage' 即可。
         new ImagesUploader('#photo-upload-container', {
-            inputName: 'productImage'
+            inputName: 'productImage',
+            placeholderImg: '${pageContext.request.contextPath}/assets/images/product-placeholder.svg'
         });
     });
 </script>

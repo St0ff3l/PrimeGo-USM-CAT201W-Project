@@ -288,8 +288,9 @@
                                    onmouseover="this.style.background='rgba(255,255,255,0.8)'"
                                    onmouseout="this.style.background='transparent'">
 
-                                    <img src="${pageContext.request.contextPath}/${not empty item.productImageUrl ? item.productImageUrl : 'assets/images/no-image.png'}"
+                                    <img src="${pageContext.request.contextPath}/${not empty item.productImageUrl ? item.productImageUrl : 'assets/images/product-placeholder.svg'}"
                                          alt="${item.productName}"
+                                         onerror="this.onerror=null; this.src='${pageContext.request.contextPath}/assets/images/product-placeholder.svg';"
                                          style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
 
                                     <div style="flex: 1;">

@@ -235,9 +235,9 @@
                 <% for(CartItem item : orderItems) { %>
                 <div class="order-item">
                     <div class="item-img">
-                        <% if (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) { %>
-                        <img src="<%= request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() %>" alt="<%= item.getProduct().getProductName() %>">
-                        <% } else { %>📦<% } %>
+                        <img src="<%= (item.getProduct().getPrimaryImageUrl() != null && !item.getProduct().getPrimaryImageUrl().isEmpty()) ? request.getContextPath() + "/" + item.getProduct().getPrimaryImageUrl() : request.getContextPath() + "/assets/images/product-placeholder.svg" %>"
+                             alt="<%= item.getProduct().getProductName() %>"
+                             onerror="this.onerror=null; this.src='<%= request.getContextPath() %>/assets/images/product-placeholder.svg';">
                     </div>
                     <div>
                         <h4><%= item.getProduct().getProductName() %></h4>

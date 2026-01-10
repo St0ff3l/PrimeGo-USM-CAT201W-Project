@@ -340,7 +340,7 @@
     </form>
 </div>
 
-<script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/images_uploader.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
     // 准备数据
     const serverImages = [
@@ -358,7 +358,8 @@
         const uploader = new ImagesUploader('#photo-upload-container', {
             inputName: 'newImages',
             deleteInputName: 'deleteImageIds',
-            sortInputName: 'imageSortOrder'
+            sortInputName: 'imageSortOrder',
+            placeholderImg: '${pageContext.request.contextPath}/assets/images/product-placeholder.svg'
         });
 
         // 回显图片
@@ -372,8 +373,16 @@
     let currentIndex = 0;
     const mainImage = document.getElementById('mainImage');
     const indicatorsContainer = document.getElementById('indicators');
+    const placeholderUrl = '<%= request.getContextPath() %>/assets/images/product-placeholder.svg';
 
-    if (serverImages.length === 0) serverImages.push({ url: 'https://via.placeholder.com/600x450?text=No+Image' });
+    // Persistent error handler
+    mainImage.addEventListener('error', function() {
+        if (this.src !== placeholderUrl && !this.src.endsWith('product-placeholder.svg')) {
+             this.src = placeholderUrl;
+        }
+    });
+
+    if (serverImages.length === 0) serverImages.push({ url: placeholderUrl });
 
     function renderCarousel() {
         mainImage.style.opacity = 0;

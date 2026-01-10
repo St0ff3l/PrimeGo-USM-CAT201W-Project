@@ -317,8 +317,8 @@
                 </span>
 
                 <div class="card-img-container">
-                    <img src="<%= (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) ? request.getContextPath() + "/" + p.getPrimaryImageUrl() : "../../assets/images/default_product.png" %>"
-                         onerror="this.src='https://via.placeholder.com/300?text=No+Image'"
+                    <img src="<%= (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) ? request.getContextPath() + "/" + p.getPrimaryImageUrl() : request.getContextPath() + "/assets/images/product-placeholder.svg" %>"
+                         onerror="this.onerror=null; this.src='<%= request.getContextPath() %>/assets/images/product-placeholder.svg';"
                          alt="<%= p.getProductName() %>">
                 </div>
 

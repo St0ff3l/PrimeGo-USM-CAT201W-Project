@@ -245,14 +245,11 @@
             %>
             <%-- 修改点：将整个 card 包装在指向 product_detail.jsp 的 a 标签中 --%>
             <a href="product_detail.jsp?id=<%= p.getProductId() %>" class="product-card">
-                <% if (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) { %>
                 <div class="product-img-container">
-                    <img src="<%= request.getContextPath() + "/" + p.getPrimaryImageUrl() %>"
-                         alt="<%= p.getProductName() %>">
+                    <img src="<%= (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) ? request.getContextPath() + "/" + p.getPrimaryImageUrl() : request.getContextPath() + "/assets/images/product-placeholder.svg" %>"
+                         alt="<%= p.getProductName() %>"
+                         onerror="this.onerror=null; this.src='<%= request.getContextPath() %>/assets/images/product-placeholder.svg';">
                 </div>
-                <% } else { %>
-                <div class="product-img-placeholder">📦</div>
-                <% } %>
 
                 <div class="product-details">
                     <h4 class="product-name"><%= p.getProductName() %></h4>
