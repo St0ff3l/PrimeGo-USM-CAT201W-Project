@@ -16,7 +16,7 @@ public class Product {
     private Timestamp productCreatedAt;
     private Timestamp productUpdatedAt;
 
-    // ✅ Admin audit fields (DB: Audit_Status, Audit_Message)
+    // Admin audit fields (DB: Audit_Status, Audit_Message)
     private String auditStatus; // 'PENDING', 'APPROVED', 'REJECTED'
     private String auditMessage;
 

@@ -33,10 +33,10 @@ public class CustomerOrderServlet extends HttpServlet {
         User user = (User) session.getAttribute("user");
         int userId = user.getId();
 
-        // 获取 URL 上的 action 参数
+        // Action parameter used for special navigation/flows.
         String action = req.getParameter("action");
 
-        // ⭐ 核心逻辑 1: 跳转到退款申请页面 (中间页)
+        // Forward to the refund application page (intermediate step).
         if ("toRefundPage".equals(action)) {
             String orderIdStr = req.getParameter("orderId");
             if (orderIdStr != null) {
@@ -44,27 +44,27 @@ public class CustomerOrderServlet extends HttpServlet {
                     int orderId = Integer.parseInt(orderIdStr);
                     Order order = orderDAO.getOrderById(orderId);
 
-                    // 安全检查：只能看自己的订单，且必须是已完成状态
+                    // Security check: only allow viewing the current user's order, and only when COMPLETED.
                     if (order != null && order.getCustomerId() == userId && "COMPLETED".equals(order.getOrderStatus())) {
                         req.setAttribute("refundOrder", order);
                         req.getRequestDispatcher("/customer/order/refund_application.jsp").forward(req, resp);
-                        return; // 转发后直接结束
+                        return; // Stop processing after forward.
                     }
                 } catch (NumberFormatException e) {
                     e.printStackTrace();
                 }
             }
-            // 如果出错，回到列表页
+            // Fallback to the orders list on invalid input or failed validation.
             resp.sendRedirect(req.getContextPath() + "/customer/orders");
             return;
         }
 
-        // === 默认逻辑：显示订单列表 ===
+        // Default behavior: display the orders list.
         String status = req.getParameter("status");
 
-        // ⭐ 核心修改：处理 RETURNS 过滤器
+        // Special filter for after-sales/returns-related orders.
         if ("RETURNS".equals(status)) {
-            // 查询所有售后相关的订单 (包含被拒绝的 SHIPPED 订单)
+            // Include all after-sales orders (including rejected SHIPPED orders).
             req.setAttribute("orderList", orderDAO.getReturnOrdersByUserId(userId));
             req.setAttribute("currentStatus", "RETURNS");
         } else if (status != null && !status.isEmpty() && !"ALL".equals(status)) {
@@ -104,14 +104,14 @@ public class CustomerOrderServlet extends HttpServlet {
             return;
         }
 
-        // Return/Refund request (SHIPPED only). Support both action names during migration.
+        // Return/refund request (SHIPPED only). Support both action names.
         if ("processRefundRequest".equals(action) || "requestRefund".equals(action)) {
             handleReturnRequest(req);
             resp.sendRedirect(req.getContextPath() + "/customer/orders?status=" + status);
             return;
         }
 
-        // 🟢 处理买家确认退货寄出
+        // Buyer confirmation that the return shipment has been sent.
         if ("confirmReturnShipped".equals(action)) {
             String orderIdStr = req.getParameter("orderId");
             String returnTrackingNumber = req.getParameter("returnTrackingNumber");
@@ -137,7 +137,7 @@ public class CustomerOrderServlet extends HttpServlet {
                 session.setAttribute("message", "Missing order id.");
                 session.setAttribute("messageType", "error");
             }
-            // 重定向回 Returns 列表
+            // Redirect back to the Returns list.
             resp.sendRedirect(req.getContextPath() + "/customer/orders?status=RETURNS");
             return;
         }
@@ -177,7 +177,7 @@ public class CustomerOrderServlet extends HttpServlet {
                 return;
             }
 
-            // NOTE: This just updates status; wallet refund/restock logic is not implemented in current DAO.
+            // Only updates the order status here; refund/restock handling is not performed in this servlet.
             boolean success = orderDAO.updateOrderStatus(orderId, "CANCELLED");
             if (success) {
                 session.setAttribute("message", "Order cancelled successfully.");
@@ -229,7 +229,7 @@ public class CustomerOrderServlet extends HttpServlet {
                 return;
             }
 
-            // 7-day no-reason return window (using createdAt as fallback; ideally use shipped_at if available)
+            // 7-day return window (uses createdAt as a fallback; shipped time is preferred if available).
             long now = System.currentTimeMillis();
             long baseTime = (order.getCreatedAt() != null) ? order.getCreatedAt().getTime() : now;
             long daysDiff = (now - baseTime) / (1000L * 60 * 60 * 24);

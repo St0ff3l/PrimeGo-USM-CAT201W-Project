@@ -11,12 +11,12 @@ import java.util.List;
 public class ProductDAO {
 
     // ==========================================
-    // 查询方法
+    // Query methods
     // ==========================================
 
     public List<ProductDTO> getProductsByMerchantId(int merchantId) {
         List<ProductDTO> products = new ArrayList<>();
-        // ⭐ SQL: 确保 SELECT p.* 包含了 Has_Been_Approved
+        // SQL selects product fields plus category name and the primary image (if any).
         String sql = "SELECT p.*, c.Category_Name, " +
                 "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
                 "FROM Product p " +
@@ -214,11 +214,11 @@ public class ProductDAO {
     }
 
     // ==========================================
-    // 插入方法
+    // Insert methods
     // ==========================================
 
     public int insertProduct(Product product) {
-        // ⭐ SQL 包含了 Contact_Whatsapp
+        // Inserts a new product row, including contact WhatsApp and audit fields.
         String sql = "INSERT INTO Product (Merchant_Id, Category_Id, Product_Name, Product_Description, " +
                 "Product_Price, Product_Stock_Quantity, Contact_Whatsapp, Product_Status, Audit_Status, Audit_Message) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -233,7 +233,7 @@ public class ProductDAO {
             pstmt.setBigDecimal(5, product.getProductPrice());
             pstmt.setInt(6, product.getProductStockQuantity());
 
-            // ⭐ 插入 WhatsApp
+            // Contact WhatsApp
             pstmt.setString(7, product.getContactWhatsapp());
 
             pstmt.setString(8, product.getProductStatus());
@@ -256,11 +256,11 @@ public class ProductDAO {
     }
 
     // ==========================================
-    // 更新方法
+    // Update methods
     // ==========================================
 
     public boolean updateProduct(Product product) {
-        // ⭐ 修改后的 SQL，包含 Contact_Whatsapp = ?, Audit_Status = ?, Audit_Message = ?
+        // Updates product editable fields and resets audit fields as part of the workflow.
         String sql = "UPDATE Product SET " +
                 "Category_Id = ?, Product_Name = ?, Product_Description = ?, " +
                 "Product_Price = ?, Product_Stock_Quantity = ?, Contact_Whatsapp = ?, Product_Status = ?, " +
@@ -277,13 +277,12 @@ public class ProductDAO {
             pstmt.setBigDecimal(4, product.getProductPrice());
             pstmt.setInt(5, product.getProductStockQuantity());
 
-            // ⭐ 设置参数 6: WhatsApp
+            // Contact WhatsApp
             pstmt.setString(6, product.getContactWhatsapp());
 
-            // ⭐ 参数索引顺延
             pstmt.setString(7, product.getProductStatus());
 
-            // ⭐ 新增 Audit 字段
+            // Audit fields
             pstmt.setString(8, product.getAuditStatus());
             pstmt.setString(9, product.getAuditMessage());
 
@@ -300,7 +299,7 @@ public class ProductDAO {
     }
 
     // ==========================================
-    // 库存扣减方法
+    // Stock adjustment
     // ==========================================
 
     public void decreaseStock(Connection conn, int productId, int quantity) throws SQLException {
@@ -315,7 +314,7 @@ public class ProductDAO {
             int affectedRows = pstmt.executeUpdate();
 
             if (affectedRows == 0) {
-                throw new SQLException("库存不足或商品不存在 (Product ID: " + productId + ")");
+                throw new SQLException("Insufficient stock or product not found (Product ID: " + productId + ")");
             }
         }
     }
@@ -374,7 +373,7 @@ public class ProductDAO {
         return products;
     }
 
-    // ⭐ 统一的映射逻辑 (复用代码)
+    // Shared row-to-DTO mapping used by multiple queries.
     private ProductDTO mapRowToProductDTO(ResultSet rs) throws SQLException {
         ProductDTO product = new ProductDTO();
         product.setProductId(rs.getInt("Product_Id"));
@@ -390,18 +389,17 @@ public class ProductDAO {
         product.setProductCreatedAt(rs.getTimestamp("Product_Created_At"));
         product.setProductUpdatedAt(rs.getTimestamp("Product_Updated_At"));
 
-        // ⭐ 读取 Contact_Whatsapp
+        // Read Contact_Whatsapp when the column exists.
         try {
             product.setContactWhatsapp(rs.getString("Contact_Whatsapp"));
         } catch (SQLException e) {
-            // 忽略
+            // ignore
         }
 
-        // ⭐⭐ 关键新增：读取 Has_Been_Approved
+        // Read Has_Been_Approved when the column exists; default to false for older schemas.
         try {
             product.setHasBeenApproved(rs.getBoolean("Has_Been_Approved"));
         } catch (SQLException e) {
-            // 防止旧数据库表没加这列报错
             product.setHasBeenApproved(false);
         }
 
@@ -417,14 +415,14 @@ public class ProductDAO {
         return product;
     }
 
-    // ⭐ 修改后的管理员审核更新逻辑
+    // Update product audit decision and derived product status.
     public boolean updateProductAuditByAdmin(int productId, String auditStatus, String auditMessage) {
         String newProductStatus = "OFF_SALE";
         String extraUpdate = "";
 
         if ("APPROVED".equals(auditStatus)) {
             newProductStatus = "ON_SALE";
-            // ⭐⭐ 关键新增：如果批准了，将 Has_Been_Approved 设为 1
+            // When approved, mark the product as having been approved at least once.
             extraUpdate = ", Has_Been_Approved = 1 ";
         }
 
@@ -447,3 +445,4 @@ public class ProductDAO {
         }
     }
 }
+

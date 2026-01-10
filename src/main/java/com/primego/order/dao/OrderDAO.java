@@ -16,11 +16,18 @@ public class OrderDAO {
     private WalletDAO walletDAO = new WalletDAO();
 
     /**
-     * ⭐ 核心新增：批量创建订单 (用于拆单逻辑)
-     * 在一个数据库事务中，创建多个 Order，插入对应的 OrderItems，扣减库存，扣减钱包
-     * 
-     * @param orders 分组后的订单列表
-     * @return 成功生成的订单ID列表，失败返回 null
+     * Creates multiple orders in a single database transaction.
+     *
+     * This method is designed for split-order scenarios:
+     * - Insert each order into the Orders table
+     * - Insert corresponding Order_Item rows
+     * - Decrease product stock
+     * - Deduct the customer's wallet balance
+     *
+     * If any step fails, the entire transaction is rolled back.
+     *
+     * @param orders grouped/split orders to persist
+     * @return list of generated order IDs; returns null on failure
      */
     public List<Integer> createOrdersBatch(List<Order> orders) {
         Connection conn = null;
@@ -29,30 +36,30 @@ public class OrderDAO {
         ResultSet generatedKeys = null;
         List<Integer> createdOrderIds = new ArrayList<>();
 
-        // SQL: 插入主订单
+        // SQL: insert an order (header)
         String insertOrderSql = "INSERT INTO Orders (Customer_Id, Orders_Total_Amount, Orders_Order_Status, " +
                 "Orders_Payment_Status, Orders_Address) VALUES (?, ?, ?, ?, ?)";
 
-        // SQL: 插入订单项
+        // SQL: insert an order item (line)
         String insertItemSql = "INSERT INTO Order_Item (Orders_Id, Product_Id, Order_Item_Product_Name, " +
                 "Order_Item_Price, Order_Item_Quantity, Order_Item_Subtotal) VALUES (?, ?, ?, ?, ?, ?)";
 
         try {
             conn = DBUtil.getConnection();
-            // 1. 开启事务：关闭自动提交 (非常重要)
+            // Begin transaction.
             conn.setAutoCommit(false);
 
-            // 2. 循环处理每一个拆分后的子订单
+            // Process each split order.
             for (Order order : orders) {
 
                 // ---------------------------------------------------
-                // Step A: 插入 Orders 表
+                // Step A: Insert into Orders
                 // ---------------------------------------------------
                 orderStmt = conn.prepareStatement(insertOrderSql, Statement.RETURN_GENERATED_KEYS);
                 orderStmt.setInt(1, order.getCustomerId());
                 orderStmt.setBigDecimal(2, order.getTotalAmount());
 
-                // 初始状态
+                // Initial status for a successfully paid order.
                 orderStmt.setString(3, "PAID");
                 orderStmt.setString(4, "PAID");
                 orderStmt.setString(5, order.getAddress());
@@ -66,14 +73,14 @@ public class OrderDAO {
                 generatedKeys = orderStmt.getGeneratedKeys();
                 if (generatedKeys.next()) {
                     newOrderId = generatedKeys.getInt(1);
-                    createdOrderIds.add(newOrderId); // 记录生成的ID
+                    createdOrderIds.add(newOrderId); // Track generated order IDs
                 } else {
                     throw new SQLException("Creating order failed, no ID obtained.");
                 }
-                orderStmt.close(); // 关闭以便下一次循环使用
+                orderStmt.close(); // Close so the next loop iteration can recreate it cleanly
 
                 // ---------------------------------------------------
-                // Step B: 循环插入 Items 并 扣减库存
+                // Step B: Insert items and decrease stock
                 // ---------------------------------------------------
                 itemStmt = conn.prepareStatement(insertItemSql);
 
@@ -84,30 +91,30 @@ public class OrderDAO {
                     itemStmt.setBigDecimal(4, item.getPrice());
                     itemStmt.setInt(5, item.getQuantity());
                     itemStmt.setBigDecimal(6, item.getSubtotal());
-                    itemStmt.addBatch(); // 加入批处理
+                    itemStmt.addBatch();
 
-                    // 调用 ProductDAO 扣减库存 (传入 conn 保持事务)
-                    // 注意：ProductDAO 中必须有 decreaseStock(Connection conn, ...) 方法
+                    // Decrease stock using the same connection to keep everything in one transaction.
+                    // ProductDAO is expected to provide decreaseStock(Connection conn, ...).
                     productDAO.decreaseStock(conn, item.getProductId(), item.getQuantity());
                 }
 
-                // 执行批量插入 Items
+                // Batch insert items.
                 itemStmt.executeBatch();
                 itemStmt.close();
 
                 // ---------------------------------------------------
-                // Step C: 钱包扣款 (只扣用户，不给商家)
+                // Step C: Deduct wallet balance (customer only)
                 // ---------------------------------------------------
-                // 修改：调用 deductUserBalance 而不是 payOrder
+                // Deduct the customer's balance for this order amount.
                 walletDAO.deductUserBalance(conn, order.getCustomerId(), order.getTotalAmount());
             }
 
-            // 3. 所有订单处理完毕，提交事务
+            // Commit if all orders succeed.
             conn.commit();
             return createdOrderIds;
 
         } catch (SQLException e) {
-            // 发生错误，回滚所有操作
+            // Roll back the entire batch on any failure.
             if (conn != null) {
                 try {
                     System.err.println("Batch Order Transaction Failed. Rolling back... Reason: " + e.getMessage());
@@ -117,9 +124,9 @@ public class OrderDAO {
                 }
             }
             e.printStackTrace();
-            return null; // 返回 null 表示失败
+            return null;
         } finally {
-            // 恢复 AutoCommit 并关闭资源
+            // Restore auto-commit and close resources.
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
@@ -142,7 +149,9 @@ public class OrderDAO {
     }
 
     /**
-     * 原有的创建单个订单方法 (保留以兼容旧代码)
+     * Creates a single order.
+     *
+     * This is a compatibility wrapper that delegates to createOrdersBatch.
      */
     public int createOrder(Order order) {
         List<Order> singleList = new ArrayList<>();
@@ -156,7 +165,7 @@ public class OrderDAO {
     }
 
     // =========================================================================
-    // ↓↓↓↓↓ 查询与更新方法 ↓↓↓↓↓
+    // Query and update methods
     // =========================================================================
 
     public List<Order> getOrdersByUserId(int userId) {
@@ -184,10 +193,10 @@ public class OrderDAO {
     }
 
     /**
-     * Get orders by user ID and status
-     */
-    /**
-     * 根据状态查询订单 (已修改：查询 SHIPPED 时排除掉售后纠纷订单)
+     * Returns orders for a given user filtered by order status.
+     *
+     * Special handling: when querying SHIPPED ("To Receive"), exclude orders that have refund rejection history,
+     * so they appear only in the returns/refund list.
      */
     public List<Order> getOrdersByUserIdAndStatus(int userId, String status) {
         List<Order> orderList = new ArrayList<>();
@@ -200,8 +209,7 @@ public class OrderDAO {
         sql.append("LEFT JOIN Refunds r ON o.Orders_Id = r.Orders_Id ");
         sql.append("WHERE o.Customer_Id = ? AND o.Orders_Order_Status = ? ");
 
-        // ⭐⭐⭐ 核心修改：如果是查询 SHIPPED (To Receive) 列表，排除掉有拒绝记录的订单 ⭐⭐⭐
-        // 这样“被拒绝但回退为 SHIPPED”的订单就不会出现在 To Receive 里，只会出现在 Returns 里
+        // If querying SHIPPED, exclude orders that were rejected in after-sales flow.
         if ("SHIPPED".equals(status)) {
             sql.append("AND (r.Rejection_Count IS NULL OR r.Rejection_Count = 0) ");
         }
@@ -218,7 +226,7 @@ public class OrderDAO {
                 while (rs.next()) {
                     Order order = mapRowToOrder(rs);
 
-                    // ✅ 统一映射 Refunds 字段（包含 Return_Address / Return_Tracking_Number）
+                    // Map Refunds columns (including return address and tracking number) when present.
                     mapRefundFields(order, rs);
 
                     order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
@@ -233,7 +241,7 @@ public class OrderDAO {
     }
 
     /**
-     * Get single order by ID
+     * Returns a single order by its ID.
      */
     public Order getOrderById(int orderId) {
         Order order = null;
@@ -260,8 +268,8 @@ public class OrderDAO {
 
     public List<Order> getOrdersByMerchantId(int merchantId) {
         List<Order> orderList = new ArrayList<>();
-        // DISTINCT 确保同一个订单如果包含多个该商家的商品，只显示一次
-        // ✅ 注意：mapRefundFields 需要 Refund_Reason/Refund_Status/Refund_Type 等字段都在 ResultSet 里
+        // DISTINCT ensures an order appears only once even if it contains multiple items from the same merchant.
+        // mapRefundFields expects refund-related columns to be available when the query selects them.
         String sql = "SELECT DISTINCT o.*, " +
                 "r.Refund_Reason, r.Rejection_Count, r.Merchant_Reject_Reason, r.Refund_Status, r.Refund_Type, " +
                 "r.Return_Address, r.Return_Tracking_Number " +
@@ -326,7 +334,7 @@ public class OrderDAO {
     }
 
     public boolean updateOrderStatus(int orderId, String newStatus) {
-        // 🟢 修改逻辑：如果是完成订单，同时更新 completed_at 时间
+        // When completing an order, also write the completion timestamp.
         String sql = "UPDATE Orders SET Orders_Order_Status = ? WHERE Orders_Id = ?";
         if ("COMPLETED".equals(newStatus)) {
             sql = "UPDATE Orders SET Orders_Order_Status = ?, completed_at = NOW() WHERE Orders_Id = ?";
@@ -346,32 +354,32 @@ public class OrderDAO {
     }
 
 
-    // 🟢 [修改] 用户申请退款
+    // Customer requests a refund.
     public boolean requestRefund(int orderId, String reason, int userId) {
         return requestRefund(orderId, reason, userId, "MONEY_ONLY");
     }
 
-    // 🟢 [新增] 用户申请退款 + 退款类型
+    // Customer requests a refund with an explicit refund type.
     public boolean requestRefund(int orderId, String reason, int userId, String refundType) {
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
-            conn.setAutoCommit(false); // 开启事务
+            conn.setAutoCommit(false); // Begin transaction
 
-            // 1. 更新 Orders 表状态
+            // 1) Update Orders status
             String orderSql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED' WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
                 ps.setInt(1, orderId);
                 ps.executeUpdate();
             }
 
-            // 2. 插入或更新 Refunds 表
+            // 2) Insert or update Refunds row
             String rt = (refundType == null || refundType.trim().isEmpty()) ? "MONEY_ONLY" : refundType.trim();
             if (!"MONEY_ONLY".equals(rt) && !"RETURN_AND_REFUND".equals(rt)) {
                 rt = "MONEY_ONLY";
             }
 
-            // ⭐ 注意：Refund_Type 是 enum 且 NOT NULL，这里必须显式写入
+            // Refund_Type is an enum and NOT NULL, so it must always be written explicitly.
             String refundSql = "INSERT INTO Refunds (Orders_Id, Customer_Id, Refund_Type, Refund_Reason, Refund_Amount, Refund_Status) " +
                     "VALUES (?, ?, ?, ?, (SELECT Orders_Total_Amount FROM Orders WHERE Orders_Id = ?), 'PENDING') " +
                     "ON DUPLICATE KEY UPDATE " +
@@ -401,14 +409,14 @@ public class OrderDAO {
     }
 
 
-    // 🟢 [修改] 商家拒绝退款
+    // Merchant rejects a refund and records the rejection reason.
     public boolean rejectRefund(int orderId, String merchantReason) {
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. 更新 Refunds 表：状态=REJECTED, 次数+1, 记录拒绝理由
+            // 1) Update Refunds: status=REJECTED, increment rejection count, store rejection reason
             String refundSql = "UPDATE Refunds SET Refund_Status = 'REJECTED', " +
                     "Rejection_Count = Rejection_Count + 1, " +
                     "Merchant_Reject_Reason = ? " +
@@ -419,8 +427,7 @@ public class OrderDAO {
                 ps.executeUpdate();
             }
 
-            // 2. ⭐⭐ 关键修改：状态回退为 SHIPPED (而不是 COMPLETED) ⭐⭐
-            // 这样用户在前端才能再次看到 "Apply Again" 按钮 (因为前端判断 if status == SHIPPED)
+            // 2) Revert Orders status to SHIPPED so the user can submit another request when applicable.
             String orderSql = "UPDATE Orders SET Orders_Order_Status = 'SHIPPED' WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
                 ps.setInt(1, orderId);
@@ -439,21 +446,21 @@ public class OrderDAO {
     }
 
 
-    // 🟢 [新增] 商家同意退款 (仅更新状态，钱在 WalletDAO 扣)
+    // Merchant approves a refund (status only; the wallet operation is handled elsewhere).
     public boolean approveRefundStatus(int orderId) {
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. 更新 Refunds 表
+            // 1) Update Refunds
             String refundSql = "UPDATE Refunds SET Refund_Status = 'APPROVED' WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(refundSql)) {
                 ps.setInt(1, orderId);
                 ps.executeUpdate();
             }
 
-            // 2. 更新 Orders 表
+            // 2) Update Orders
             String orderSql = "UPDATE Orders SET Orders_Order_Status = 'REFUNDED' WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
                 ps.setInt(1, orderId);
@@ -471,7 +478,7 @@ public class OrderDAO {
         }
     }
 
-    // 🟢 [新增] 商家同意退货 (写入退货地址 + 状态 WAITING_RETURN)
+    // Merchant agrees to a return: write return address and mark Refund_Status as WAITING_RETURN.
     public boolean agreeReturn(int orderId, String returnAddress) {
         String addr = (returnAddress == null) ? null : returnAddress.trim();
         if (addr == null || addr.isEmpty()) {
@@ -483,7 +490,7 @@ public class OrderDAO {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // 1) 更新 Refunds
+            // 1) Update Refunds
             String sql = "UPDATE Refunds SET Refund_Status = 'WAITING_RETURN', Return_Address = ? WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, addr);
@@ -494,7 +501,7 @@ public class OrderDAO {
                 }
             }
 
-            // 2) 保持 Orders 处于售后状态，确保两端列表都能看到
+            // 2) Keep Orders in an after-sales state so both sides can still see it in their lists.
             String orderSql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED' WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
                 ps.setInt(1, orderId);
@@ -512,12 +519,12 @@ public class OrderDAO {
         }
     }
 
-    // 🟡 兼容旧调用：不传地址
+    // Backward-compatible overload: agree to return without providing an address.
     public boolean agreeReturn(int orderId) {
         return agreeReturn(orderId, null);
     }
 
-    // 🟢 [新增] 买家确认已发货 (写入寄回单号 + 状态 RETURN_SHIPPED)
+    // Buyer confirms the return shipment: write tracking number and set Refund_Status to RETURN_SHIPPED.
     public boolean buyerConfirmShipped(int orderId, String returnTrackingNumber) {
         String trk = (returnTrackingNumber == null) ? null : returnTrackingNumber.trim();
         if (trk == null || trk.isEmpty()) {
@@ -529,7 +536,7 @@ public class OrderDAO {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            // 1) 更新 Refunds
+            // 1) Update Refunds
             String sql = "UPDATE Refunds SET Refund_Status = 'RETURN_SHIPPED', Return_Tracking_Number = ? WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, trk);
@@ -540,7 +547,7 @@ public class OrderDAO {
                 }
             }
 
-            // 2) 保持 Orders 处于售后状态
+            // 2) Keep Orders in an after-sales state
             String orderSql = "UPDATE Orders SET Orders_Order_Status = 'RETURN_REQUESTED' WHERE Orders_Id = ?";
             try (PreparedStatement ps = conn.prepareStatement(orderSql)) {
                 ps.setInt(1, orderId);
@@ -558,7 +565,7 @@ public class OrderDAO {
         }
     }
 
-    // 🟡 兼容旧调用：不传单号
+    // Backward-compatible overload: confirm return shipment without providing a tracking number.
     public boolean buyerConfirmShipped(int orderId) {
         return buyerConfirmShipped(orderId, null);
     }
@@ -568,10 +575,8 @@ public class OrderDAO {
 
 
 
-
-
-    // 🟢 [新增] 专门用于查询 "售后/退款" 列表
-    // 逻辑：查询 (状态是 申请中/已退款) 或者 (状态是 SHIPPED 且 拒绝次数 > 0)
+    // Query specifically for the user's returns/refunds list.
+    // Logic: include (RETURN_REQUESTED/REFUNDED) OR (SHIPPED with rejection history) OR waiting/return-shipped states.
     public List<Order> getReturnOrdersByUserId(int userId) {
         List<Order> orderList = new ArrayList<>();
         String sql = "SELECT o.*, " +
@@ -605,7 +610,7 @@ public class OrderDAO {
     }
 
     // =========================================================================
-    // ↓↓↓↓↓ 私有方法 ↓↓↓↓↓
+    // Private helpers
     // =========================================================================
 
     private Order mapRowToOrder(ResultSet rs) throws SQLException {
@@ -626,17 +631,17 @@ public class OrderDAO {
         try {
             order.setCompletedAt(rs.getTimestamp("completed_at"));
         } catch (SQLException e) {
-            /* 忽略列不存在的情况 */
+            /* Ignore when the column does not exist */
         }
 
-        // ❌ 注意：不再从 Orders 表读取 refund_reason（已迁移到 Refunds 表）
+        // Note: refund fields are no longer read from Orders; they come from the Refunds table.
 
         return order;
     }
 
-    // 🟢 [新增辅助方法] 映射 Refunds 表的字段 (普通查询没 JOIN Refunds 时不会报错)
+    // Helper to map Refunds columns when the current query includes them.
     private void mapRefundFields(Order order, ResultSet rs) {
-        // ✅ Each column is optional depending on which query SELECTs it.
+        // Each column is optional depending on which query SELECTs it.
         // Read them independently so one missing column won't break the rest.
         try { order.setRefundReason(rs.getString("Refund_Reason")); } catch (Exception ignored) {}
         try { order.setRejectionCount(rs.getInt("Rejection_Count")); } catch (Exception ignored) {}
@@ -673,8 +678,8 @@ public class OrderDAO {
                 while (rs.next()) {
                     Order order = mapRowToOrder(rs);
                     mapRefundFields(order, rs);
-                    // For dashboard summary, we might not need items to improve performance,
-                    // but let's include them for completeness if needed in modal detail
+                    // For dashboard summaries we might skip loading items for performance,
+                    // but items can be loaded for detailed views if needed.
                     // order.setOrderItems(getOrderItemsByOrderId(order.getOrdersId()));
                     orderList.add(order);
                 }

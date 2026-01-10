@@ -29,7 +29,7 @@ import java.util.UUID;
 )
 public class ProductActionServlet extends HttpServlet {
 
-    // 实例化两个 DAO
+    // DAO instances for product and product image operations.
     private ProductDAO productDAO = new ProductDAO();
     private ProductImageDAO imageDAO = new ProductImageDAO();
 
@@ -58,13 +58,13 @@ public class ProductActionServlet extends HttpServlet {
         }
 
         try {
-            // 1. 获取基本信息
+            // 1) Read input fields.
             int productId = Integer.parseInt(request.getParameter("productId"));
 
-            // ⭐ 关键逻辑：先获取数据库中的旧数据，用于对比
+            // Load the current product from the database so we can compare changes.
             Product oldProduct = productDAO.getProductById(productId);
             if (oldProduct == null) {
-                // 防止空指针，如果找不到商品直接返回
+                // If the product cannot be found, stop to avoid null references.
                 response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?error=notfound");
                 return;
             }
@@ -73,37 +73,38 @@ public class ProductActionServlet extends HttpServlet {
             int categoryId = Integer.parseInt(request.getParameter("categoryId"));
             BigDecimal price = new BigDecimal(request.getParameter("productPrice"));
             int stock = Integer.parseInt(request.getParameter("productStock"));
-            // 注意：这里先获取前端传来的状态，后面可能会被逻辑覆盖
+            // Read the UI-provided status first; it may be overridden by the audit rule below.
             String status = request.getParameter("productStatus");
             String description = request.getParameter("productDescription");
             String whatsapp = request.getParameter("contactWhatsapp");
 
-            // ==========================================
-            // ⭐ 关键逻辑：检测敏感字段是否发生变更
-            // ==========================================
+            // --------------------------------------------------
+            // Detect whether sensitive fields have changed.
+            // If they did, force the product into re-audit.
+            // --------------------------------------------------
             boolean needsAudit = false;
 
-            // 1. 检测描述是否改变
+            // Check whether the description changed.
             if (isStringChanged(oldProduct.getProductDescription(), description)) {
                 needsAudit = true;
             }
-            // 2. 检测 WhatsApp 是否改变
+            // Check whether WhatsApp contact changed.
             if (isStringChanged(oldProduct.getContactWhatsapp(), whatsapp)) {
                 needsAudit = true;
             }
 
-            // ⭐⭐ 3. 新增：检测商品名称是否改变
+            // Check whether the product name changed.
             if (isStringChanged(oldProduct.getProductName(), name)) {
                 needsAudit = true;
             }
 
-            // 4. 检测是否删除了图片
+            // Check whether any images were removed.
             String deleteIds = request.getParameter("deleteImageIds");
             if (deleteIds != null && !deleteIds.trim().isEmpty()) {
                 needsAudit = true;
             }
 
-            // 5. 检测是否上传了新图片 (需要遍历 Part)
+            // Check whether any new images were uploaded.
             Collection<Part> parts = request.getParts();
             for (Part part : parts) {
                 if (part.getName().equals("newImages") && part.getSize() > 0 && part.getSubmittedFileName() != null && !part.getSubmittedFileName().isEmpty()) {
@@ -112,9 +113,9 @@ public class ProductActionServlet extends HttpServlet {
                 }
             }
 
-            // ==========================================
-            // 组装新对象
-            // ==========================================
+            // --------------------------------------------------
+            // Build the updated product object.
+            // --------------------------------------------------
             Product product = new Product();
             product.setProductId(productId);
             product.setMerchantId(user.getId());
@@ -125,27 +126,25 @@ public class ProductActionServlet extends HttpServlet {
             product.setContactWhatsapp(whatsapp);
             product.setProductDescription(description);
 
-            // 根据变更检测结果设置状态
+            // Apply status/audit fields based on the change detection.
             if (needsAudit) {
-                // ⚠️ 触发了敏感修改：强制下架并重置为待审核
+                // Sensitive content changed: force the product off-sale and set audit status to pending.
                 product.setProductStatus("OFF_SALE");
                 product.setAuditStatus("PENDING");
-                product.setAuditMessage(null); // 清空之前的审核消息
+                product.setAuditMessage(null);
                 System.out.println("Product ID " + productId + " triggered re-audit due to content changes.");
             } else {
-                // ✅ 未修改敏感信息：保留原有的审核状态，状态使用前端传来的（比如用户只是改了价格或手动上下架）
+                // No sensitive content change: keep existing audit fields; use the UI-provided product status.
                 product.setProductStatus(status);
                 product.setAuditStatus(oldProduct.getAuditStatus());
                 product.setAuditMessage(oldProduct.getAuditMessage());
             }
 
-            // 执行更新
+            // Persist the update.
             boolean updateSuccess = productDAO.updateProduct(product);
 
             if (updateSuccess) {
-                // ==========================================
-                // 2. 处理图片删除
-                // ==========================================
+                // 2) Delete selected images.
                 if (deleteIds != null && !deleteIds.trim().isEmpty()) {
                     String[] ids = deleteIds.split(",");
                     for (String idStr : ids) {
@@ -158,9 +157,7 @@ public class ProductActionServlet extends HttpServlet {
                     }
                 }
 
-                // ==========================================
-                // 3. 处理新图片上传
-                // ==========================================
+                // 3) Save newly uploaded images.
                 String uploadDir = getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "products";
                 File uploadDirFile = new File(uploadDir);
                 if (!uploadDirFile.exists()) uploadDirFile.mkdirs();
@@ -169,7 +166,7 @@ public class ProductActionServlet extends HttpServlet {
                 File sourceDirFile = new File(sourceDir);
                 if (!sourceDirFile.exists()) sourceDirFile.mkdirs();
 
-                // 重新遍历 Parts 保存文件 (前面只是检查，这里是实际保存)
+                // Iterate parts again to actually write files (the first pass was only for validation).
                 for (Part part : parts) {
                     if (part.getName().equals("newImages") && part.getSize() > 0 && part.getSubmittedFileName() != null && !part.getSubmittedFileName().isEmpty()) {
 
@@ -195,9 +192,7 @@ public class ProductActionServlet extends HttpServlet {
                     }
                 }
 
-                // ==========================================
-                // 4. 处理图片排序
-                // ==========================================
+                // 4) Apply image ordering (the first ID is treated as the primary image).
                 String sortOrder = request.getParameter("imageSortOrder");
                 if (sortOrder != null && !sortOrder.trim().isEmpty()) {
                     String[] ids = sortOrder.split(",");
@@ -247,10 +242,11 @@ public class ProductActionServlet extends HttpServlet {
         return "";
     }
 
-    // 辅助方法：比较两个字符串是否不同 (处理 null 和空字符串的情况)
+    // Helper: compare two strings safely (handles nulls and leading/trailing whitespace).
     private boolean isStringChanged(String oldVal, String newVal) {
         String o = (oldVal == null) ? "" : oldVal.trim();
         String n = (newVal == null) ? "" : newVal.trim();
         return !o.equals(n);
     }
 }
+

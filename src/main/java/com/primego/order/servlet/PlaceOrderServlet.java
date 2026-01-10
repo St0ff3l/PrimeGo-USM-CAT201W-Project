@@ -37,7 +37,7 @@ public class PlaceOrderServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
 
-        // 1. 获取当前登录用户
+        // 1) Get the current logged-in user.
         User user = (User) session.getAttribute("user");
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
@@ -46,7 +46,7 @@ public class PlaceOrderServlet extends HttpServlet {
         int userId = user.getId();
 
         // =========================================================================
-        // Step 1: 验证支付 PIN 码
+        // Step 1: Validate the payment PIN.
         // =========================================================================
         String inputPin = request.getParameter("paymentPin");
         CustomerProfile profile = profileDAO.getCustomerProfile(userId);
@@ -64,7 +64,7 @@ public class PlaceOrderServlet extends HttpServlet {
         }
 
         // =========================================================================
-        // Step 2: 准备分组数据 (按 MerchantId 分组，支持拆单)
+        // Step 2: Prepare grouped items (group by merchantId to support split orders).
         // =========================================================================
         request.setCharacterEncoding("UTF-8");
         String fullName = request.getParameter("fullName");
@@ -72,20 +72,20 @@ public class PlaceOrderServlet extends HttpServlet {
         String phone = request.getParameter("phone");
         String fullAddress = fullName + ", " + address + ", Phone: " + phone;
 
-        // ⭐ 核心逻辑：使用 Map 按 MerchantId 分组存放商品
-        // Key: MerchantId, Value: List<OrderItem>
+        // Group items by merchantId.
+        // Key: merchantId, Value: List<OrderItem>
         Map<Integer, List<OrderItem>> merchantItemsMap = new HashMap<>();
 
         String isBuyNow = request.getParameter("isBuyNow");
         String productIdStr = request.getParameter("productId");
-        // 获取确认页面传来的真实购买数量
+        // Quantity selected on the confirmation page.
         String quantityStr = request.getParameter("quantity");
 
         String[] selectedIds = request.getParameterValues("selectedProductIds");
         List<String> selectedIdList = (selectedIds != null) ? Arrays.asList(selectedIds) : new ArrayList<>();
 
         if ("true".equals(isBuyNow) && productIdStr != null) {
-            // === 场景 A: 立即购买 ===
+            // Scenario A: Buy now
             try {
                 int productId = Integer.parseInt(productIdStr);
                 int quantity = 1;
@@ -98,7 +98,7 @@ public class PlaceOrderServlet extends HttpServlet {
                     int merchantId = product.getMerchantId();
                     merchantItemsMap.putIfAbsent(merchantId, new ArrayList<>());
 
-                    // 创建 Item 并放入 Map
+                    // Create an order item and add it to the merchant group.
                     OrderItem item = createOrderItem(product, quantity);
                     merchantItemsMap.get(merchantId).add(item);
                 }
@@ -106,22 +106,22 @@ public class PlaceOrderServlet extends HttpServlet {
                 e.printStackTrace();
             }
         } else {
-            // === 场景 B: 购物车结算 (核心：遍历并按商家分组) ===
+            // Scenario B: Checkout from cart (iterate cart items and group by merchant).
             Cart cart = (Cart) session.getAttribute("cart");
             if (cart != null && !cart.getItems().isEmpty()) {
                 for (CartItem cartItem : cart.getItems()) {
                     String pId = String.valueOf(cartItem.getProduct().getProductId());
-                    // 只处理被勾选的商品
+                    // Process only selected products.
                     if (!selectedIdList.isEmpty() && !selectedIdList.contains(pId)) {
                         continue;
                     }
 
-                    // ⭐ 此处依赖 CartDAO 的修复，如果不修复，getMerchantId() 为 0，拆单会失败
+                    // Relies on product data in the cart item containing a valid merchantId.
                     int merchantId = cartItem.getProduct().getMerchantId();
 
                     merchantItemsMap.putIfAbsent(merchantId, new ArrayList<>());
 
-                    // 创建 Item 并放入 Map
+                    // Create an order item and add it to the merchant group.
                     OrderItem item = createOrderItem(cartItem.getProduct(), cartItem.getQuantity());
                     merchantItemsMap.get(merchantId).add(item);
                 }
@@ -134,25 +134,25 @@ public class PlaceOrderServlet extends HttpServlet {
         }
 
         // =========================================================================
-        // Step 3: 将分组 Map 转换为 List<Order> 并计算总价
+        // Step 3: Convert the grouped map into a list of orders and calculate totals.
         // =========================================================================
         List<Order> ordersToCreate = new ArrayList<>();
-        BigDecimal grandTotal = BigDecimal.ZERO; // 所有子订单的总金额 (用于检查钱包)
+        BigDecimal grandTotal = BigDecimal.ZERO; // Total amount across all sub-orders.
 
         for (Map.Entry<Integer, List<OrderItem>> entry : merchantItemsMap.entrySet()) {
             List<OrderItem> items = entry.getValue();
 
-            // 3.1 计算该子订单的商品总价
+            // 3.1 Calculate subtotal for this sub-order.
             BigDecimal subTotal = BigDecimal.ZERO;
             for (OrderItem item : items) {
                 subTotal = subTotal.add(item.getSubtotal());
             }
 
-            // 3.2 加上运费 (策略：每个拆分的子订单都单独加 15 运费)
+            // 3.2 Add shipping fee (policy: each sub-order charges its own shipping fee).
             BigDecimal shippingFee = new BigDecimal("15.00");
             BigDecimal orderTotal = subTotal.add(shippingFee);
 
-            // 3.3 创建子订单对象
+            // 3.3 Build the sub-order.
             Order order = new Order();
             order.setCustomerId(userId);
             order.setAddress(fullAddress);
@@ -161,12 +161,12 @@ public class PlaceOrderServlet extends HttpServlet {
 
             ordersToCreate.add(order);
 
-            // 3.4 累加到全局总金额
+            // 3.4 Accumulate to the overall total.
             grandTotal = grandTotal.add(orderTotal);
         }
 
         // =========================================================================
-        // Step 4: 检查钱包余额 (使用 grandTotal)
+        // Step 4: Check wallet balance using grandTotal.
         // =========================================================================
         BigDecimal currentBalance = walletDAO.getBalance(userId);
         if (currentBalance.compareTo(grandTotal) < 0) {
@@ -175,14 +175,14 @@ public class PlaceOrderServlet extends HttpServlet {
         }
 
         // =========================================================================
-        // Step 5: 调用批量创建方法 (⭐ 调用 OrderDAO 新增的方法)
+        // Step 5: Create orders in batch.
         // =========================================================================
         List<Integer> createdIds = orderDAO.createOrdersBatch(ordersToCreate);
 
         if (createdIds != null && !createdIds.isEmpty()) {
-            // === 成功 ===
+            // Success
             if (!"true".equals(isBuyNow)) {
-                // 清理购物车中已购买的商品
+                // Remove purchased cart items from session and database.
                 Cart cart = (Cart) session.getAttribute("cart");
                 int cartId = cartDAO.getOrCreateCartId(userId);
 
@@ -190,8 +190,8 @@ public class PlaceOrderServlet extends HttpServlet {
                     for (String id : selectedIdList) {
                         try {
                             int pId = Integer.parseInt(id);
-                            cart.removeItem(pId); // 清除 Session 中的购物车项
-                            cartDAO.removeItemFromCart(cartId, pId); // 清除数据库中的购物车项
+                            cart.removeItem(pId); // Remove from session cart
+                            cartDAO.removeItemFromCart(cartId, pId); // Remove from database cart
                         } catch (NumberFormatException e) {
                             // ignore
                         }
@@ -199,7 +199,7 @@ public class PlaceOrderServlet extends HttpServlet {
                 }
             }
 
-            // ⭐ 关键修改：拼接所有生成的订单ID，传给成功页面
+            // Build a comma-separated list of created order ids.
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < createdIds.size(); i++) {
                 sb.append(createdIds.get(i));
@@ -208,16 +208,16 @@ public class PlaceOrderServlet extends HttpServlet {
                 }
             }
 
-            // 跳转到成功页面，参数名为 orderIds (注意多了个s)
+            // Redirect to the success page. Parameter name: orderIds
             response.sendRedirect(request.getContextPath() + "/customer/order/payment_success.jsp?orderIds=" + sb.toString());
         } else {
-            // === 失败 ===
+            // Failure
             request.setAttribute("errorMessage", "Order processing failed. Please try again.");
             request.getRequestDispatcher("/customer/order/order_confirmation.jsp").forward(request, response);
         }
     }
 
-    // 辅助方法：将 ProductDTO 转换为 OrderItem (避免重复代码)
+    // Helper: convert ProductDTO into OrderItem to avoid duplicating mapping logic.
     private OrderItem createOrderItem(ProductDTO product, int quantity) {
         OrderItem item = new OrderItem();
         item.setProductId(product.getProductId());

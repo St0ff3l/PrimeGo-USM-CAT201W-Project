@@ -6,19 +6,21 @@ import java.io.File;
 public class PathUtil {
 
     /**
-     * 获取图片上传的目标路径
-     * 策略：
-     * 1. 优先检查环境变量 (适用于 Docker/服务器部署)
-     * 2. 其次尝试自动寻找本地项目的 src 目录 (适用于 IDEA 本地开发，防止重启丢图)
-     * 3. 最后回退到 Tomcat 运行目录 (保底方案)
+     * Resolves the target directory for uploaded images.
+     *
+     * Resolution strategy:
+     * 1) Prefer an environment variable (recommended for Docker/server deployments).
+     * 2) Otherwise, try to locate the local project source directory (useful for IDE local development so files
+     *    persist across restarts).
+     * 3) Finally, fall back to the servlet container's runtime directory.
      *
      * @param context ServletContext
-     * @param subDir  子目录名称 (例如 "products", "rechargephotos", "withdrawphotos")
-     * @return 绝对路径
+     * @param subDir  Subdirectory name (for example: "products", "rechargephotos", "withdrawphotos")
+     * @return Absolute path to the upload directory
      */
     public static String getUploadDir(ServletContext context, String subDir) {
         // -----------------------------------------------------------
-        // 策略 1: 环境变量 (生产环境/Docker 推荐)
+        // Strategy 1: environment variable (recommended for production/Docker)
         // -----------------------------------------------------------
         String envPath = System.getenv("PRIMEGO_UPLOAD_DIR");
         if (envPath != null && !envPath.isEmpty()) {
@@ -28,13 +30,13 @@ public class PathUtil {
         }
 
         // -----------------------------------------------------------
-        // 策略 2: 本地开发自动定位 src 目录 (防止硬编码 /Users/zhangyifei...)
+        // Strategy 2: local development - try to locate src/main/webapp (avoid hardcoding an absolute path)
         // -----------------------------------------------------------
-        
-        // Debug: 打印当前运行目录，方便调试
+
+        // Debug: print the current working directory to help diagnose path resolution issues
         System.out.println("[PathUtil] user.dir: " + System.getProperty("user.dir"));
 
-        // 2.1 优先尝试硬编码的已知项目路径 (解决 IDEA 运行路径不一致问题)
+        // 2.1 Try a known project path first (handles cases where the IDE working directory differs)
         String hardcodedPath = "/Users/zhangyifei/IdeaProjects/PrimeGo-USM-CAT201W-Project";
         File hardcodedDir = new File(hardcodedPath + File.separator + "src" + File.separator + "main" + File.separator + "webapp");
         if (hardcodedDir.exists()) {
@@ -45,15 +47,15 @@ public class PathUtil {
             return localSourcePath;
         }
 
-        // 2.2 尝试基于 user.dir 自动寻找
-        // System.getProperty("user.dir") 在 IDEA 中运行时，通常是项目的根目录
+        // 2.2 Try to locate the project root based on user.dir
+        // In IDE runs, System.getProperty("user.dir") is often the project root directory
         String projectRoot = System.getProperty("user.dir");
 
-        // 检查这是一个标准的 Maven/Web 项目结构吗？
+        // Check whether this looks like a standard Maven/Web project structure
         File srcDir = new File(projectRoot + File.separator + "src" + File.separator + "main" + File.separator + "webapp");
 
         if (srcDir.exists()) {
-            // 拼凑出 target 目录: src/main/webapp/assets/images/<subDir>
+            // Resolve to: src/main/webapp/assets/images/<subDir>
             String localSourcePath = srcDir.getAbsolutePath() + File.separator + "assets" + File.separator + "images" + File.separator + subDir;
             File dir = new File(localSourcePath);
             if (!dir.exists()) dir.mkdirs();
@@ -62,9 +64,10 @@ public class PathUtil {
         }
 
         // -----------------------------------------------------------
-        // 策略 3: 保底方案 (存到 Tomcat 临时运行目录)
+        // Strategy 3: fallback (store under the servlet container's runtime directory)
         // -----------------------------------------------------------
-        // 如果上面都没找到，就存到当前的运行目录里 (重启可能会丢失，但能保证程序不报错)
+        // If none of the above paths are available, store under the current deployed webapp directory.
+        // Note: files stored here may be lost on restart/redeploy, but this keeps the application functional.
         String fallbackPath = context.getRealPath("/") + "assets" + File.separator + "images" + File.separator + subDir;
         File dir = new File(fallbackPath);
         if (!dir.exists()) dir.mkdirs();
@@ -72,7 +75,7 @@ public class PathUtil {
     }
 
     /**
-     * 默认方法，兼容旧代码，默认存到 products
+     * Backward-compatible overload. Uses "products" as the default subdirectory.
      */
     public static String getUploadDir(ServletContext context) {
         return getUploadDir(context, "products");

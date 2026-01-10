@@ -6,19 +6,22 @@ import java.sql.Timestamp;
 public class ProductDTO extends Product {
     private String categoryName;
     private String primaryImageUrl;
-    private String merchantName; // 新增：用于存储关联查询到的卖家用户名
+    // Merchant username retrieved from a joined query.
+    private String merchantName;
 
-    // ⭐ 新增：库存数量字段，对应数据库的 Product_Stock_Quantity
+    // Inventory quantity (maps to database column Product_Stock_Quantity).
     private int productStockQuantity;
 
-    // ⭐⭐ 关键新增：用于判断是否曾经通过过审核 (true=修改申请, false=新品上架)
+    // Indicates whether this product has ever been approved.
+    // true: an update request for an existing product
+    // false: a new product listing
     private boolean hasBeenApproved;
 
     public ProductDTO() {
         super();
     }
 
-    // ⭐⭐ 新增字段的 Getter 和 Setter
+    // Getter and setter for approval status.
     public boolean isHasBeenApproved() {
         return hasBeenApproved;
     }
@@ -27,7 +30,7 @@ public class ProductDTO extends Product {
         this.hasBeenApproved = hasBeenApproved;
     }
 
-    // ⭐ 新增：库存字段的 Getter 和 Setter
+    // Getter and setter for inventory quantity.
     public int getProductStockQuantity() {
         return productStockQuantity;
     }
@@ -36,7 +39,7 @@ public class ProductDTO extends Product {
         this.productStockQuantity = productStockQuantity;
     }
 
-    // 原有的 Getter 和 Setter
+    // Existing getters and setters.
     public String getMerchantName() {
         return merchantName;
     }

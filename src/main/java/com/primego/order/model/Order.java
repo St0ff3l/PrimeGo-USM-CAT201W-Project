@@ -17,20 +17,20 @@ public class Order {
     private int rejectionCount;
     private String merchantRejectReason;
 
-    // ⭐ 新增：售后的子状态 (PENDING, REJECTED, APPROVED)
+    // After-sales sub-status (PENDING, REJECTED, APPROVED)
     private String refundStatus;
 
-    // ⭐ 新增：退款类型 (MONEY_ONLY / RETURN_AND_REFUND)
+    // Refund type (MONEY_ONLY / RETURN_AND_REFUND)
     private String refundType;
 
-    // ⭐ 新增: 快递单号 (对应数据库新增的 Tracking_Number 字段)
+    // Shipment tracking number (maps to the database field "Tracking_Number")
     private String trackingNumber;
 
-    // ⭐ 退货退款扩展：商家退货地址 & 买家寄回单号
+    // Return-and-refund details: merchant return address and buyer return tracking number
     private String returnAddress;
     private String returnTrackingNumber;
 
-    // 包含订单项列表
+    // Order items included in this order
     private List<OrderItem> orderItems;
 
     // Getters and Setters

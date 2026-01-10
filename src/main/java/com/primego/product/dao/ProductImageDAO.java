@@ -13,8 +13,9 @@ import java.util.List;
 public class ProductImageDAO {
 
     /**
-     * 1. 插入单张图片
-     * @return boolean 是否插入成功
+     * Inserts a single product image record.
+     *
+     * @return true if the insert succeeds
      */
     public boolean insertImage(ProductImage image) {
         String sql = "INSERT INTO Product_Image (Product_Id, Image_Url, Image_Is_Primary) VALUES (?, ?, ?)";
@@ -31,8 +32,8 @@ public class ProductImageDAO {
     }
 
     /**
-     * 2. 根据商品ID获取所有图片
-     * (主图排在第一位)
+     * Returns all images for a product id.
+     * Primary images (if any) are ordered first.
      */
     public List<ProductImage> getImagesByProductId(int productId) {
         List<ProductImage> images = new ArrayList<>();
@@ -57,8 +58,8 @@ public class ProductImageDAO {
     }
 
     /**
-     * 3. 根据图片ID删除图片
-     * (用于编辑页面，用户点击垃圾桶删除某张旧图)
+     * Deletes a single image by its image id.
+     * Typically used when removing an existing image from an edit page.
      */
     public boolean deleteImageById(int imageId) {
         String sql = "DELETE FROM Product_Image WHERE Image_Id = ?";
@@ -73,8 +74,8 @@ public class ProductImageDAO {
     }
 
     /**
-     * 4. 删除某个商品的所有图片
-     * (用于“删除商品”功能)
+     * Deletes all images for the given product id.
+     * Typically used when a product is deleted.
      */
     public void deleteImagesByProductId(int productId) {
         String sql = "DELETE FROM Product_Image WHERE Product_Id = ?";
@@ -88,8 +89,8 @@ public class ProductImageDAO {
     }
 
     /**
-     * 5. (可选) 将该商品下所有图片设置为“非主图”
-     * 场景：你想设置一张新图片为主图前，先调用这个，防止出现两张主图。
+     * Clears the primary-image flag for all images of a product.
+     * Call this before setting a new primary image to ensure there is only one.
      */
     public void unsetAllPrimaryImages(int productId) {
         String sql = "UPDATE Product_Image SET Image_Is_Primary = 0 WHERE Product_Id = ?";
@@ -103,11 +104,11 @@ public class ProductImageDAO {
     }
 
     /**
-     * 6. 更新/设置主图逻辑 (旧逻辑兼容)
-     * 逻辑：尝试把原来的主图路径改掉；如果原来没有主图，就插一张新的。
+     * Updates the existing primary image URL for a product.
+     * If no primary image exists, inserts a new primary image record.
      */
     public void updateProductPrimaryImage(int productId, String imageUrl) {
-        // 尝试更新现有的主图记录
+        // Try updating the current primary image record.
         String updateSql = "UPDATE Product_Image SET Image_Url = ?, Image_Upload_Time = NOW() " +
                 "WHERE Product_Id = ? AND Image_Is_Primary = 1";
 
@@ -119,7 +120,7 @@ public class ProductImageDAO {
 
             int rows = pstmt.executeUpdate();
 
-            // 如果没有更新到任何行 (说明之前没有主图)，则执行插入
+            // If no row was updated, insert a new primary image.
             if (rows == 0) {
                 String insertSql = "INSERT INTO Product_Image (Product_Id, Image_Url, Image_Is_Primary) VALUES (?, ?, 1)";
                 try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
@@ -134,24 +135,22 @@ public class ProductImageDAO {
     }
 
     // ==========================================
-    // ⭐ 7. 新增：这是你报错缺失的方法！
+    // Primary image update
     // ==========================================
 
     /**
-     * 批量更新主图状态：将指定的图片设为主图，其余设为非主图
-     * @param productId 商品ID
-     * @param primaryImageId 要设为主图的图片ID
+     * Sets the specified image as the primary image for the product.
+     * All other images for the product are set to non-primary.
      */
     public void updatePrimaryImage(int productId, int primaryImageId) {
-        // 使用 CASE WHEN 语句一次性更新所有图片的状态
-        // 只有 ID 等于 primaryImageId 的图片会被设为 1 (true)，该商品下的其他图片会被设为 0 (false)
+        // Single statement update: set Image_Is_Primary based on whether the row id matches.
         String sql = "UPDATE Product_Image SET Image_Is_Primary = (CASE WHEN Image_Id = ? THEN 1 ELSE 0 END) WHERE Product_Id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setInt(1, primaryImageId); // 第一个参数：要成为主图的 ID
-            pstmt.setInt(2, productId);      // 第二个参数：商品 ID
+            pstmt.setInt(1, primaryImageId);
+            pstmt.setInt(2, productId);
 
             pstmt.executeUpdate();
         } catch (SQLException e) {

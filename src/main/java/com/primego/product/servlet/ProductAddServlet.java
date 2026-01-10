@@ -1,7 +1,7 @@
 package com.primego.product.servlet;
 
 import com.primego.product.dao.ProductDAO;
-import com.primego.product.dao.ProductImageDAO; // 1. 引入类
+import com.primego.product.dao.ProductImageDAO;
 import com.primego.product.model.Product;
 import com.primego.product.model.ProductImage;
 import com.primego.user.model.User;
@@ -68,7 +68,7 @@ public class ProductAddServlet extends HttpServlet {
             product.setProductStockQuantity(stock);
             product.setContactWhatsapp(whatsapp);
 
-            // ✅ DB schema note:
+            // DB schema note:
             // Product_Status is enum('ON_SALE','OFF_SALE'), so we can’t store PENDING here.
             // Use Audit_Status to control admin review.
             product.setProductStatus("OFF_SALE");
@@ -128,7 +128,7 @@ public class ProductAddServlet extends HttpServlet {
 
                         ProductImage image = new ProductImage(productId, dbImageUrl, isFirstImage);
 
-                        // ✅ 3. 使用实例变量调用方法，而不是类名
+                        // 3. Call methods using instance variables instead of the class name.
                         productImageDAO.insertImage(image);
 
                         isFirstImage = false;

@@ -20,12 +20,12 @@ public class Cart {
     }
 
     public void addItem(CartItem item) {
-        // Check if item already exists
+        // If the product already exists in the cart, merge quantities.
         for (CartItem existingItem : items) {
             if (existingItem.getProduct().getProductId() == item.getProduct().getProductId()) {
                 int newQuantity = existingItem.getQuantity() + item.getQuantity();
 
-                // ⭐ 库存校验：如果超过库存，强制设为最大库存
+                // Stock validation: cap the quantity at the product's available stock.
                 int maxStock = existingItem.getProduct().getProductStockQuantity();
                 if (newQuantity > maxStock) {
                     newQuantity = maxStock;
@@ -36,7 +36,7 @@ public class Cart {
             }
         }
 
-        // ⭐ 新增项校验：确保初始数量不超过库存
+        // Stock validation for new items: ensure the initial quantity does not exceed stock.
         int maxStock = item.getProduct().getProductStockQuantity();
         if (item.getQuantity() > maxStock) {
             item.setQuantity(maxStock);
@@ -52,7 +52,7 @@ public class Cart {
     public void updateQuantity(int productId, int quantity) {
         for (CartItem item : items) {
             if (item.getProduct().getProductId() == productId) {
-                // ⭐ 库存校验：如果更新数量超过库存，限制为最大库存
+                // Stock validation: cap the updated quantity at the product's available stock.
                 int maxStock = item.getProduct().getProductStockQuantity();
                 if (quantity > maxStock) {
                     quantity = maxStock;

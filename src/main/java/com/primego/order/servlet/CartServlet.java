@@ -32,7 +32,7 @@ public class CartServlet extends HttpServlet {
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("user");
 
-        // 初始化购物车
+        // Initialize the cart in session. If the user is logged in, load from the database; otherwise create a new cart.
         Cart cart = (Cart) session.getAttribute("cart");
         if (cart == null) {
             if (user != null) {
@@ -50,7 +50,7 @@ public class CartServlet extends HttpServlet {
                 ProductDTO product = productDAO.getProductById(productId);
 
                 if (product != null) {
-                    // ⭐ 1. 获取当前购物车中该商品的数量
+                    // Determine the current quantity of this product already in the cart.
                     int currentQty = 0;
                     for (CartItem item : cart.getItems()) {
                         if (item.getProduct().getProductId() == productId) {
@@ -59,7 +59,7 @@ public class CartServlet extends HttpServlet {
                         }
                     }
 
-                    // ⭐ 2. 检查库存：如果 (当前数量 + 1) > 库存，则不添加
+                    // Stock guard: only add if (current quantity + 1) does not exceed available stock.
                     if (currentQty + 1 <= product.getProductStockQuantity()) {
                         CartItem item = new CartItem(product, 1);
                         cart.addItem(item);
@@ -69,7 +69,7 @@ public class CartServlet extends HttpServlet {
                             cartDAO.addItemToCart(cartId, productId, 1);
                         }
                     } else {
-                        // 可选：设置一个错误消息 session attribute 提示库存不足
+                        // Optional: store a message in session so the UI can display an out-of-stock warning.
                         session.setAttribute("cartError", "Cannot add more items. Stock limit reached for " + product.getProductName());
                     }
                 }
@@ -85,12 +85,12 @@ public class CartServlet extends HttpServlet {
                     int productId = Integer.parseInt(productIdStr);
                     int quantity = Integer.parseInt(quantityStr);
 
-                    // ⭐ 3. 获取商品库存信息进行校验
+                    // Load stock information for validation.
                     ProductDTO product = productDAO.getProductById(productId);
                     int stock = (product != null) ? product.getProductStockQuantity() : 0;
 
                     if (quantity > 0) {
-                        // 如果请求数量大于库存，则强制设为最大库存
+                        // If the requested quantity exceeds stock, cap it to the available stock.
                         if (quantity > stock) {
                             quantity = stock;
                             session.setAttribute("cartError", "Quantity adjusted to maximum stock for " + product.getProductName());
@@ -103,13 +103,13 @@ public class CartServlet extends HttpServlet {
                         }
                     }
                 } catch (NumberFormatException e) {
-                    // Ignore
+                    // Ignore invalid numeric input.
                 }
             }
             response.sendRedirect(request.getContextPath() + "/customer/order/cart.jsp");
 
         } else if ("remove".equals(action)) {
-            // ... (保持不变)
+            // Remove a single product from the cart.
             String productIdStr = request.getParameter("productId");
             if (productIdStr != null) {
                 int productId = Integer.parseInt(productIdStr);
@@ -123,7 +123,7 @@ public class CartServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/customer/order/cart.jsp");
 
         } else if ("clear".equals(action)) {
-            // ... (保持不变)
+            // Clear all items from the cart.
             cart.clear();
             if (user != null) {
                 int cartId = cartDAO.getOrCreateCartId(user.getId());
@@ -131,7 +131,7 @@ public class CartServlet extends HttpServlet {
             }
             response.sendRedirect(request.getContextPath() + "/customer/order/cart.jsp");
         } else {
-            // ... (保持不变)
+            // Default behavior: refresh the cart from the database for logged-in users.
             if (user != null) {
                 cart = cartDAO.getCartByUserId(user.getId());
                 session.setAttribute("cart", cart);

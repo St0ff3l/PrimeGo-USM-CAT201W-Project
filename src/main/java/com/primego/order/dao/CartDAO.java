@@ -11,7 +11,7 @@ import java.util.List;
 
 public class CartDAO {
 
-    // Get or Create Cart for User
+    // Retrieves the user's cart id; creates a new cart row if none exists.
     public int getOrCreateCartId(int userId) {
         int cartId = getCartIdByUserId(userId);
         if (cartId == -1) {
@@ -20,6 +20,7 @@ public class CartDAO {
         return cartId;
     }
 
+    // Looks up the cart id for a user. Returns -1 when the user has no cart.
     private int getCartIdByUserId(int userId) {
         String sql = "SELECT Cart_Id FROM Cart WHERE User_Id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -36,6 +37,7 @@ public class CartDAO {
         return -1;
     }
 
+    // Creates an empty cart for the user and returns the generated cart id.
     private int createCart(int userId) {
         String sql = "INSERT INTO Cart (User_Id) VALUES (?)";
         try (Connection conn = DBUtil.getConnection();
@@ -55,9 +57,9 @@ public class CartDAO {
         return -1;
     }
 
-    // Add Item to Cart
+    // Adds an item to the cart; if the item already exists, increments its quantity.
     public void addItemToCart(int cartId, int productId, int quantity) {
-        // Check if item exists
+        // If the item is already in the cart, increase its quantity; otherwise insert a new row.
         int existingQuantity = getItemQuantity(cartId, productId);
         if (existingQuantity > 0) {
             updateItemQuantity(cartId, productId, existingQuantity + quantity);
@@ -66,6 +68,7 @@ public class CartDAO {
         }
     }
 
+    // Returns the quantity of a product currently in the cart. Returns 0 if not present.
     private int getItemQuantity(int cartId, int productId) {
         String sql = "SELECT Cart_Item_Quantity FROM Cart_Item WHERE Cart_Id = ? AND Product_Id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -83,10 +86,12 @@ public class CartDAO {
         return 0;
     }
 
+    // Public wrapper around the internal quantity update helper.
     public void updateItemQuantityPublic(int cartId, int productId, int quantity) {
         updateItemQuantity(cartId, productId, quantity);
     }
 
+    // Updates an item's quantity in the cart.
     private void updateItemQuantity(int cartId, int productId, int quantity) {
         String sql = "UPDATE Cart_Item SET Cart_Item_Quantity = ? WHERE Cart_Id = ? AND Product_Id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -100,6 +105,7 @@ public class CartDAO {
         }
     }
 
+    // Inserts a new cart item row.
     private void insertCartItem(int cartId, int productId, int quantity) {
         String sql = "INSERT INTO Cart_Item (Cart_Id, Product_Id, Cart_Item_Quantity) VALUES (?, ?, ?)";
         try (Connection conn = DBUtil.getConnection();
@@ -113,7 +119,7 @@ public class CartDAO {
         }
     }
 
-    // Remove Item
+    // Removes a single product from the cart.
     public void removeItemFromCart(int cartId, int productId) {
         String sql = "DELETE FROM Cart_Item WHERE Cart_Id = ? AND Product_Id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -126,7 +132,7 @@ public class CartDAO {
         }
     }
 
-    // Clear Cart
+    // Removes all items from the cart.
     public void clearCart(int cartId) {
         String sql = "DELETE FROM Cart_Item WHERE Cart_Id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -138,11 +144,11 @@ public class CartDAO {
         }
     }
 
-    // Get Cart Items (with Product details)
+    // Loads the cart for a user, including product details for each cart item.
     public Cart getCartByUserId(int userId) {
         Cart cart = new Cart();
         int cartId = getCartIdByUserId(userId);
-        if (cartId == -1) return cart; // Empty cart
+        if (cartId == -1) return cart; // No cart found
 
         String sql = "SELECT ci.Cart_Item_Quantity, p.*, " +
                 "(SELECT Image_Url FROM Product_Image pi WHERE pi.Product_Id = p.Product_Id AND pi.Image_Is_Primary = 1 LIMIT 1) as Primary_Image " +
@@ -158,17 +164,17 @@ public class CartDAO {
                     ProductDTO product = new ProductDTO();
                     product.setProductId(rs.getInt("Product_Id"));
 
-                    // ⭐⭐⭐ 关键修复：读取 Merchant_Id ⭐⭐⭐
-                    // 只有这里读出来了，PlaceOrderServlet 才能正确拆单
+                    // Merchant_Id is required by downstream order logic (for example, splitting an order by merchant).
                     product.setMerchantId(rs.getInt("Merchant_Id"));
-                    product.setCategoryId(rs.getInt("Category_Id")); // 顺便也加上 Category_Id
+                    // Category_Id is also included for completeness.
+                    product.setCategoryId(rs.getInt("Category_Id"));
 
                     product.setProductName(rs.getString("Product_Name"));
                     product.setProductPrice(rs.getBigDecimal("Product_Price"));
                     product.setProductDescription(rs.getString("Product_Description"));
                     product.setPrimaryImageUrl(rs.getString("Primary_Image"));
 
-                    // 设置库存数量
+                    // Populate the product stock quantity.
                     product.setProductStockQuantity(rs.getInt("Product_Stock_Quantity"));
 
                     CartItem item = new CartItem(product, rs.getInt("Cart_Item_Quantity"));

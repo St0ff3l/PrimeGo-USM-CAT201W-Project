@@ -14,7 +14,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
-// 访问路径: /merchant/order/order_management
+// Route: /merchant/order/order_management
 @WebServlet("/merchant/order/order_management")
 public class MerchantOrderServlet extends HttpServlet {
 
@@ -23,7 +23,7 @@ public class MerchantOrderServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // 1. 权限检查
+        // Authorization check: only logged-in merchants can access this page.
         HttpSession session = req.getSession(false);
         User user = (User) (session != null ? session.getAttribute("user") : null);
 
@@ -32,7 +32,7 @@ public class MerchantOrderServlet extends HttpServlet {
             return;
         }
 
-        // ✅ 新增：返回地址填写页
+        // Forward to the return-address form for return-and-refund flows.
         String action = req.getParameter("action");
         if ("toReturnAddress".equals(action)) {
             String orderIdStr = req.getParameter("orderId");
@@ -55,11 +55,11 @@ public class MerchantOrderServlet extends HttpServlet {
             return;
         }
 
-        // 2. 查询该商家的所有订单
+        // Load all orders belonging to the current merchant.
         List<Order> orders = orderDAO.getOrdersByMerchantId(user.getId());
         req.setAttribute("orders", orders);
 
-        // 3. 转发
+        // Render the order management page.
         req.getRequestDispatcher("/merchant/order/order_management.jsp").forward(req, resp);
     }
 
@@ -76,7 +76,7 @@ public class MerchantOrderServlet extends HttpServlet {
             return;
         }
 
-        // ✅ 新增：保存退货地址
+        // Persist the merchant's return address for a specific order.
         if ("saveReturnAddress".equals(action)) {
             String orderIdStr = req.getParameter("orderId");
             String returnAddress = req.getParameter("returnAddress");
@@ -114,7 +114,7 @@ public class MerchantOrderServlet extends HttpServlet {
             return;
         }
 
-        // === 1. 发货逻辑 ===
+        // 1) Shipping flow
         if ("shipOrder".equals(action)) {
             String orderIdStr = req.getParameter("orderId");
             String trackingNumber = req.getParameter("trackingNumber");
@@ -141,7 +141,7 @@ public class MerchantOrderServlet extends HttpServlet {
             }
         }
 
-        // === 2. 处理退款逻辑 ===
+        // 2) Refund/return flow
         else if ("processRefund".equals(action)) {
             String orderIdStr = req.getParameter("orderId");
             String decision = req.getParameter("decision");
@@ -160,24 +160,25 @@ public class MerchantOrderServlet extends HttpServlet {
                         session.setAttribute("message", "Order not found.");
                         session.setAttribute("messageType", "error");
                     } else {
+                        // Normalize refund type.
                         String rt = (refundType == null || refundType.trim().isEmpty()) ? "MONEY_ONLY" : refundType.trim();
                         if (!"MONEY_ONLY".equals(rt) && !"RETURN_AND_REFUND".equals(rt)) {
                             rt = "MONEY_ONLY";
                         }
 
-                        // MONEY_ONLY: merchant should not do "agree_return" step; approve means refund now.
+                        // For MONEY_ONLY, approving the request means refunding immediately.
                         if ("MONEY_ONLY".equals(rt) && "agree_return".equals(decision)) {
                             decision = "confirm_return_receipt";
                         }
 
-                        // === 场景 A: 商家同意退货 (第一步) ===
+                        // Case A: merchant agrees to a return (first step for RETURN_AND_REFUND).
                         if ("agree_return".equals(decision)) {
-                            // For RETURN_AND_REFUND, merchant must provide a return address
+                            // For RETURN_AND_REFUND, a return address is required.
                             if ("RETURN_AND_REFUND".equals(rt)) {
                                 resp.sendRedirect(req.getContextPath() + "/merchant/order/order_management?action=toReturnAddress&orderId=" + Integer.parseInt(orderIdStr));
                                 return;
                             } else {
-                                // MONEY_ONLY doesn't need return address
+                                // MONEY_ONLY does not require a return address.
                                 boolean ok = orderDAO.agreeReturn(orderId);
                                 if (ok) {
                                     session.setAttribute("message", "Request Accepted. Waiting for customer to return items.");
@@ -189,16 +190,16 @@ public class MerchantOrderServlet extends HttpServlet {
                             }
                         }
 
-                        // === 场景 B: 商家确认收到退货 (最后一步 - 退钱) ===
+                        // Case B: merchant confirms receipt of returned items (final step, triggers refund).
                         else if ("confirm_return_receipt".equals(decision)) {
-                            // 1) 平台托管退款：只把钱退回给买家，不扣商家
+                            // Refund from platform escrow back to the customer.
                             boolean refundSuccess = walletDAO.refundFromEscrowToCustomer(
                                     order.getCustomerId(),
                                     order.getTotalAmount()
                             );
 
                             if (refundSuccess) {
-                                // 2) 更新状态为 APPROVED / REFUNDED
+                                // Update refund status to approved/refunded.
                                 boolean ok = orderDAO.approveRefundStatus(orderId);
                                 if (ok) {
                                     session.setAttribute("message", "Refund processed successfully.");
@@ -213,7 +214,7 @@ public class MerchantOrderServlet extends HttpServlet {
                             }
                         }
 
-                        // === 场景 C: 商家拒绝 ===
+                        // Case C: merchant rejects the request.
                         else if ("reject".equals(decision)) {
                             if (merchantReason == null || merchantReason.trim().isEmpty()) {
                                 session.setAttribute("message", "Please provide a rejection reason.");
@@ -245,7 +246,7 @@ public class MerchantOrderServlet extends HttpServlet {
             }
         }
 
-        // 重定向回 Returns 标签页，让商家看到处理结果
+        // Redirect back to the Returns tab so the merchant can see the latest state.
         resp.sendRedirect(req.getContextPath() + "/merchant/order/order_management?filter=return");
     }
 }
