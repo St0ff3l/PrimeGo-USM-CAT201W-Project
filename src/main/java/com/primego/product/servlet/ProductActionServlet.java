@@ -204,6 +204,14 @@ public class ProductActionServlet extends HttpServlet {
                             e.printStackTrace();
                         }
                     }
+                } else {
+                    // If the merchant deleted all existing images, the frontend sort order will be empty
+                    // (new uploads don't have DB ids yet). In that case, enforce a primary image if any
+                    // images remain after deletes/inserts.
+                    Integer fallbackPrimaryId = imageDAO.getFirstImageIdByProductId(productId);
+                    if (fallbackPrimaryId != null) {
+                        imageDAO.updatePrimaryImage(productId, fallbackPrimaryId);
+                    }
                 }
 
                 response.sendRedirect(request.getContextPath() + "/merchant/product/product_management.jsp?msg=updated");

@@ -157,4 +157,24 @@ public class ProductImageDAO {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Returns the first image id for a product (lowest Image_Id), or null if the product has no images.
+     * Useful to enforce a primary image after deletes/inserts.
+     */
+    public Integer getFirstImageIdByProductId(int productId) {
+        String sql = "SELECT Image_Id FROM Product_Image WHERE Product_Id = ? ORDER BY Image_Id ASC LIMIT 1";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, productId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("Image_Id");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
