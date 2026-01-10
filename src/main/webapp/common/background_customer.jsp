@@ -1,13 +1,18 @@
-‘<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%--
-  文件名: common/background_customer.jsp
-  描述: 买家/客户专用背景组件 (橙色主题)
+  File: common/background_customer.jsp
+  Purpose: Customer-facing background decoration (orange theme).
+
+  Notes:
+  - Styles in this file target the global <body> background.
+  - The blobs are fixed-position decorative elements and sit behind page content.
+  - Red/Yellow blobs are rendered as white to de-emphasize them in this theme.
 --%>
 
 <style>
-  /* ================= 背景专用样式 ================= */
+  /* ================= Background-only styles ================= */
 
-  /* 1. Body 基础设置 */
+  /* 1) Base <body> setup */
   body {
     background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
     min-height: 100vh;
@@ -15,17 +20,17 @@
     overflow-x: hidden;
   }
 
-  /* 2. 背景球体通用样式 */
+  /* 2) Background blob base styles */
   .background-blob {
     position: fixed;
     border-radius: 50%;
     z-index: -1;
     opacity: 1;
     filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
-    pointer-events: none; /* 防止背景挡住点击 */
+    pointer-events: none; /* Keep purely decorative; do not block clicks */
   }
 
-  /* Red Blob -> 改为白色 (隐藏/辅助) */
+  /* Red blob: rendered as white (hidden/auxiliary) */
   .blob-red {
     width: 750px; height: 650px; top: -200px; left: -200px;
     transform: rotate(-10deg);
@@ -33,7 +38,7 @@
     box-shadow: none;
   }
 
-  /* Yellow Blob -> 改为白色 (隐藏/辅助) */
+  /* Yellow blob: rendered as white (hidden/auxiliary) */
   .blob-yellow {
     width: 900px; height: 700px; top: -250px; right: -100px;
     transform: rotate(30deg);
@@ -41,7 +46,7 @@
     box-shadow: none;
   }
 
-  /* Orange Blob -> 主视觉 (橙色渐变) */
+  /* Orange blob: primary visual element (orange gradient) */
   .blob-orange {
     width: 1800px; height: 950px; bottom: -650px; left: -600px;
     transform: rotate(-10deg);

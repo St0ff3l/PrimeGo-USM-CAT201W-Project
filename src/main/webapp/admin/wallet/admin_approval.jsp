@@ -16,7 +16,7 @@
         return;
     }
 
-    // Role check: Ensure only ADMIN can access
+    // Role check: allow ADMIN only
     String role = (user.getRole() != null) ? user.getRole().toString() : "";
     if (!"ADMIN".equals(role)) {
         response.sendRedirect("my_wallet.jsp");
@@ -25,11 +25,11 @@
 
     WalletDAO dao = new WalletDAO();
 
-    // Retrieve parameters
+    // Request parameters
     String view = request.getParameter("view"); // "pending" (default) or "history"
     String type = request.getParameter("type"); // "TOPUP" or "WITHDRAW"
 
-    // Default to TOPUP category if not specified
+    // Default to TOPUP if no transaction type is provided
     if (type == null || type.isEmpty()) {
         type = "TOPUP";
     }
@@ -38,14 +38,13 @@
     List<AdminTransactionLog> historyList = null;
 
     if ("history".equals(view)) {
-        // Retrieve history logs
+        // Load processed transactions (audit history)
         historyList = dao.getProcessedTransactions();
-        // Optional: Add type filtering here if needed (currently displays all)
+        // NOTE: Type filtering can be added here if needed.
     } else {
-        // Retrieve pending transactions
+        // Load pending transactions and filter by the selected type
         List<WalletTransaction> allPending = dao.getPendingTransactions();
         pendingList = new ArrayList<>();
-        // Filter list based on the selected type
         for (WalletTransaction txn : allPending) {
             if (txn.getTransactionType() != null && txn.getTransactionType().equalsIgnoreCase(type)) {
                 pendingList.add(txn);
@@ -110,10 +109,10 @@
         }
         .btn-filter.inactive { opacity: 0.5; box-shadow: none; }
 
-        /* Tabs for View Switch */
+        /* Tabs for switching between Pending and History */
         .view-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 50px; width: fit-content; }
         .view-tab { padding: 8px 20px; border-radius: 40px; text-decoration: none; color: #666; font-weight: 600; transition: all 0.3s; }
-        /* Modal Styles */
+        /* Modal styles */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -178,20 +177,20 @@
 
 <jsp:include page="/common/background_admin.jsp" />
 
-<!-- Image Preview Modal -->
+<!-- Image preview modal -->
 <div id="imageModal" class="modal-overlay" onclick="closeImageModal()">
     <div class="modal-content" style="background: transparent; box-shadow: none; padding: 0; width: auto;" onclick="event.stopPropagation()">
         <img id="modalImage" src="" class="modal-img">
     </div>
 </div>
 
-<!-- Action Modal -->
+<!-- Approve/Reject action modal -->
 <div id="actionModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-close" onclick="closeActionModal()">&times;</div>
         <div class="modal-title" id="actionTitle">Review Request</div>
 
-        <!-- Transaction Details -->
+        <!-- Transaction details summary -->
         <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                 <span style="color: #666;">User ID:</span>
@@ -232,7 +231,7 @@
         </a>
     </div>
 
-    <!-- Notification Section -->
+    <!-- Notification messages (success / error) -->
     <c:if test="${not empty sessionScope.message}">
         <div style="background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #c3e6cb; display: flex; align-items: center; gap: 10px;">
             <i class="ri-checkbox-circle-line"></i><span>${sessionScope.message}</span>
@@ -257,14 +256,14 @@
         </div>
     </div>
 
-    <!-- View Switcher -->
+    <!-- View switcher (Pending / History) -->
     <div class="view-tabs">
         <a href="?view=pending&type=<%= type %>" class="view-tab <%= !"history".equals(view) ? "active" : "" %>">Pending</a>
         <a href="?view=history" class="view-tab <%= "history".equals(view) ? "active" : "" %>">History</a>
     </div>
 
     <% if (!"history".equals(view)) { %>
-    <!-- Filter Buttons (Visible only in Pending view) -->
+    <!-- Type filter buttons (TOPUP / WITHDRAW). Visible only in Pending view. -->
     <div class="action-buttons">
         <a href="?view=pending&type=TOPUP"
            class="btn-filter btn-filter-topup <%= "TOPUP".equals(type) ? "active" : "inactive" %>">
@@ -280,7 +279,7 @@
 
     <div class="txn-list">
         <% if ("history".equals(view)) { %>
-        <!-- History View -->
+        <!-- History view -->
         <% if (historyList == null || historyList.isEmpty()) { %>
         <div class="txn-item" style="color: #888; justify-content: center; padding: 40px; flex-direction: column; text-align: center;">
             <i class="ri-history-line" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i>
@@ -288,7 +287,7 @@
         </div>
         <% } else {
             for (AdminTransactionLog log : historyList) {
-                // Fetch associated transaction details for image display
+                // Load the related transaction to display the receipt/QR image (if available)
                 WalletTransaction txn = dao.getTransactionById(log.getWalletTransactionId());
         %>
         <div class="txn-item">
@@ -329,7 +328,7 @@
         <%  }
         } %>
         <% } else { %>
-        <!-- Pending View -->
+        <!-- Pending view -->
         <% if (pendingList == null || pendingList.isEmpty()) { %>
         <div class="txn-item" style="color: #888; justify-content: center; padding: 40px; flex-direction: column; text-align: center;">
             <i class="ri-inbox-line" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i>
@@ -399,7 +398,7 @@
             btn.style.backgroundColor = '#2ecc71';
             btn.innerText = 'Confirm Approve';
 
-            // Approve: Remarks optional
+            // Approve: remarks optional
             remarks.required = false;
             remarks.placeholder = "Optional remarks...";
         } else {
@@ -408,7 +407,7 @@
             btn.style.backgroundColor = '#e74c3c';
             btn.innerText = 'Confirm Reject';
 
-            // Reject: Remarks required
+            // Reject: remarks required
             remarks.required = true;
             remarks.placeholder = "Reason for rejection (Required)...";
         }
@@ -420,7 +419,7 @@
         document.getElementById('actionModal').style.display = 'none';
     }
 
-    // Close modal when clicking outside
+    // Close the action modal when clicking on the overlay
     window.onclick = function(event) {
         if (event.target == document.getElementById('actionModal')) {
             closeActionModal();

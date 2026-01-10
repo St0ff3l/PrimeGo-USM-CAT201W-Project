@@ -1,16 +1,26 @@
 /**
- * Images Uploader Component (With Drag & Drop Sorting)
- * 功能：支持多图上传、预览、删除、以及 **拖拽排序**
+ * Images Uploader component with drag-and-drop sorting.
+ *
+ * Responsibilities:
+ * - Select multiple images via file picker or drop them onto the upload area.
+ * - Render local previews for newly selected files.
+ * - Render existing (server) images and allow them to be removed.
+ * - Allow reordering of preview tiles via drag-and-drop.
+ *
+ * Form integration:
+ * - New files are submitted through the hidden <input type="file">.
+ * - Deleted server image IDs are written to a hidden input as a comma-separated list.
+ * - The current sort order of server image IDs is written to a hidden input.
  */
 class ImagesUploader {
     constructor(containerSelector, config = {}) {
         this.container = document.querySelector(containerSelector);
         if (!this.container) return;
 
-        this.inputName = config.inputName || 'newImages'; // 新文件的 input name
-        this.deleteInputName = config.deleteInputName || 'deleteImageIds'; // 删除的 ID
-        this.sortInputName = config.sortInputName || 'imageSortOrder'; // 排序后的 ID 列表
-        this.placeholderImg = config.placeholderImg || ''; // 占位图 URL
+        this.inputName = config.inputName || 'newImages'; // Input name used for newly added files
+        this.deleteInputName = config.deleteInputName || 'deleteImageIds'; // Input name used for deleted server image IDs
+        this.sortInputName = config.sortInputName || 'imageSortOrder'; // Input name used for the sorted server image ID list
+        this.placeholderImg = config.placeholderImg || ''; // Fallback image URL if a preview fails to load
 
         this.dt = new DataTransfer();
         this.deletedIds = new Set();
@@ -57,13 +67,13 @@ class ImagesUploader {
 
         input.addEventListener('change', (e) => this.handleNewFiles(e.target.files));
 
-        // 拖拽文件上传区域
+        // Drag-and-drop upload area: prevent default browser handling and accept dropped files
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
             area.addEventListener(evt, (e) => { e.preventDefault(); e.stopPropagation(); });
         });
         area.addEventListener('drop', (e) => this.handleNewFiles(e.dataTransfer.files));
 
-        // === 新增：预览列表的拖拽排序事件 ===
+        // Preview list drag-and-drop sorting
         preview.addEventListener('dragstart', (e) => this.handleSortStart(e));
         preview.addEventListener('dragover', (e) => this.handleSortOver(e));
         preview.addEventListener('drop', (e) => this.handleSortDrop(e));
@@ -75,7 +85,7 @@ class ImagesUploader {
 
         images.forEach(img => {
             const div = this.createPreviewItem(img.url, true);
-            div.dataset.id = img.id; // 绑定数据库 ID
+            div.dataset.id = img.id; // Persist the server/database ID on the preview element
             this.ui.preview.appendChild(div);
         });
         this.updateSortInput();
@@ -87,7 +97,7 @@ class ImagesUploader {
             if (file.type.startsWith('image/')) {
                 this.dt.items.add(file);
                 hasNew = true;
-                // 渲染预览
+                // Render a preview tile for each newly selected file
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const div = this.createPreviewItem(e.target.result, false);
@@ -105,7 +115,7 @@ class ImagesUploader {
     createPreviewItem(src, isServerImage) {
         const div = document.createElement('div');
         div.className = 'iu-preview-wrapper';
-        div.draggable = true; // 允许拖拽
+        div.draggable = true; // Enable drag-and-drop sorting
 
         const img = document.createElement('img');
         img.src = src;
@@ -130,7 +140,7 @@ class ImagesUploader {
                 this.deletedIds.add(div.dataset.id);
                 this.ui.deleteInput.value = Array.from(this.deletedIds).join(',');
             }
-            // 如果是新文件，逻辑比较复杂这里简化处理：仅移除DOM，后端会忽略多余的file
+            // For newly selected files we only remove the DOM tile; the backend should ignore extra files if needed
             if (this.ui.preview.children.length === 0) this.toggleView(false);
             this.updateSortInput();
         };
@@ -141,13 +151,13 @@ class ImagesUploader {
         return div;
     }
 
-    // === 拖拽排序逻辑 ===
+    // Drag-and-drop sorting logic
     handleSortStart(e) {
         const item = e.target.closest('.iu-preview-wrapper');
         if (item) {
             e.dataTransfer.effectAllowed = 'move';
             item.classList.add('dragging');
-            this.dragItem = item; // 记录当前拖拽的元素
+            this.dragItem = item; // Keep a reference to the element being dragged
         }
     }
 
@@ -170,11 +180,11 @@ class ImagesUploader {
         if (this.dragItem) {
             this.dragItem.classList.remove('dragging');
             this.dragItem = null;
-            this.updateSortInput(); // 排序结束后更新 input
+            this.updateSortInput(); // Persist sort order after dropping
         }
     }
 
-    // 更新排序后的 ID 列表 (只针对服务器已有图片)
+    // Write the current server image ID order to the hidden input (new/local files are excluded)
     updateSortInput() {
         const ids = [];
         this.ui.preview.querySelectorAll('.iu-preview-wrapper').forEach(div => {

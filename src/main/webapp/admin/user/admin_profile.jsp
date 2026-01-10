@@ -10,7 +10,7 @@
             <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
                 rel="stylesheet">
             <style>
-                /* Inherit basic styles */
+                /* Base reset and typography */
                 * {
                     margin: 0;
                     padding: 0;
@@ -26,7 +26,7 @@
                     color: #333;
                 }
 
-                /* Background Blobs - Admin Logic: Red Only, others White */
+                /* Decorative background shapes (admin theme: red primary shape, others kept neutral/white) */
                 .background-blob {
                     position: fixed;
                     border-radius: 50%;
@@ -35,7 +35,7 @@
                     filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
                 }
 
-                /* RED BLOB - KEPT AS IS */
+                /* Primary (red) background shape */
                 .blob-red {
                     width: 750px;
                     height: 650px;
@@ -46,7 +46,7 @@
                     box-shadow: inset 10px 10px 30px rgba(255, 255, 255, 0.5), inset -20px -20px 60px rgba(139, 0, 0, 0.4);
                 }
 
-                /* YELLOW BLOB - TURNED WHITE */
+                /* Neutral (white) background shape (was yellow) */
                 .blob-yellow {
                     width: 900px;
                     height: 700px;
@@ -54,12 +54,12 @@
                     right: -100px;
                     transform: rotate(30deg);
                     background: #ffffff;
-                    /* Changed to White */
-                    /* Removed colored box-shadow, kept minimal or removed */
+                    /* Set to white */
+                    /* Remove colored shadow to keep the shape subtle */
                     box-shadow: none;
                 }
 
-                /* ORANGE BLOB - TURNED WHITE */
+                /* Neutral (white) background shape (was orange) */
                 .blob-orange {
                     width: 1800px;
                     height: 950px;
@@ -67,11 +67,11 @@
                     left: -600px;
                     transform: rotate(-10deg);
                     background: #ffffff;
-                    /* Changed to White */
+                    /* Set to white */
                     box-shadow: none;
                 }
 
-                /* Glass Panel */
+                /* Frosted-glass content card */
                 .glass-panel {
                     background: rgba(255, 255, 255, 0.7);
                     backdrop-filter: blur(20px);
@@ -88,7 +88,7 @@
                     color: #d63031;
                 }
 
-                /* Red theme for Admin text */
+                /* Profile text styling */
                 .profile-info p {
                     margin-bottom: 15px;
                     font-size: 1.1rem;

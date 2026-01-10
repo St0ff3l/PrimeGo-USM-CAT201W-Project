@@ -30,7 +30,7 @@
                     color: #333;
                 }
 
-                /* ================= 2. 纯 CSS 背景 (实心 3D) - Strictly copied from index.jsp ================= */
+                /* ================= 2. Pure CSS Background (Solid 3D) - Strictly copied from index.jsp ================= */
                 .background-blob {
                     position: fixed;
                     border-radius: 50%;

@@ -1,9 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
-    // ⭐ 获取 orderIds 参数 (可能是逗号分隔的字符串，如 "1001,1002")
     String orderIdsStr = request.getParameter("orderIds");
-
-    // 兼容旧逻辑：如果没有 orderIds，尝试获取 orderId
     if (orderIdsStr == null || orderIdsStr.isEmpty()) {
         orderIdsStr = request.getParameter("orderId");
     }
@@ -21,7 +18,7 @@
         body { color: #333; position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; }
 
         .card {
-            width: 450px; /* 稍微宽一点以容纳长订单号 */
+            width: 450px;
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.6);

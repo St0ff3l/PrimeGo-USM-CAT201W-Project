@@ -32,6 +32,7 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Poppins', sans-serif; }
         body {
+            /* Optional page background gradient. Keep commented out unless you want the gradient. */
             /* background: linear-gradient(to bottom, #f0f2f5, #e0e5ec); */
             padding: 40px;
             color:#333;

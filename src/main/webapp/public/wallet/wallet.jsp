@@ -94,7 +94,7 @@
 
 <div class="glass-panel">
     <div class="back-row">
-        <!-- Modified: Merchants go to Dashboard, others go to Profile -->
+        <!-- Navigation: Merchants go to Dashboard, others go to Profile -->
         <c:choose>
             <c:when test="${sessionScope.user.role == 'MERCHANT'}">
                 <a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp" class="back-btn" title="Back to Dashboard">
@@ -149,7 +149,7 @@
         </div>
     </div>
 
-    <!-- Button Group -->
+    <!-- Wallet action buttons -->
     <c:if test="${sessionScope.user.role != 'ADMIN'}">
         <div class="btn-group">
             <c:choose>
@@ -165,7 +165,7 @@
     </c:if>
 
     <div class="txn-list">
-        <!-- ADMIN View -->
+        <!-- List of pending requests for administrators -->
         <c:if test="${sessionScope.user.role == 'ADMIN'}">
             <c:if test="${empty pendingList}">
                 <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No pending requests.</p></div>
@@ -180,7 +180,7 @@
                         <div class="txn-left-sub">
                             User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
 
-                            <!-- Display image link (Using relative path from database) -->
+                            <!-- Link to view transaction evidence or QR code -->
                             <c:if test="${not empty txn.receiptImage}">
                                 <br>
                                 <a href="${pageContext.request.contextPath}/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
@@ -205,7 +205,7 @@
             </c:forEach>
         </c:if>
 
-        <!-- Customer/Merchant View -->
+        <!-- Transaction history for users -->
         <c:if test="${sessionScope.user.role != 'ADMIN'}">
             <c:if test="${empty myTransactions}">
                 <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No transaction history found.</p></div>
@@ -230,7 +230,7 @@
                         <div class="txn-left-sub">
                             <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
 
-                            <!-- Display Admin Remarks -->
+                            <!-- Administrator feedback or remarks -->
                             <c:if test="${not empty txn.remarks}">
                                 <br>
                                 <span style="color: #666; font-style: italic; font-size: 0.85rem;">

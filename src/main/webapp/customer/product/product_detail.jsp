@@ -9,12 +9,12 @@
 
 <%
     // ==========================================
-    // 1. 获取产品 ID 与 数据
+    // 1. Retrieve Product ID and Data
     // ==========================================
     String productIdStr = request.getParameter("id");
 
     ProductDTO product = null;
-    List<ProductImage> imageList = new ArrayList<>(); // 存储所有图片
+    List<ProductImage> imageList = new ArrayList<>(); // List to store all images
     String statusDisplay = "";
 
     if (productIdStr != null && !productIdStr.trim().isEmpty()) {
@@ -23,7 +23,7 @@
             ProductDAO productDAO = new ProductDAO();
             product = productDAO.getProductById(pid);
 
-            // 获取该商品的所有图片
+            // Retrieve all images for the specified product
             ProductImageDAO imageDAO = new ProductImageDAO();
             imageList = imageDAO.getImagesByProductId(pid);
 
@@ -32,13 +32,13 @@
         }
     }
 
-    // 如果找不到商品，跳回首页
+    // Redirect to homepage if product is not found
     if (product == null) {
         response.sendRedirect(request.getContextPath() + "/index.jsp");
         return;
     }
 
-    // --- 处理状态显示 ---
+    // --- Handle Status Display ---
     if (product.getProductStatus() != null) {
         if ("ON_SALE".equals(product.getProductStatus())) {
             statusDisplay = "On Sale";
@@ -49,7 +49,7 @@
         }
     }
 
-    // 获取当前登录用户 (用于判断购物车/购买按钮状态)
+    // Retrieve current logged-in user (for determining Cart/Buy button visibility)
     User currentUser = (User) session.getAttribute("user");
 %>
 
@@ -362,7 +362,7 @@
                     <div style="font-weight: 600; font-size: 1.05rem;"><%= product.getMerchantName() %></div>
                     <div style="font-size: 0.8rem; color: var(--text-gray);">Official Merchant</div>
 
-                    <%-- ⭐ 号码展示区域 --%>
+                    <%-- Contact Number Display Area --%>
                     <% if (product.getContactWhatsapp() != null && !product.getContactWhatsapp().trim().isEmpty()) { %>
                     <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px; color: #25D366; font-weight: 500; font-size: 0.9rem;">
                         <i class="ri-whatsapp-fill"></i>
@@ -371,7 +371,7 @@
                     <% } %>
                 </div>
 
-                <%-- ⭐ Chat 按钮 (点击跳转) --%>
+                <%-- Chat Button (Click to redirect) --%>
                 <% if (product.getContactWhatsapp() != null && !product.getContactWhatsapp().trim().isEmpty()) { %>
                 <a href="https://wa.me/<%= product.getContactWhatsapp().replaceAll("[^0-9]", "") %>"
                    target="_blank" class="btn-whatsapp">
@@ -389,8 +389,8 @@
             <div class="action-group">
                 <% if (currentUser != null) { %>
                 <%--
-                    ⭐ 修改点: 添加购物车改为 Button + AJAX
-                    使用 javascript:void(0) 防止页面跳转，onclick 调用 JS 函数
+                    Add to Cart implemented via Button + AJAX.
+                    Uses onclick to call JS function to prevent page reload.
                 --%>
                 <button onclick="addToCart(<%= product.getProductId() %>)" class="btn-action btn-cart">
                     <i class="ri-shopping-cart-2-line"></i> Add to Cart
@@ -422,17 +422,17 @@
 
 <script>
     // ==========================================
-    // AJAX 添加购物车逻辑 (新增)
+    // AJAX Add to Cart Logic
     // ==========================================
     function addToCart(productId) {
-        // 构建请求 URL
+        // Construct request URL
         const url = '${pageContext.request.contextPath}/cart_action?action=add&productId=' + productId;
 
-        // 发送 AJAX 请求
+        // Send AJAX request
         fetch(url)
             .then(response => {
-                // 如果后端 Servlet 是执行 response.sendRedirect，Fetch 会自动跟随并返回 200 OK
-                // 我们不需要解析返回的 HTML，只要状态码是 200 就代表添加成功
+                // If backend Servlet executes response.sendRedirect, Fetch follows automatically returning 200 OK
+                // We do not need to parse the returned HTML, status 200 indicates success
                 if (response.ok) {
                     showModal("Success!", "Product successfully added to your cart.", "success");
                 } else {
@@ -446,7 +446,7 @@
     }
 
     // ==========================================
-    // 图片轮播逻辑
+    // Image Carousel Logic
     // ==========================================
     const PLACEHOLDER_IMG = '<%= request.getContextPath() %>/assets/images/product-placeholder.svg';
 
@@ -502,5 +502,3 @@
 
 </body>
 </html>
-
-

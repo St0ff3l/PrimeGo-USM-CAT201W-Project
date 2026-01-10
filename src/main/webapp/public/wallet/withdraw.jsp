@@ -5,12 +5,14 @@
 <%@ page import="java.math.BigDecimal" %>
 
 <%
+    /* Authenticate user and ensure session is valid */
     User user = (User) session.getAttribute("user");
     if (user == null) {
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
 
+    /* Retrieve current wallet balance for the authenticated user */
     WalletDAO dao = new WalletDAO();
     BigDecimal balance = dao.getBalance(user.getId());
     if (balance == null) balance = BigDecimal.ZERO;
@@ -63,7 +65,7 @@
         .upload-container {
             width: 100%;
             height: 180px;
-            border: 2px dashed #3498db; /* Blue dashed border */
+            border: 2px dashed #3498db; /* Signature border for the drop zone */
             border-radius: 20px;
             background: linear-gradient(180deg, rgba(235, 248, 255, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%);
             display: flex;
@@ -99,12 +101,12 @@
             color: #999;
         }
 
-        /* Hide original file input */
+        /* Hide the native file input to utilize custom UI */
         input[type="file"] {
             display: none;
         }
 
-        /* Display uploaded file name */
+        /* Display for the selected file's metadata */
         .file-name-display {
             font-weight: 700;
             color: #2ecc71;
@@ -118,16 +120,20 @@
         .error-msg { color: #e74c3c; font-size: 0.9rem; margin-top: 5px; display: none; font-weight: 500; }
     </style>
     <script>
+        /* Validate the withdrawal request before submission */
         function validateForm() {
             var amount = parseFloat(document.getElementById("amount").value);
             var maxBalance = parseFloat("${currentBalance}");
             var errorDiv = document.getElementById("error-msg");
 
+            /* Check for valid numeric input */
             if (isNaN(amount) || amount <= 0) {
                 errorDiv.innerText = "Please enter a valid amount greater than 0.";
                 errorDiv.style.display = "block";
                 return false;
             }
+
+            /* Ensure the amount does not exceed the available balance */
             if (amount > maxBalance) {
                 errorDiv.innerText = "Withdrawal amount exceeds your available balance.";
                 errorDiv.style.display = "block";
@@ -139,13 +145,15 @@
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (file) {
-                // Hide original text prompt
+                // Clear the default placeholder UI
                 document.getElementById('upload-placeholder').style.display = 'none';
-                // Show file name
+                
+                // Present the chosen file name to the user
                 const display = document.getElementById('file-name-display');
                 display.style.display = 'block';
                 display.innerText = "Selected: " + file.name;
-                // Change icon color to indicate success
+                
+                // Update icon to reflect successful selection
                 document.querySelector('.upload-icon').style.color = '#2ecc71';
                 document.querySelector('.upload-icon').className = 'ri-checkbox-circle-line upload-icon';
             }
@@ -209,7 +217,7 @@
 
 <script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
 <script>
-    // Initialize the uploader
+    // Initialize the specialized image uploader component
     new ImagesUploader('#qr-uploader', {
         inputName: 'receiptImage'
     });

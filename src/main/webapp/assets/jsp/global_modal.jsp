@@ -1,6 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <style>
-  /* ===== 自定义弹窗样式 (开始) ===== */
+  /* ===== Custom modal styles (start) ===== */
   .custom-modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
@@ -21,11 +21,11 @@
     width: 60px; height: 60px; margin: 0 auto 15px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center; font-size: 30px;
   }
-  /* 红色错误样式 */
+  /* Red (error) state */
   .icon-error { background: #ffebee; color: #ef5350; }
-  /* 绿色成功样式 */
+  /* Green (success) state */
   .icon-success { background: #e8f5e9; color: #66bb6a; }
-  /* 橙色警告样式 */
+  /* Orange (warning / confirm) state */
   .icon-warning { background: #fff3e0; color: #ff9800; }
 
   .modal-title { font-size: 1.2rem; font-weight: 700; color: #333; margin-bottom: 10px; }
@@ -37,7 +37,7 @@
     outline: none;
   }
   .modal-btn:hover { background: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-  /* ===== 自定义弹窗样式 (结束) ===== */
+  /* ===== Custom modal styles (end) ===== */
 </style>
 
 <div class="custom-modal-overlay" id="customModal">
@@ -55,7 +55,7 @@
 </div>
 
 <script>
-  /* ===== 全局弹窗逻辑 ===== */
+  /* ===== Global modal logic ===== */
   (function() {
     const modalOverlay = document.getElementById('customModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -69,8 +69,8 @@
     let onPrimaryCallback = null;   // alert: callback; confirm: onConfirm
     let onSecondaryCallback = null; // confirm: onCancel
 
-    // 挂载到 window 对象，使其成为全局函数
-    // type 参数支持: 'error', 'success', 'warning' (或者是旧代码的 true/false)
+    // Expose as a global function on window
+    // Supported type values: 'error', 'success', 'warning' (also supports legacy boolean true/false)
     window.showModal = function(title, message, type = 'error', callback = null) {
       currentMode = 'alert';
       modalTitle.innerText = title;
@@ -78,11 +78,11 @@
       onPrimaryCallback = callback;
       onSecondaryCallback = null;
 
-      // 重置样式
+      // Reset icon classes
       modalIcon.className = '';
       modalIconBg.className = 'modal-icon-wrap';
 
-      // 根据类型设置图标和颜色
+      // Apply icon and color based on modal type
       if (type === 'error' || type === true) {
         modalIcon.classList.add('ri-error-warning-line');
         modalIconBg.classList.add('icon-error');
@@ -98,11 +98,11 @@
       modalBtnCancel.style.display = 'none';
       modalBtnOk.innerText = "OK, Got it";
 
-      // 显示弹窗
+      // Show modal
       modalOverlay.classList.add('active');
     };
 
-    // 新增：确认弹窗
+    // Confirm modal (shows Cancel + custom primary callback)
     window.showConfirm = function(title, message, onConfirm, onCancel = null) {
       currentMode = 'confirm';
       modalTitle.innerText = title;
@@ -116,19 +116,19 @@
       modalIconBg.classList.remove('icon-error', 'icon-success');
       modalIconBg.classList.add('icon-warning');
 
-      // Show cancel, Update OK text
+      // Show cancel, update OK text
       modalBtnCancel.style.display = 'inline-block';
       modalBtnOk.innerText = "Yes, Proceed";
 
       modalOverlay.classList.add('active');
     };
 
-    // 关闭弹窗函数
+    // Close the modal; in confirm mode, the argument indicates whether the primary action was chosen
     window.closeModal = function(isPrimaryAction = false) {
       modalOverlay.classList.remove('active');
 
       if (currentMode === 'alert') {
-        // Alert mode: always run callback if exists (old behavior)
+        // Alert mode: always run callback if provided
         if (onPrimaryCallback) onPrimaryCallback();
       } else {
         // Confirm mode
@@ -139,12 +139,12 @@
         }
       }
 
-      // Clear
+      // Clear callbacks
       onPrimaryCallback = null;
       onSecondaryCallback = null;
     };
 
-    // 点击遮罩层也可以关闭 (视为 Cancel / Close)
+    // Clicking outside the dialog closes it (treated as Cancel / Close)
     modalOverlay.addEventListener('click', function(e) {
       if(e.target === modalOverlay) {
         window.closeModal(false);

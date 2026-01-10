@@ -5,7 +5,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
     // ==========================================
-    // 1. 安全检查逻辑
+    // 1. Access control checks
     // ==========================================
     User user = (User) session.getAttribute("user");
     if (user == null) {
@@ -18,7 +18,7 @@
         return;
     }
 
-    // Load Categories
+    // Load categories for the <select> dropdown
     CategoryDAO categoryDAO = new CategoryDAO();
     List<Category> categories = categoryDAO.findAll();
 %>
@@ -38,23 +38,23 @@
     <link href="${pageContext.request.contextPath}/assets/css/images_uploader.css" rel="stylesheet">
 
     <style>
-        /* ==================== 变量定义 ==================== */
+        /* ==================== CSS variables ==================== */
         :root {
             --bg-color: #F3F6F9;
-            --primary: #FF9500; /* PrimeGo 橙色 */
+            --primary: #FF9500; /* PrimeGo orange */
             --primary-hover: #E68600;
             --secondary: #FF5E55;
             --text-dark: #2d3436;
             --text-gray: #636e72;
 
-            /* Glass tokens */
+            /* Glassmorphism tokens */
             --pg-glass-bg-055: rgba(255, 255, 255, 0.55);
             --pg-glass-border: rgba(255, 255, 255, 0.9);
             --pg-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
             --pg-glass-blur: 25px;
             --card-radius: 16px;
 
-            /* >>> 2. 覆盖上传组件颜色，适配 PrimeGo 主题 <<< */
+            /* Theme overrides for the image uploader component */
             --iu-primary: var(--primary);
             --iu-bg: rgba(255, 255, 255, 0.4);
             --iu-border: #dfe6e9;
@@ -70,7 +70,7 @@
             padding-top: 90px;
         }
 
-        /* 核心布局 - Grid */
+        /* Main layout grid */
         .layout-container {
             max-width: 1400px;
             margin: 25px auto;
@@ -81,7 +81,7 @@
             align-items: start;
         }
 
-        /* ==================== Publish 表单样式 ==================== */
+        /* ==================== Publish form styles ==================== */
         .form-card {
             background: var(--pg-glass-bg-055);
             backdrop-filter: blur(var(--pg-glass-blur));
@@ -91,7 +91,7 @@
             border-radius: var(--card-radius);
             padding: 30px 40px;
             width: 100%;
-            /* 入场效果 */
+            /* Entrance animation */
             opacity: 0;
             transform: translateY(22px);
             animation: pgFadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
@@ -106,14 +106,14 @@
         .page-header h2 { font-size: 1.6rem; font-weight: 700; color: var(--text-dark); margin-bottom: 5px; }
         .page-header p { color: var(--text-gray); font-size: 0.85rem; }
 
-        /* Grid: 调整左右比例，给上传区域更多空间 */
+        /* Grid: give more space to the upload area */
         .form-content-grid {
             display: grid;
             grid-template-columns: 1.8fr 1.2fr;
             gap: 40px;
         }
 
-        /* 表单控件 */
+        /* Form controls */
         .form-group { margin-bottom: 18px; }
         .row-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
@@ -124,7 +124,7 @@
             width: 100%; padding: 10px 15px;
             border: 2px solid rgba(0,0,0,0.06);
             border-radius: 10px;
-            font-size: 0.9rem; transition: 0.3s;
+            font-size:  0.9rem; transition: 0.3s;
             background: rgba(255,255,255,0.55);
             color: var(--text-dark); outline: none;
         }
@@ -134,10 +134,10 @@
             box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.1);
         }
 
-        /* 上传区域容器 */
+        /* Upload area container */
         .right-col { display: flex; flex-direction: column; }
 
-        /* 按钮区 */
+        /* Form actions */
         .btn-container {
             margin-top: 20px;
             display: flex; justify-content: flex-end; gap: 15px;
@@ -241,10 +241,10 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // 5. 初始化组件
-        // 参数1: 容器 ID
-        // 参数2: 配置 input 的 name 属性。
-        // 注意：如果你后端期望同一个 name 接收多个文件，使用 'productImage' 即可。
+        // Initialize the image uploader
+        // 1) Container selector
+        // 2) inputName: the <input type="file"> name used for form submission
+        // Note: if the backend expects multiple files under the same field name, keep it as 'productImage'.
         new ImagesUploader('#photo-upload-container', {
             inputName: 'productImage',
             placeholderImg: '${pageContext.request.contextPath}/assets/images/product-placeholder.svg'
@@ -254,3 +254,4 @@
 
 </body>
 </html>
+

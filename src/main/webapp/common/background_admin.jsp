@@ -1,32 +1,36 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%--
-  文件名: common/background_admin.jsp
-  描述: 管理员专用背景组件 (红色主题)
+  File: common/background_admin.jsp
+  Purpose: Admin-only background decoration (red theme).
+
+  Notes:
+  - Styles in this file target the global <body> background.
+  - The blobs are fixed-position decorative elements and sit behind page content.
 --%>
 
 <style>
-    /* ================= 背景专用样式 ================= */
+    /* ================= Background-only styles ================= */
 
-    /* 1. Body 基础设置 */
+    /* 1) Base <body> setup */
     body {
         background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
         min-height: 100vh;
         position: relative;
         overflow-x: hidden;
-        /* 这里不写 color: #333，留给主页面定义，或者放通用css里 */
+        /* Intentionally no text color here; let the page-level stylesheet decide */
     }
 
-    /* 2. 背景球体样式 */
+    /* 2) Background blob base styles */
     .background-blob {
         position: fixed;
         border-radius: 50%;
         z-index: -1;
         opacity: 1;
         filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
-        pointer-events: none; /* 防止背景挡住点击 */
+        pointer-events: none; /* Keep purely decorative; do not block clicks */
     }
 
-    /* Admin 专属红色主球 */
+    /* Admin primary red blob */
     .blob-red {
         width: 750px;
         height: 650px;
@@ -37,7 +41,7 @@
         box-shadow: inset 10px 10px 30px rgba(255, 255, 255, 0.5), inset -20px -20px 60px rgba(139, 0, 0, 0.4);
     }
 
-    /* 辅助白色球体 (Admin设计) */
+    /* Secondary white blobs (admin design) */
     .blob-yellow {
         width: 900px;
         height: 700px;
@@ -59,6 +63,7 @@
     }
 </style>
 
+<!-- Background blobs (decorative only) -->
 <div class="background-blob blob-red"></div>
 <div class="background-blob blob-yellow"></div>
 <div class="background-blob blob-orange"></div>

@@ -11,7 +11,7 @@
 
 <%
     // ==========================================
-    // Java 后端逻辑 (保持不变)
+    // Server-side logic (unchanged)
     // ==========================================
     User currentUser = (User) session.getAttribute("user");
     if (currentUser == null || !"MERCHANT".equals(currentUser.getRole().toString())) {
@@ -65,7 +65,7 @@
     <link href="${pageContext.request.contextPath}/assets/css/images_uploader.css" rel="stylesheet">
 
     <style>
-        /* --- 变量定义 --- */
+        /* --- Variables --- */
         :root {
             --bg-color: #F3F6F9;
             --primary: #FF9500;
@@ -92,8 +92,8 @@
 
         .container { max-width: 1600px; margin: 0 auto; padding: 0 30px; }
 
-        /* --- 核心布局：Grid --- */
-        /* 这里的结构是：[Gallery 400px] [Main Content 1fr] */
+        /* --- Main layout: grid --- */
+        /* Structure: [Gallery 400px] [Main Content 1fr] */
         .layout-container {
             display: grid;
             grid-template-columns: 400px 1fr;
@@ -101,7 +101,7 @@
             align-items: start;
         }
 
-        /* === 1. 左侧：图片轮播 (Gallery) === */
+        /* === 1. Left side: image preview carousel (Gallery) === */
         .gallery-card {
             background: var(--pg-glass-bg);
             border: 1px solid var(--pg-glass-border);
@@ -142,15 +142,15 @@
         .indicator.active { background: var(--primary); transform: scale(1.3); }
 
 
-        /* === 2. 右侧主体区 (Main Content) === */
+        /* === 2. Main content area (right side) === */
         .main-content-area {
-            /* 内部再分两栏：左(Info+Desc) 右(Upload) */
+            /* Split into two columns: left (Info + Description), right (Upload) */
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr; /* 左侧宽一些，右侧上传窄一些 */
+            grid-template-columns: 1.2fr 0.8fr; /* Wider left column, narrower upload column */
             gap: 25px;
         }
 
-        /* 通用卡片样式 */
+        /* Shared card style */
         .glass-card {
             background: var(--pg-glass-bg);
             border: 1px solid var(--pg-glass-border);
@@ -160,14 +160,14 @@
             backdrop-filter: blur(20px);
         }
 
-        /* --- 2.1 右侧主体 - 左半部分 (Info + Desc) --- */
+        /* --- 2.1 Left column (Info + Description) --- */
         .form-left-col {
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
 
-        /* 上半：基本信息 Grid */
+        /* Top section: basic info grid */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -179,7 +179,7 @@
         .form-control { width: 100%; padding: 10px 15px; border: 1px solid #dfe6e9; border-radius: 10px; background: var(--input-bg); font-size: 0.95rem; outline: none; transition: 0.3s; }
         .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.1); }
 
-        /* 下半：描述框 (自动填充剩余高度) */
+        /* Bottom section: description textarea (fills remaining height) */
         .desc-card {
             flex-grow: 1;
             display: flex;
@@ -192,7 +192,7 @@
             line-height: 1.6;
         }
 
-        /* --- 2.2 右侧主体 - 右半部分 (Upload) --- */
+        /* --- 2.2 Right column (Upload) --- */
         .form-right-col {
             display: flex;
             flex-direction: column;
@@ -205,11 +205,11 @@
             flex-direction: column;
         }
 
-        /* 强制覆盖上传组件样式 */
+        /* Force override for the uploader component */
         #photo-upload-container { flex-grow: 1; display: flex; flex-direction: column; }
         .iu-upload-area { flex-grow: 1; min-height: 400px !important; }
 
-        /* 底部按钮 (跨两列) */
+        /* Bottom action buttons (spans both columns) */
         .action-bar {
             grid-column: span 2;
             display: flex; justify-content: flex-end; gap: 15px;
@@ -227,8 +227,8 @@
         .badge { padding: 5px 12px; border-radius: 12px; background: #E3F2FD; color: #1976D2; font-size: 0.85rem; font-weight: 600; }
 
         @media (max-width: 1200px) {
-            .layout-container { grid-template-columns: 1fr; } /* 极窄屏幕变单栏 */
-            .main-content-area { grid-template-columns: 1fr; } /* 表单区变垂直 */
+            .layout-container { grid-template-columns: 1fr; } /* Very narrow screens: switch to a single column */
+            .main-content-area { grid-template-columns: 1fr; } /* Form area becomes vertical */
             .gallery-card { position: static; }
         }
     </style>
@@ -301,7 +301,7 @@
                                 <input type="number" name="productStock" class="form-control" step="1" min="0" value="<%= product.getProductStockQuantity() %>" required>
                             </div>
 
-                            <%-- ⭐ 新增：WhatsApp 联系方式 (回显数据) ⭐ --%>
+                            <%-- New: WhatsApp contact (pre-filled) --%>
                             <div class="form-group col-span-2">
                                 <label class="form-label">
                                     <i class="ri-whatsapp-line" style="font-size: 1.1rem; vertical-align: middle; margin-right: 4px; color: #25D366;"></i>
@@ -311,7 +311,7 @@
                                        placeholder="e.g. 60123456789"
                                        value="<%= product.getContactWhatsapp() != null ? product.getContactWhatsapp() : "" %>" required>
                             </div>
-                            <%-- ⭐ 结束新增 ⭐ --%>
+                            <%-- End new field --%>
                         </div>
                     </div>
 
@@ -342,7 +342,7 @@
 
 <script src="${pageContext.request.contextPath}/assets/js/images_uploader.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
-    // 准备数据
+    // Prepare initial image data for the uploader/carousel
     const serverImages = [
         <% for (int i = 0; i < imageList.size(); i++) { ProductImage img = imageList.get(i); %>
         {
@@ -354,7 +354,7 @@
     ];
 
     document.addEventListener("DOMContentLoaded", function() {
-        // 初始化上传组件
+        // Initialize the upload widget
         const uploader = new ImagesUploader('#photo-upload-container', {
             inputName: 'newImages',
             deleteInputName: 'deleteImageIds',
@@ -362,14 +362,14 @@
             placeholderImg: '${pageContext.request.contextPath}/assets/images/product-placeholder.svg'
         });
 
-        // 回显图片
+        // Show existing images
         uploader.setInitialImages(serverImages);
 
-        // 初始化左侧轮播
+        // Initialize the left-side carousel preview
         renderCarousel();
     });
 
-    // 轮播图逻辑
+    // Carousel logic
     let currentIndex = 0;
     const mainImage = document.getElementById('mainImage');
     const indicatorsContainer = document.getElementById('indicators');
@@ -394,7 +394,7 @@
         indicatorsContainer.innerHTML = '';
         serverImages.forEach((_, idx) => {
             const dot = document.createElement('div');
-            // 注意反斜杠转义
+            // Note: escape sequence for template literal in JSP/JS context
             dot.className = `indicator \${idx === currentIndex ? 'active' : ''}`;
             dot.onclick = () => { currentIndex = idx; renderCarousel(); };
             indicatorsContainer.appendChild(dot);
@@ -407,3 +407,5 @@
 
 </body>
 </html>
+
+

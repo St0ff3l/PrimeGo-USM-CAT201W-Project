@@ -1,31 +1,36 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%--
-  文件名: components/background.jsp
-  描述: 包含 3D 悬浮球背景的 CSS 和 HTML 结构
+  File: common/background.jsp
+  Purpose: Shared background decoration using pure CSS “3D blob” elements.
+
+  Notes:
+  - This file styles the global <body> background.
+  - The blob elements are fixed-position and placed behind page content.
 --%>
 
 <style>
-    /* ================= 背景专用样式 ================= */
+    /* ================= Background-only styles ================= */
 
-    /* 1. 设置 Body 的基础渐变背景 */
-    /* 注意：这里设置 body 背景不会冲突，但要注意不要在其他地方覆盖它 */
+    /* 1) Base page background applied to <body>
+       Keep in mind: other stylesheets can override body background if they set it later. */
     body {
         background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
         min-height: 100vh;
-        overflow-x: hidden; /* 防止球体溢出导致滚动条 */
+        overflow-x: hidden; /* Prevent horizontal scrollbars caused by off-screen blobs */
         position: relative;
     }
 
-    /* 2. 纯 CSS 背景 (实心 3D 球体) */
+    /* 2) Pure CSS background blobs (solid 3D spheres) */
     .background-blob {
-        position: fixed; /* 固定定位，滚动页面时背景不动 */
+        position: fixed; /* Stays in place while scrolling */
         border-radius: 50%;
-        z-index: -1;     /* 确保在最底层 */
+        z-index: -1;     /* Keep behind all page content */
         opacity: 1;
         filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
-        pointer-events: none; /* 确保背景不阻挡鼠标点击 */
+        pointer-events: none; /* Do not block clicks on the page */
     }
 
+    /* Red blob: top-left */
     .blob-red {
         width: 750px;
         height: 650px;
@@ -36,6 +41,7 @@
         box-shadow: inset 10px 10px 30px rgba(255, 255, 255, 0.5), inset -20px -20px 60px rgba(139, 0, 0, 0.4);
     }
 
+    /* Yellow blob: top-right */
     .blob-yellow {
         width: 900px;
         height: 700px;
@@ -46,6 +52,7 @@
         box-shadow: inset 10px 10px 40px rgba(255, 255, 255, 0.7), inset -30px -30px 60px rgba(184, 134, 11, 0.3);
     }
 
+    /* Orange blob: bottom-left */
     .blob-orange {
         width: 1800px;
         height: 950px;
@@ -57,6 +64,7 @@
     }
 </style>
 
+<!-- Background blobs (decorative only) -->
 <div class="background-blob blob-red"></div>
 <div class="background-blob blob-yellow"></div>
 <div class="background-blob blob-orange"></div>

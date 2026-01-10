@@ -341,7 +341,7 @@
                                     <%-- ⭐⭐⭐ RIGHT SIDE: Actions & Tracking Form (Optimized UI) ⭐⭐⭐ --%>
                                 <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: flex-start; flex-wrap: wrap; width: 100%; max-width: 350px; margin-left: auto;">
 
-                                        <%-- 1. 待发货：允许取消 --%>
+                                        <%-- 1. To Ship: Allow Cancel --%>
                                     <c:if test="${order.orderStatus == 'PAID'}">
                                         <form action="${pageContext.request.contextPath}/customer/orders" method="post">
                                             <input type="hidden" name="action" value="cancelOrder">
@@ -354,7 +354,7 @@
                                         </form>
                                     </c:if>
 
-                                        <%-- 2. 售后/退款处理逻辑 --%>
+                                        <%-- 2. After-sales/Refund Processing Logic --%>
                                     <c:choose>
                                         <%-- A: 商家同意退货 -> 等待买家发货 (优化版输入框 + 统一样式的 WhatsApp 按钮) --%>
                                         <c:when test="${order.refundStatus == 'WAITING_RETURN'}">

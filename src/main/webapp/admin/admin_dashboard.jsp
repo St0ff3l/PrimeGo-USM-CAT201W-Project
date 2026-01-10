@@ -9,10 +9,10 @@
             <title>Admin Dashboard - PrimeGo</title>
             <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
                 rel="stylesheet">
-            <!-- Chart.js CDN -->
+            <!-- Chart.js loaded from a CDN -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <style>
-                /* Inherit basic styles */
+                /* Global reset and base typography */
                 * {
                     margin: 0;
                     padding: 0;
@@ -29,7 +29,7 @@
                     display: flex;
                 }
 
-                /* Admin Dashboard uses RED theme */
+                /* Decorative background shapes (admin theme uses a red primary shape) */
                 .background-blob {
                     position: fixed;
                     border-radius: 50%;
@@ -38,6 +38,7 @@
                     filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
                 }
 
+                /* Primary (red) background shape */
                 .blob-red {
                     width: 750px;
                     height: 650px;
@@ -48,6 +49,7 @@
                     box-shadow: inset 10px 10px 30px rgba(255, 255, 255, 0.5), inset -20px -20px 60px rgba(139, 0, 0, 0.4);
                 }
 
+                /* Neutral (white) background shape */
                 .blob-yellow {
                     width: 900px;
                     height: 700px;
@@ -58,6 +60,7 @@
                     box-shadow: none;
                 }
 
+                /* Neutral (white) background shape */
                 .blob-orange {
                     width: 1800px;
                     height: 950px;
@@ -68,7 +71,7 @@
                     box-shadow: none;
                 }
 
-                /* Sidebar */
+                /* Left sidebar navigation */
                 .sidebar {
                     width: 250px;
                     background: rgba(255, 255, 255, 0.8);
@@ -184,7 +187,7 @@
                     }
                 }
 
-                /* Glass Panel Style */
+                /* Frosted-glass card styling used across sections */
                 .glass-panel {
                     background: rgba(255, 255, 255, 0.7);
                     backdrop-filter: blur(20px);
@@ -195,7 +198,7 @@
                     margin-bottom: 30px;
                 }
 
-                /* Metrics Grid */
+                /* Key metrics layout */
                 .metrics-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -227,7 +230,7 @@
                     font-weight: 600;
                 }
 
-                /* Charts Section */
+                /* Charts layout */
                 .charts-grid {
                     display: grid;
                     grid-template-columns: 2fr 1fr;
@@ -464,35 +467,35 @@
             <div class="background-blob blob-yellow"></div>
             <div class="background-blob blob-orange"></div>
 
-            <!-- Sidebar -->
+            <!-- Sidebar navigation -->
             <div class="sidebar">
                 <h2>PrimeGo Admin</h2>
                 <div class="nav-item active" onclick="switchTab('dashboard', this)">
-                    <span>📊 Dashboard</span>
+                    <span>Dashboard</span>
                 </div>
                 <div class="nav-item" onclick="switchTab('users', this)">
-                    <span>👥 User Management</span>
+                    <span>User Management</span>
                 </div>
                 <div class="nav-item" onclick="switchTab('settings', this)">
-                    <span>⚙️ Settings</span>
+                    <span>Settings</span>
                 </div>
 
-                <!-- NEW: Product Review Queue -->
+                <!-- Admin: product review queue -->
                 <a class="nav-item" style="text-decoration:none;"
                     href="${pageContext.request.contextPath}/admin/product/review/list">
-                    <span>🧾 Product Review</span>
+                    <span>Product Review</span>
                 </a>
 
-                <!-- NEW: Funds Approval -->
+                <!-- Admin: wallet top-up/withdraw approval -->
                 <a class="nav-item" style="text-decoration:none;"
                     href="${pageContext.request.contextPath}/admin/wallet/admin_approval.jsp">
-                    <span>💰 Funds Approval</span>
+                    <span>Funds Approval</span>
                 </a>
 
-                <!-- NEW: Merchant Create -->
+                <!-- Admin: create merchant accounts -->
                 <a class="nav-item" style="text-decoration:none;"
                     href="${pageContext.request.contextPath}/admin/merchant/create">
-                    <span>🏪 Merchant Create</span>
+                    <span>Merchant Create</span>
                 </a>
 
                 <div class="sidebar-footer">
@@ -502,10 +505,10 @@
                 </div>
             </div>
 
-            <!-- Main Content -->
+            <!-- Main page content -->
             <div class="main-content">
 
-                <!-- Tab 1: Dashboard Overview -->
+                <!-- Dashboard overview tab -->
                 <div id="dashboard" class="tab-content active">
                     <div class="header-section">
                         <h1>Dashboard Overview</h1>
@@ -577,7 +580,7 @@
                     </div>
                 </div>
 
-                <!-- Tab 2: User Management -->
+                <!-- User management tab -->
                 <div id="users" class="tab-content">
                     <div class="header-section">
                         <h1>User Management</h1>
@@ -635,7 +638,7 @@
                     </div>
                 </div>
 
-                <!-- Tab 3: Settings (Placeholder) -->
+                <!-- Settings tab -->
                 <div id="settings" class="tab-content">
                     <div class="header-section">
                         <h1>System Settings</h1>
@@ -704,7 +707,7 @@
 
             </div>
 
-            <!-- User Details Modal -->
+            <!-- User details modal -->
             <div id="userDetailModal" class="modal-overlay">
                 <div class="modal-content">
                     <button class="close-btn" onclick="closeUserModal()">&times;</button>
@@ -715,7 +718,7 @@
                 </div>
             </div>
 
-            <!-- Global Message Modal (Success Dialog) -->
+            <!-- Global message modal (success dialog) -->
             <c:if test="${not empty sessionScope.globalMessage}">
                 <div id="globalMessageModal" class="modal-overlay" style="display: flex;">
                     <div class="modal-content" style="text-align: center; width: 350px;">
@@ -740,7 +743,7 @@
                 <c:remove var="globalMessageType" scope="session" />
             </c:if>
 
-            <!-- Transactions Detail Modal -->
+            <!-- Transactions detail modal -->
             <div id="transactionsModal" class="modal-overlay">
                 <div class="modal-content modal-lg">
                     <button class="close-btn" onclick="closeTransactionsModal()">&times;</button>
@@ -894,7 +897,7 @@
             </div>
 
             <script>
-                // Tab Switching Logic
+                // Switch between tab panels and update the active sidebar item
                 function switchTab(tabId, navElement) {
                     // Hide all tabs
                     document.querySelectorAll('.tab-content').forEach(tab => {
@@ -910,7 +913,7 @@
                     navElement.classList.add('active');
                 }
 
-                // Charts Initialization
+                // Charts initialization (Traffic: line chart, Users: doughnut chart)
                 const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
                 new Chart(ctxTraffic, {
                     type: 'line',
@@ -951,7 +954,7 @@
                     }
                 });
 
-                // User Details Logic (Simplified)
+                // User details modal: render basic info and then fetch extended profile data
                 function viewUserDetails(id, username, role, status, createdAt) {
                     const modal = document.getElementById('userDetailModal');
                     const body = document.getElementById('modalBody');
@@ -1030,7 +1033,7 @@
                     document.getElementById('userDetailModal').style.display = 'none';
                 }
 
-                // Transactions Modal Logic
+                // Transactions modal
                 function openTransactionsModal() {
                     document.getElementById('transactionsModal').style.display = 'flex';
                 }
@@ -1039,7 +1042,7 @@
                     document.getElementById('transactionsModal').style.display = 'none';
                 }
 
-                // Close on outside click for both modals
+                // Close modals when clicking on the overlay
                 window.onclick = function (event) {
                     const uModal = document.getElementById('userDetailModal');
                     const tModal = document.getElementById('transactionsModal');

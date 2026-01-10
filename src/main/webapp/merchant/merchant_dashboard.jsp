@@ -7,11 +7,10 @@
 <%@ page import="java.util.List" %>
 <%
     // ==========================================
-    // 1. 权限检查
+    // 1. Permission check
     // ==========================================
     User user = (User) session.getAttribute("user");
 
-    // 调试代码：如果你还进不去，取消下面这行的注释，看看控制台打印了什么
     // System.out.println("Dashboard Check: User=" + user + ", Role=" + (user!=null?user.getRole():"null"));
 
     if (user == null) {
@@ -19,17 +18,15 @@
         return;
     }
 
-    // 🔥 核心修复点：将 Enum 强转为 String 再比较 🔥
     String roleStr = user.getRole().toString();
 
-    // 如果不是 MERCHANT 且不是 ADMIN，踢回登录页
     if (!"MERCHANT".equals(roleStr) && !"ADMIN".equals(roleStr)) {
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
 
     // ==========================================
-    // 2. Dashboard 数据（参照数据库 Orders / Order_Item / Product）
+    // 2. Dashboard Data（Orders / Order_Item / Product）
     // ==========================================
     int toShipCount = 0;      // Orders_Order_Status = 'PAID'
     int shippedCount = 0;     // Orders_Order_Status = 'SHIPPED'
@@ -173,7 +170,7 @@
         .shop-profile { display: flex; align-items: center; gap: 20px; }
         .shop-avatar { width: 80px; height: 80px; border-radius: 50%; background: #ffeaa7; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; }
         .shop-meta h2 { font-size: 1.5rem; margin-bottom: 5px; }
-        .shop-tags span { background: #f1f2f6; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; color: #636e72; margin-right: 8px; }
+        /* .shop-tags was removed */
         .shop-btn { padding: 10px 25px; border-radius: 30px; border: 2px solid var(--text-dark); background: transparent; font-weight: 600; cursor: pointer; transition: 0.3s; }
         .shop-btn:hover { background: var(--text-dark); color: white; }
 
@@ -356,18 +353,12 @@
     <%@ include file="../common/layout/merchant_sidebar.jsp" %>
 
     <main class="main-content">
-        <!-- Dashboard View - 这个页面只显示dashboard内容 -->
         <div id="view-dashboard" class="view-section active">
             <div class="shop-header-card" style="margin-bottom: 30px;">
                 <div class="shop-profile">
                     <div class="shop-avatar">S</div>
                     <div class="shop-meta">
                         <h2><%= user.getUsername() %>'s Store</h2>
-                        <div class="shop-tags">
-                            <span>⭐ Level 3 Seller</span>
-                            <span>✅ Verified</span>
-                            <span>📍 Penang, MY</span>
-                        </div>
                     </div>
                 </div>
                 <button class="shop-btn" onclick="location.href='${pageContext.request.contextPath}/merchant/product/product_management.jsp'">Manage Products</button>
@@ -408,39 +399,38 @@
                                 </p>
 
                                 <% if (!lowStockPreview.isEmpty()) { %>
-                                    <div class="low-stock-list">
-                                        <% for (LowStockItem item : lowStockPreview) { %>
-                                            <div class="low-stock-item">
-                                                <div class="low-stock-left">
-                                                    <a class="low-stock-name"
-                                                       href="<%= request.getContextPath() %>/merchant/product/product_edit.jsp?id=<%= item.productId %>"
-                                                       title="Edit <%= item.name %>">
-                                                        <%= item.name %>
-                                                    </a>
-                                                    <div class="low-stock-meta">
-                                                        Stock: <span class="low-stock-stock <%= (item.stock <= 0 ? "stock-zero" : "") %>"><%= item.stock %></span>
-                                                    </div>
-                                                </div>
-
-                                                <div class="low-stock-actions">
-                                                    <a class="btn-restock-mini"
-                                                       href="<%= request.getContextPath() %>/merchant/product/product_edit.jsp?id=<%= item.productId %>">
-                                                        <i class="ri-edit-line"></i> Restock
-                                                    </a>
-                                                </div>
+                                <div class="low-stock-list">
+                                    <% for (LowStockItem item : lowStockPreview) { %>
+                                    <div class="low-stock-item">
+                                        <div class="low-stock-left">
+                                            <a class="low-stock-name"
+                                               href="<%= request.getContextPath() %>/merchant/product/product_edit.jsp?id=<%= item.productId %>"
+                                               title="Edit <%= item.name %>">
+                                                <%= item.name %>
+                                            </a>
+                                            <div class="low-stock-meta">
+                                                Stock: <span class="low-stock-stock <%= (item.stock <= 0 ? "stock-zero" : "") %>"><%= item.stock %></span>
                                             </div>
-                                        <% } %>
+                                        </div>
 
-                                        <% if (hasMoreLowStock) { %>
-                                            <div style="margin-top:2px; font-size:0.85rem; color: var(--text-gray);">...and more</div>
-                                        <% } %>
+                                        <div class="low-stock-actions">
+                                            <a class="btn-restock-mini"
+                                               href="<%= request.getContextPath() %>/merchant/product/product_edit.jsp?id=<%= item.productId %>">
+                                                <i class="ri-edit-line"></i> Restock
+                                            </a>
+                                        </div>
                                     </div>
+                                    <% } %>
+
+                                    <% if (hasMoreLowStock) { %>
+                                    <div style="margin-top:2px; font-size:0.85rem; color: var(--text-gray);">...and more</div>
+                                    <% } %>
+                                </div>
                                 <% } %>
                             </div>
                         </div>
 
-                        <!-- 右侧总按钮：批量查看/补货 -->
-                        <!-- <a href="<%= request.getContextPath() %>/merchant/product/product_management.jsp" class="todo-action">Restock</a> -->
+
                     </div>
                 </div>
 
@@ -501,6 +491,3 @@
 
 </body>
 </html>
-
-
-

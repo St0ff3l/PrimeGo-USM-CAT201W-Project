@@ -1,13 +1,17 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%--
-  文件名: common/background_merchant.jsp
-  描述: 商家专用背景组件 (黄色/金色主题)
+  File: common/background_merchant.jsp
+  Purpose: Merchant-facing background decoration (yellow / gold theme).
+
+  Notes:
+  - Styles in this file target the global <body> background.
+  - The blobs are fixed-position decorative elements and sit behind page content.
 --%>
 
 <style>
-    /* ================= 背景专用样式 ================= */
+    /* ================= Background-only styles ================= */
 
-    /* 1. Body 基础设置 */
+    /* 1) Base <body> setup */
     body {
         background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
         min-height: 100vh;
@@ -15,17 +19,17 @@
         overflow-x: hidden;
     }
 
-    /* 2. 背景球体通用样式 */
+    /* 2) Background blob base styles */
     .background-blob {
         position: fixed;
         border-radius: 50%;
         z-index: -1;
         opacity: 1;
         filter: drop-shadow(30px 40px 50px rgba(0, 0, 0, 0.2));
-        pointer-events: none; /* 防止背景挡住点击 */
+        pointer-events: none; /* Keep purely decorative; do not block clicks */
     }
 
-    /* Red Blob -> 改为白色 (隐藏/辅助) */
+    /* Red blob: rendered as white (hidden/auxiliary) */
     .blob-red {
         width: 750px; height: 650px; top: -200px; left: -200px;
         transform: rotate(-10deg);
@@ -33,7 +37,7 @@
         box-shadow: none;
     }
 
-    /* Yellow Blob -> 主视觉 (金色/黄色渐变) */
+    /* Yellow blob: primary visual element (gold/yellow gradient) */
     .blob-yellow {
         width: 900px; height: 700px; top: -250px; right: -100px;
         transform: rotate(30deg);
@@ -41,7 +45,7 @@
         box-shadow: inset 10px 10px 40px rgba(255, 255, 255, 0.7), inset -30px -30px 60px rgba(184, 134, 11, 0.3);
     }
 
-    /* Orange Blob -> 改为白色 (隐藏/辅助) */
+    /* Orange blob: rendered as white (hidden/auxiliary) */
     .blob-orange {
         width: 1800px; height: 950px; bottom: -650px; left: -600px;
         transform: rotate(-10deg);

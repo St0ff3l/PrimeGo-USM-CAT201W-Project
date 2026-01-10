@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="${pageContext.request.contextPath}/logo.png" type="image/png">
     <style>
-        /* Inherit basic styles from index.jsp */
+        /* Base styles and global resets */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body {
             background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
@@ -22,7 +22,7 @@
             color: #333;
         }
 
-        /* Background Blobs - Same as Login/Index */
+        /* Background decorative elements */
         .background-blob {
             position: fixed;
             border-radius: 50%;
@@ -52,7 +52,7 @@
             box-shadow: inset 15px 15px 50px rgba(255, 255, 255, 0.5), inset -40px -40px 80px rgba(160, 82, 45, 0.3);
         }
 
-        /* Signup Card */
+        /* Signup card module */
         .signup-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
@@ -87,6 +87,7 @@
         .back-link:hover { color: #2d3436; }
     </style>
     <script>
+        /* Form validation for matching email and password fields */
         function validateForm() {
             var email = document.getElementById("email").value;
             var confirmEmail = document.getElementById("confirmEmail").value;

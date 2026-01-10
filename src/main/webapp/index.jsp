@@ -7,9 +7,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%
-  // ============================================================
-  // 1. 商家强制重定向逻辑 (保留)
-  // ============================================================
+  // Redirect merchant users to their dashboard
 
   User __idxUser = (User) session.getAttribute("user");
   if (__idxUser == null) {
@@ -27,13 +25,11 @@
     }
   }
 
-  // ============================================================
-  // 2. 获取商品数据并过滤库存
-  // ============================================================
+  // Fetch product data and filter by stock availability
   ProductDAO productDAO = new ProductDAO();
   List<ProductDTO> productList = productDAO.getAllProducts();
 
-  // ⭐ 新增：过滤逻辑，只保留库存大于 0 的商品
+  // Filter to include only products with stock greater than 0
   List<ProductDTO> displayList = new ArrayList<>();
   if (productList != null) {
     for (ProductDTO p : productList) {
@@ -53,7 +49,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="icon" href="${pageContext.request.contextPath}/logo.png" type="image/png">
   <style>
-    /* ================= 1. 全局基础样式 ================= */
+    /* Global Base Styles */
     body {
       font-family: 'Poppins', sans-serif;
       color: #333;
@@ -61,7 +57,7 @@
       margin: 0;
     }
 
-    /* ================= 2. 毛玻璃容器样式 ================= */
+    /* Glassmorphism Container Styles */
     .glass-panel {
       background: rgba(255, 255, 255, 0.7);
       backdrop-filter: blur(20px);
@@ -72,7 +68,7 @@
               inset 0 0 0 1px rgba(255, 255, 255, 0.5);
     }
 
-    /* ================= 3. Hero 区域 ================= */
+    /* Hero Section */
     .hero {
       max-width: 1200px;
       margin: 140px auto 50px;
@@ -114,7 +110,7 @@
       box-shadow: 0 8px 20px rgba(255, 59, 48, 0.6);
     }
 
-    /* ================= 4. 商品网格 ================= */
+    /* Product Grid */
     .section-container {
       max-width: 1200px;
       margin: 0 auto 50px;
@@ -140,7 +136,7 @@
       transition: transform 0.3s, box-shadow 0.3s;
       display: flex;
       flex-direction: column;
-      cursor: pointer; /* 鼠标变手型 */
+      cursor: pointer; /* Change cursor to pointer */
     }
 
     .product-card:hover {
@@ -209,7 +205,7 @@
       color: white;
     }
 
-    /* ================= 5. 页脚 ================= */
+    /* Footer */
     footer {
       background: #2d3436;
       color: white;
@@ -221,7 +217,7 @@
 </head>
 <body>
 
-<%-- 引入通用组件 --%>
+<%-- Include common components --%>
 <%@ include file="common/background.jsp" %>
 <%@ include file="common/layout/header_bar.jsp" %>
 <%@ include file="common/login_check_modal.jsp" %>
@@ -237,7 +233,7 @@
 
   <div class="product-grid">
     <%
-      // ⭐ 修改：使用 displayList (已过滤库存) 进行判空
+      // Check if display list is empty
       if (displayList.isEmpty()) {
     %>
     <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
@@ -246,9 +242,9 @@
     </div>
     <%
     } else {
-      // ⭐ 修改：遍历 displayList
+      // Iterate through the display list
       for (ProductDTO p : displayList) {
-        // 卡片整体点击跳转到详情页
+        // Redirection URL for product detail
         String detailUrl = request.getContextPath() + "/customer/product/product_detail.jsp?id=" + p.getProductId();
     %>
 
@@ -271,8 +267,8 @@
         </p>
 
         <%--
-          addToCart() 接收商品 ID
-          event.stopPropagation() 防止点击按钮时触发卡片的跳转
+          addToCart() handles product addition
+          event.stopPropagation() prevents the card click event from triggering
         --%>
         <button class="btn btn-add" onclick="event.stopPropagation(); addToCart(<%= p.getProductId() %>)">Add to Cart</button>
       </div>
@@ -294,16 +290,16 @@
   const isLoggedIn = <%= __idxUser != null %>;
 
   /**
-   * 添加到购物车逻辑
-   * @param {number} productId - 商品ID
+   * Add to cart logic
+   * @param {number} productId - Product ID
    */
   function addToCart(productId) {
     if (!isLoggedIn) {
       showLoginModal();
       return;
     }
-    // 假设你的 Servlet 映射为 /cart_action，并且接受 add 动作
-    // 如果未登录，后端 Servlet 应该处理重定向或 Session 存储
+    // Redirect to cart action servlet with add parameters
+    // If not logged in, backend servlet handles redirection or session storage
     window.location.href = "${pageContext.request.contextPath}/cart_action?action=add&productId=" + productId + "&quantity=1";
   }
 </script>

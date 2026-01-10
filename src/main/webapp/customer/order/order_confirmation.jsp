@@ -7,41 +7,41 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.math.BigDecimal" %>
 <%@ page import="java.util.Arrays" %>
-<%-- ⭐ 导入 DAO 和 Model --%>
+<%-- Import DAO and Model classes --%>
 <%@ page import="com.primego.wallet.dao.WalletDAO" %>
 <%@ page import="com.primego.user.dao.AddressDAO" %>
 <%@ page import="com.primego.user.model.UserAddress" %>
 <%@ page import="com.primego.user.model.User" %>
-<%-- ⭐ 新增导入：用于检查 PIN 码 --%>
+<%-- Import for PIN code verification --%>
 <%@ page import="com.primego.user.dao.ProfileDAO" %>
 <%@ page import="com.primego.user.model.CustomerProfile" %>
-<%-- ⭐ 新增导入：用于计算商家数量 --%>
+<%-- Import for merchant count calculation --%>
 <%@ page import="java.util.Set" %>
 <%@ page import="java.util.HashSet" %>
 
 <%
-    // ⭐ 0. 获取当前用户 (必须登录)
+    // 0. Retrieve current user (login required)
     User user = (User) session.getAttribute("user");
     if (user == null) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
         return;
     }
 
-    // ⭐ 1. 获取钱包余额
+    // 1. Retrieve wallet balance
     WalletDAO walletDAO = new WalletDAO();
     BigDecimal walletBalance = walletDAO.getBalance(user.getId());
 
-    // ⭐ 2. 获取默认地址
+    // 2. Retrieve default shipping address
     AddressDAO addressDAO = new AddressDAO();
     UserAddress defaultAddress = addressDAO.getDefaultAddress(user.getId());
 
-    // ⭐ 3. 检查用户是否设置了 PIN 码
+    // 3. Check if payment PIN is configured
     ProfileDAO profileDAO = new ProfileDAO();
     CustomerProfile profile = profileDAO.getCustomerProfile(user.getId());
     boolean hasPin = (profile != null && profile.getPaymentPin() != null && !profile.getPaymentPin().isEmpty());
 
     // -----------------------------------------------------------------
-    // 购物车/立即购买逻辑
+    // Shopping cart and "Buy Now" handling
     // -----------------------------------------------------------------
 
     String productIdStr = request.getParameter("productId");
@@ -53,14 +53,14 @@
     List<CartItem> orderItems = new ArrayList<>();
     BigDecimal subTotal = BigDecimal.ZERO;
 
-    // ⭐ 新增：定义 buyNowQuantity 变量，默认为 1
+    // Define variable for "Buy Now" quantity, default is 1
     int buyNowQuantity = 1;
 
     if (isBuyNow) {
         try {
             int productId = Integer.parseInt(productIdStr);
 
-            // ⭐ 修复点：尝试从请求中获取数量，而不是默认 1
+            // Retrieve quantity from request parameters
             String qtyParam = request.getParameter("quantity");
             if (qtyParam != null && !qtyParam.isEmpty()) {
                 buyNowQuantity = Integer.parseInt(qtyParam);
@@ -69,7 +69,7 @@
             ProductDAO productDAO = new ProductDAO();
             ProductDTO product = productDAO.getProductById(productId);
             if (product != null) {
-                // 使用获取到的数量创建 CartItem
+                // Create CartItem with specified quantity
                 CartItem item = new CartItem(product, buyNowQuantity);
                 orderItems.add(item);
                 subTotal = item.getTotalPrice();
@@ -94,7 +94,7 @@
     }
 
     // ========================================================
-    // ⭐ 新增：计算涉及的商家数量，以便正确计算运费
+    // Calculate number of merchants to determine shipping fees
     // ========================================================
     Set<Integer> merchantSet = new HashSet<>();
     for (CartItem item : orderItems) {
@@ -104,7 +104,7 @@
     }
     int merchantCount = merchantSet.isEmpty() ? 1 : merchantSet.size();
 
-    // 基础运费 RM 15.00 * 商家数量
+    // Total shipping fee (Flat RM 15.00 per merchant)
     BigDecimal singleShipFee = new BigDecimal("15.00");
     BigDecimal totalShipFee = singleShipFee.multiply(new BigDecimal(merchantCount));
 %>
@@ -124,13 +124,13 @@
         .card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
         h2 { font-size: 1.2rem; margin-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; }
 
-        /* 商品列表样式 */
+        /* Item list styles */
         .order-item { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }
         .order-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .item-img { width: 80px; height: 80px; background: rgba(255,255,255,0.5); border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 2rem; overflow: hidden; }
         .item-img img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 摘要和钱包样式 */
+        /* Summary and wallet styles */
         .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; color: #555; }
         .total-row { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 700; font-size: 1.3rem; color: #2d3436; border-top: 2px dashed #ccc; padding-top: 20px; }
         .btn-pay { width: 100%; background: linear-gradient(45deg, #FF3B30, #FF9500); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: 600; font-size: 1.1rem; cursor: pointer; margin-top: 20px; box-shadow: 0 5px 15px rgba(255, 59, 48, 0.3); transition: 0.3s; }
@@ -139,7 +139,7 @@
 
         .wallet-info { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: 600; }
 
-        /* 地址卡片样式 */
+        /* Delivery address card styles */
         .delivery-opt { display: flex; gap: 15px; margin-bottom: 15px; }
         .opt-box { flex: 1; border: 2px solid transparent; background: rgba(255,255,255,0.5); padding: 15px; border-radius: 12px; cursor: pointer; text-align: center; }
         .opt-box.selected { border-color: #FF3B30; background: rgba(255, 59, 48, 0.05); color: #FF3B30; font-weight: 600; }
@@ -155,11 +155,11 @@
         .btn-add-address { border: 2px dashed #ccc; border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #888; text-decoration: none; transition: 0.3s; min-height: 120px; background: rgba(255,255,255,0.3); }
         .btn-add-address:hover { border-color: #FF3B30; color: #FF3B30; background: rgba(255,255,255,0.8); }
 
-        /* --- ⭐ Modal Styles (弹窗样式) --- */
+        /* --- Modal Dialog Styles --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px);
-            display: none; /* 默认隐藏 */
+            display: none; /* Hidden by default */
             justify-content: center; align-items: center;
             z-index: 1000; animation: fadeIn 0.3s;
         }
@@ -172,7 +172,7 @@
         }
         .modal-icon { font-size: 3.5rem; color: #FF9500; margin-bottom: 10px; }
 
-        /* PIN 输入框容器 */
+        /* PIN code input field container */
         .pin-input-container {
             display: flex; gap: 10px; justify-content: center; margin: 25px 0;
         }
@@ -215,7 +215,7 @@
     <input type="hidden" name="isBuyNow" value="<%= isBuyNow %>">
     <% if (isBuyNow) { %>
     <input type="hidden" name="productId" value="<%= productIdStr %>">
-    <%-- ⭐ 修复点：value 属性改为动态变量 buyNowQuantity --%>
+    <%-- Set quantity value from dynamic variable --%>
     <input type="hidden" name="quantity" id="hiddenQuantity" value="<%= buyNowQuantity %>">
     <% } %>
 
@@ -225,7 +225,7 @@
     <%     }
     } %>
 
-    <%-- ⭐ 隐藏的 input，用于接收 Modal 输入的最终 PIN 码提交给后台 --%>
+    <%-- Hidden input for payment PIN to be submitted --%>
     <input type="hidden" name="paymentPin" id="finalPaymentPin">
 
     <div class="container">
@@ -246,7 +246,7 @@
 
                             <% int stock = item.getProduct().getProductStockQuantity(); %>
 
-                            <%-- ⭐ onkeydown 拦截回车，防止意外提交 --%>
+                            <%-- Prevent accidental form submission on Enter key --%>
                             <input type="number" min="1" max="<%= stock %>" value="<%= item.getQuantity() %>"
                                    style="width: 60px; padding: 5px; border-radius: 5px; border: 1px solid #ccc;"
                                    onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }"
@@ -263,7 +263,7 @@
             <div class="card">
                 <h2>Delivery Method</h2>
                 <div class="delivery-opt">
-                    <%-- ⭐ 修改：显示运费金额 (Java算好的) --%>
+                    <%-- Display pre-calculated shipping fee --%>
                     <div class="opt-box selected">🚚 Shipping</div>
                 </div>
 
@@ -304,16 +304,16 @@
 
                 <div class="summary-row"><span>Subtotal</span><span id="subTotal">RM <%= String.format("%.2f", subTotal) %></span></div>
 
-                <%-- ⭐ 修改：显示商家数量和总运费 --%>
+                <%-- Display merchant count and total shipping fee --%>
                 <div class="summary-row">
                     <span>Delivery (<%= merchantCount %> Merchant<%= merchantCount > 1 ? "s" : "" %>)</span>
                     <span id="shipFee">RM <%= String.format("%.2f", totalShipFee) %></span>
                 </div>
 
-                <%-- ⭐ 修改：显示总价 (subTotal + totalShipFee) --%>
+                <%-- Display grand total (subtotal + shipping) --%>
                 <div class="total-row"><span>Total</span><span id="totalDisplay" style="color:#FF3B30;">RM <%= String.format("%.2f", subTotal.add(totalShipFee)) %></span></div>
 
-                <%-- ⭐ 修改：按钮类型改为 button，点击触发 handlePayClick --%>
+                <%-- Use button type to trigger handlePayClick script --%>
                 <button type="button" class="btn-pay" onclick="handlePayClick()">Pay Now</button>
 
                 <% if(request.getAttribute("errorMessage") != null) { %>
@@ -324,7 +324,7 @@
     </div>
 </form>
 
-<%-- ⭐ Modal 1: 输入 PIN 码 --%>
+<%-- Modal 1: Payment PIN Input --%>
 <div class="modal-overlay" id="pinModal">
     <div class="modal-box">
         <div class="modal-icon">🔒</div>
@@ -350,7 +350,7 @@
     </div>
 </div>
 
-<%-- ⭐ Modal 2: 提醒设置 PIN 码 --%>
+<%-- Modal 2: Set Payment PIN Reminder --%>
 <div class="modal-overlay" id="noPinModal">
     <div class="modal-box">
         <div class="modal-icon">⚠️</div>
@@ -366,7 +366,7 @@
     </div>
 </div>
 
-<%-- ⭐ 自动重新打开弹窗逻辑 --%>
+<%-- Logic to automatically reopen the modal if validation fails --%>
 <%
     if (request.getAttribute("showPinModal") != null && (Boolean)request.getAttribute("showPinModal")) {
 %>
@@ -380,13 +380,13 @@
 
 <script>
     let basePrice = <%= subTotal %>;
-    // ⭐ 修改 JS：运费不再是固定的 15，而是算出来的 totalShipFee
+    // Shipping cost calculated based on merchant count
     let shipCost = <%= totalShipFee %>;
 
-    // ⭐ 后端传入变量
+    // Values passed from server side
     const userHasPin = <%= hasPin %>;
 
-    // ⭐ 点击 "Pay Now" 触发
+    // Triggered when "Pay Now" button is clicked
     function handlePayClick() {
         const addr = document.getElementById('inputAddress').value;
         if(!addr) {
@@ -402,7 +402,7 @@
         }
     }
 
-    // ⭐ 关闭弹窗
+    // Close the modal dialog
     function closeModal(modalId) {
         document.getElementById(modalId).classList.remove('active');
         if(modalId === 'pinModal') {
@@ -410,7 +410,7 @@
         }
     }
 
-    // ⭐ PIN 输入框自动跳转逻辑
+    // Auto-focus logic for PIN code input fields
     function moveToNext(input) {
         if (input.value.length >= 1) {
             let next = input.nextElementSibling;
@@ -432,7 +432,7 @@
         }
     }
 
-    // ⭐ 确认支付
+    // Confirm and submit payment
     function confirmPayment() {
         let pin = "";
         const inputs = document.querySelectorAll('.pin-digit');
@@ -452,7 +452,6 @@
         document.getElementById('orderForm').submit();
     }
 
-    // 原有的地址选择逻辑
     function selectAddress(card, name, phone, address) {
         document.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
@@ -461,7 +460,6 @@
         document.getElementById('inputAddress').value = address;
     }
 
-    // 原有的数量更新逻辑
     function updateQuantity(input, unitPrice, maxStock) {
         let quantity = parseInt(input.value);
         if (quantity < 1 || isNaN(quantity)) {
@@ -492,7 +490,6 @@
         updateSummary();
     }
 
-    // ⭐ 修改 updateSummary 函数
     function updateSummary() {
         document.getElementById('shipFee').innerText = "RM " + shipCost.toFixed(2);
         let total = basePrice + shipCost;

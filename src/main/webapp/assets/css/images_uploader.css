@@ -1,10 +1,10 @@
 /* ==========================================
- * Images Uploader Component Styles
+ * Images Uploader component styles
  * File: assets/css/images_uploader.css
  * ========================================== */
 
 :root {
-    /* 默认颜色，会被 JSP 中的变量覆盖 */
+    /* Default theme colors (can be overridden by JSP variables) */
     --iu-primary: #4F46E5;
     --iu-bg: #F8FAFC;
     --iu-border: #CBD5E1;
@@ -130,19 +130,19 @@
     to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* === 新增：拖拽排序样式 === */
+/* Drag-and-drop sorting styles */
 
-/* 预览卡片现在可以被抓取 */
+/* Preview cards can be grabbed */
 .iu-preview-wrapper {
-    cursor: grab; /* 抓手光标 */
+    cursor: grab; /* Grab cursor */
     transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 
 .iu-preview-wrapper:active {
-    cursor: grabbing; /* 抓取中光标 */
+    cursor: grabbing; /* While dragging */
 }
 
-/* 正在被拖拽的元素 */
+/* Element currently being dragged */
 .iu-preview-wrapper.dragging {
     opacity: 0.5;
     transform: scale(0.95);
@@ -150,19 +150,19 @@
     box-shadow: none;
 }
 
-/* 拖拽放置的目标指引（可选） */
+/* Drop target indicator (optional) */
 .iu-preview-wrapper.drag-over-target {
     border-left: 4px solid var(--iu-primary);
 }
 
-/* 主图标记 (排在第一位的图片) */
+/* Main image label (the first image in the list) */
 .iu-preview-wrapper:first-child::after {
     content: 'Main';
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: rgba(255, 149, 0, 0.85); /* 橙色背景 */
+    background: rgba(255, 149, 0, 0.85); /* Orange background */
     color: white;
     font-size: 10px;
     text-align: center;

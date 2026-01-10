@@ -2,10 +2,13 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%--
-  Merchant Sidebar (Reusable Layout Component)
+  Merchant sidebar (reusable layout component).
+
   Contract:
-  - Input: requestScope.activeMenu (String) e.g. "dashboard" | "products" | "order" | "wallet" | "profile"
-  - Output: <aside class="sidebar-card">...</aside>
+  - Input: requestScope.activeMenu (String).
+           Expected values: "dashboard" | "products" | "publish" | "order" | "wallet".
+           If missing, the component defaults to "dashboard".
+  - Output: A self-contained <aside> navigation block with the matching item highlighted.
 --%>
 
 <script>
@@ -25,7 +28,7 @@
             head.appendChild(link);
         }
 
-        /* Font is optional; icons are inline SVG so no external icon font needed */
+        /* Optional font preload: SVG icons are embedded, so no icon font is needed here */
         ensureLink('pg-merchant-sidebar-preconnect-gfonts', 'https://fonts.googleapis.com', 'preconnect');
         ensureLink('pg-merchant-sidebar-preconnect-gstatic', 'https://fonts.gstatic.com', 'preconnect', { crossorigin: '' });
         ensureLink('pg-merchant-sidebar-font-poppins', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap', 'stylesheet');
@@ -33,11 +36,11 @@
 </script>
 
 <style>
-    /* ================= Merchant Sidebar UI (Self-contained) ================= */
+    /* ================= Merchant sidebar styles (scoped) ================= */
 
-    /* Scope everything to avoid leaking styles */
+    /* Scope everything under .pg-merchant-sidebar to avoid leaking styles into the page */
     .pg-merchant-sidebar {
-        /* component-local defaults (won't override a page that already defines these) */
+        /* Component-local defaults (only used if the page does not define these CSS variables) */
         --pg-merchant-primary: var(--primary, #FF9500);
         --pg-merchant-secondary: var(--secondary, #FF5E55);
         --pg-merchant-text-dark: var(--text-dark, #2d3436);
@@ -110,7 +113,7 @@
         text-align: left;
     }
 
-    /* Icon base: consistent square so items align nicely */
+    /* Icon base: fixed square so labels align */
     .pg-merchant-sidebar .menu-item .pg-mi {
         width: 30px;
         height: 30px;
@@ -136,7 +139,7 @@
         stroke-linejoin: round;
     }
 
-    /* Hard override for hostile global CSS (e.g. svg { fill: transparent } or svg { display:none }) */
+    /* Defensive overrides for aggressive global CSS that targets SVG elements */
     .pg-merchant-sidebar svg {
         display: block !important;
         visibility: visible !important;
@@ -149,7 +152,7 @@
         stroke-width: 2 !important;
     }
 
-    /* Even stronger: some resets target the SVG shape elements directly */
+    /* Some resets style the SVG shape elements directly (path/rect/etc.) */
     .pg-merchant-sidebar svg path,
     .pg-merchant-sidebar svg rect,
     .pg-merchant-sidebar svg circle,
@@ -175,6 +178,7 @@
         color: var(--pg-merchant-primary);
     }
 
+    /* Active navigation entry (matches requestScope.activeMenu) */
     .pg-merchant-sidebar .menu-item.active-view {
         background: linear-gradient(45deg, var(--pg-merchant-primary), var(--pg-merchant-secondary));
         color: #fff;
@@ -187,7 +191,7 @@
         color: #fff;
     }
 
-    /* Small active icon badge */
+    /* Decorative active badge behind the icon */
     .pg-merchant-sidebar .menu-item.active-view::after {
         content: "";
         position: absolute;
@@ -201,7 +205,7 @@
         pointer-events: none;
     }
 
-    /* Destructive action: Logout */
+    /* Destructive action styling (Logout) */
     .pg-merchant-sidebar .menu-item.menu-logout {
         color: #d63031;
     }
@@ -223,6 +227,7 @@
     }
 
     @media (max-width: 1024px) {
+        /* Compact layout: icons only */
         .pg-merchant-sidebar .sidebar-card { align-items: center; padding: 20px 10px; }
         .pg-merchant-sidebar .menu-item span,
         .pg-merchant-sidebar .menu-group-title { display: none; }
@@ -303,18 +308,7 @@
         </div>
 
         <div class="menu-group">
-            <div class="menu-group-title">Account</div>
-
-            <a class="menu-item ${active == 'profile' ? 'active-view' : ''}"
-               href="${pageContext.request.contextPath}/merchant/user/merchant_profile.jsp">
-                <span class="pg-mi" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M20 21a8 8 0 0 0-16 0"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </span>
-                <span>Profile</span>
-            </a>
+            <%-- Removed "Account" title and "Profile" link as requested --%>
 
             <a class="menu-item menu-logout" href="${pageContext.request.contextPath}/logout">
                 <span class="pg-mi" aria-hidden="true">

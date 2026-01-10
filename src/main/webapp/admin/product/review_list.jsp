@@ -30,6 +30,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body {
+            /* Optional page background gradient. Keep commented out unless you want the gradient. */
             /* background: linear-gradient(to bottom, #f0f2f5, #e0e5ec); */
             min-height: 100vh;
             color: #333;
@@ -102,7 +103,7 @@
         .badge-approved { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
         .badge-rejected { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
 
-        /* ⭐ 新增的标签样式 */
+        /* Badge styles for products that are new vs. previously approved and resubmitted (modification). */
         .badge-new {
             background: #e3f2fd;
             color: #1976d2;
@@ -210,12 +211,12 @@
         <%
         } else {
             for (ProductDTO p : products) {
-                // 原有状态样式
+                // Base status badge style
                 String badgeClass = "badge-pending";
                 if ("APPROVED".equals(p.getAuditStatus())) badgeClass = "badge-approved";
                 if ("REJECTED".equals(p.getAuditStatus())) badgeClass = "badge-rejected";
 
-                // ⭐ 判断是新商品还是修改
+                // Determine whether this row represents a new listing or a modification submission
                 boolean isModification = p.isHasBeenApproved();
                 String typeLabel = isModification ? "Modification" : "New Listing";
                 String typeClass = isModification ? "badge-update" : "badge-new";

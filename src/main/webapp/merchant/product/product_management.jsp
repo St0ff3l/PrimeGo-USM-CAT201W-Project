@@ -5,7 +5,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
     // ==========================================
-    // 1. 权限检查
+    // 1. Authorization check
     // ==========================================
     User user = (User) session.getAttribute("user");
 
@@ -22,7 +22,7 @@
     }
 
     // ==========================================
-    // 2. 获取真实数据
+    // 2. Load product data
     // ==========================================
     ProductDAO productDAO = new ProductDAO();
     List<ProductDTO> productList = productDAO.getProductsByMerchantId(user.getId());
@@ -41,7 +41,7 @@
 
     <style>
         /* =========================================
-           1. Dashboard 通用布局样式
+           1. Shared dashboard layout styles
            ========================================= */
         :root {
             --bg-color: #F3F6F9;
@@ -87,16 +87,16 @@
         .main-content { display: flex; flex-direction: column; gap: 25px; }
 
         /* =========================================
-           2. Product Manager 样式 + 全局入场动画
+           2. Product Manager styles + global entrance animations
            ========================================= */
 
-        /* 定义动画关键帧 */
+        /* Define animation keyframes */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 1. 顶部标题栏动画 */
+        /* 1. Header animation */
         .page-header {
             background: var(--pg-glass-bg-055);
             backdrop-filter: blur(var(--pg-glass-blur));
@@ -107,15 +107,15 @@
             padding: 25px 30px;
             display: flex; justify-content: space-between; align-items: center;
 
-            /* 新增动画属性 */
+            /* Animation settings */
             opacity: 0;
             animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            animation-delay: 0s; /* 立即执行 */
+            animation-delay: 0s; /* Run immediately */
         }
         .page-header h1 { font-size: 1.5rem; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
         .page-header p { color: var(--text-gray); font-size: 0.9rem; }
 
-        /* 2. 搜索工具栏动画 */
+        /* 2. Toolbar animation */
         .toolbar {
             background: var(--pg-glass-bg-055);
             backdrop-filter: blur(var(--pg-glass-blur));
@@ -126,10 +126,10 @@
             border-radius: var(--card-radius);
             display: flex; gap: 15px; align-items: center;
 
-            /* 新增动画属性 */
+            /* Animation settings */
             opacity: 0;
             animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            animation-delay: 0.1s; /* 稍微延迟，等标题出来后再出来 */
+            animation-delay: 0.1s; /* Slight delay after header */
         }
 
         .btn-publish {
@@ -152,7 +152,7 @@
             display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;
         }
 
-        /* 3. 商品卡片动画 */
+        /* 3. Product card animation */
         .product-card {
             background: var(--pg-glass-bg-055);
             backdrop-filter: blur(var(--pg-glass-blur));
@@ -166,11 +166,11 @@
             display: flex;
             flex-direction: column;
 
-            /* 默认隐藏 */
+            /* Hidden by default */
             opacity: 0;
-            /* 入场动画 */
+            /* Entrance animation */
             animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            /* Hover 过渡 */
+            /* Hover transition */
             transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
 
@@ -276,7 +276,7 @@
             } else {
                 int index = 0;
                 for (ProductDTO p : productList) {
-                    // 状态判断逻辑
+                    // Resolve status for display
                     String displayStatus = "";
                     String statusClass = "";
                     String statusValueForUi = "";
@@ -303,7 +303,7 @@
                         statusValueForUi = "active";
                     }
 
-                    // 动画延迟
+                    // Staggered animation delay
                     String delayStyle = String.format("animation-delay: %.1fs;", 0.2 + (index * 0.1));
             %>
             <div class="product-card"

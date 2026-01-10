@@ -8,19 +8,19 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <%
-    // 权限检查
+    // Permission check
     User user = (User) session.getAttribute("user");
     if (user == null || !"MERCHANT".equals(user.getRole().toString())) {
         response.sendRedirect(request.getContextPath() + "/public/login.jsp");
         return;
     }
 
-    // 统计数字
+    // Statistics
     int toShipCount = 0;
     int shippedCount = 0;
     int completedCount = 0;
     int cancelledCount = 0;
-    int returnCount = 0; // ⭐ 新增：售后/退款单数量（含被拒绝的 SHIPPED）
+    int returnCount = 0; // After-sales/refund order count (including rejected SHIPPED)
 
     List<Order> ordersForCount = (List<Order>) request.getAttribute("orders");
     request.setAttribute("orders", ordersForCount);
@@ -28,13 +28,13 @@
     if (ordersForCount != null) {
         for (Order o : ordersForCount) {
             String st = o.getOrderStatus();
-            // ⭐ 获取拒绝次数
+            // Get rejection count
             int rCount = o.getRejectionCount();
 
             if ("PAID".equalsIgnoreCase(st)) {
                 toShipCount++;
             } else if ("SHIPPED".equalsIgnoreCase(st)) {
-                // ⭐ 关键修改：如果是 SHIPPED 且被拒绝过，算作 Return 类；否则算正常 Shipped
+                // If SHIPPED and rejected, count as return; otherwise count as normal Shipped
                 if (rCount > 0) {
                     returnCount++;
                 } else {
@@ -121,7 +121,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
             transition: transform 0.2s;
         }
-        /* ⭐ 不同状态给不同颜色的边框，增强识别度 */
+        /* Different border colors for different statuses */
         .order-card[data-status="RETURN_REQUESTED"] { border-left-color: var(--danger); }
         .order-card[data-status="REFUNDED"] { border-left-color: var(--text-gray); }
 
@@ -137,10 +137,10 @@
         .status-completed { background: #d4edda; color: #155724; }
         .status-pending { background: #f8d7da; color: #721c24; }
         .status-cancelled { background: #e2e3e5; color: #41464b; }
-        /* ⭐ 新增状态样式 */
+        /* Status styles */
         .status-return { background: #ffeaa7; color: #d35400; }
         .status-refunded { background: #fab1a0; color: #c0392b; }
-        /* ⭐ 新增：拒绝状态样式 */
+        /* Rejection status style */
         .status-rejected { background: #ffeaa7; color: #d35400; border: 1px solid #d35400; }
 
         .address-box {
@@ -155,7 +155,7 @@
         }
         .btn-ship:hover { background: var(--primary); transform: translateY(-2px); }
 
-        /* ⭐ 处理退款按钮 */
+        /* Refund handling button */
         .btn-handle-refund {
             background: white; border: 1px solid var(--danger); color: var(--danger);
             padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;
@@ -191,7 +191,7 @@
 
         .metrics-bar {
             display: grid;
-            /* ⭐ 自动适应宽度，适配增加的按钮 */
+            /* Responsive grid to fit all buttons */
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 14px; margin: 0 0 20px 0;
         }
@@ -269,7 +269,7 @@
             </c:if>
 
             <c:forEach var="order" items="${orders}">
-                <%-- ⭐ 1. 增加 data-rejection-count 属性，供 JS 筛选用 --%>
+                <%-- Add data-rejection-count attribute for JS filtering --%>
                 <div class="order-card"
                      data-status="${order.orderStatus}"
                      data-rejection-count="${order.rejectionCount}"
@@ -281,7 +281,7 @@
                             <div class="order-date"><i class="ri-time-line"></i> ${order.createdAt}</div>
                         </div>
                         <div>
-                            <%-- ✅ Right-top status: prefer refund sub-status when exists --%>
+                            <%-- Right-top status: prefer refund sub-status when exists --%>
                             <c:choose>
                                 <c:when test="${order.rejectionCount > 0 && order.refundStatus == 'REJECTED'}">
                                     <span class="status-badge status-rejected">Refund Rejected</span>
@@ -318,7 +318,7 @@
                         </div>
                     </div>
 
-                    <%-- ✅ Show return flow info directly on card (no need to open modal) --%>
+                    <%-- Show return flow info directly on card --%>
                     <c:if test="${order.refundType == 'RETURN_AND_REFUND' && (order.refundStatus == 'WAITING_RETURN' || order.refundStatus == 'RETURN_SHIPPED')}">
                         <div style="background:#f8f9fa; padding: 12px; border-radius: 10px; margin: 0 0 15px 0;">
                             <div style="font-weight: 700; color:#2d3436; margin-bottom: 6px;">
@@ -365,14 +365,14 @@
                         </div>
                     </div>
 
-                        <%-- ⭐ 如果用户填写了退款理由，在这里显示一下，方便快速查看 --%>
+                    <%-- Show refund reason if provided --%>
                     <c:if test="${not empty order.refundReason}">
                         <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
                             <strong>Customer's Reason:</strong> ${order.refundReason}
                         </div>
                     </c:if>
 
-                    <%-- ⭐ 3. 如果有拒绝记录，显示拒绝理由（如果字段为空也给个占位） --%>
+                    <%-- Show rejection reason if exists --%>
                     <c:if test="${order.rejectionCount > 0}">
                         <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
                             <strong>Rejection Reason:</strong>
@@ -393,14 +393,14 @@
                             <span style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">$${order.totalAmount}</span>
                         </div>
 
-                            <%-- 发货按钮 --%>
+                        <%-- Ship button --%>
                         <c:if test="${order.orderStatus == 'PAID'}">
                             <button type="button" class="btn-ship" onclick="openShipModal('${order.ordersId}')">
                                 <i class="ri-truck-line"></i> Ship Order
                             </button>
                         </c:if>
 
-                            <%-- ⭐ 处理售后按钮 --%>
+                        <%-- Handle refund button --%>
                         <c:if test="${order.orderStatus == 'RETURN_REQUESTED' || order.refundStatus == 'WAITING_RETURN' || order.refundStatus == 'RETURN_SHIPPED'}">
                             <button type="button" class="btn-handle-refund"
                                     onclick="openRefundModal('${order.ordersId}', '${order.refundReason}', '${order.refundStatus}', '${order.refundType}', '${order.returnTrackingNumber}')">
@@ -440,7 +440,7 @@
     </div>
 </div>
 
-<%-- ✅ 统一使用共享退款弹窗（包含 openRefundModal/submitRefund 等 JS） --%>
+<%-- Use shared refund modal (includes openRefundModal/submitRefund JS) --%>
 <jsp:include page="../layout/order_merchant_refund.jsp" />
 
 <script>
@@ -480,7 +480,7 @@
             else if (filter === 'completed') show = (st === 'COMPLETED');
             else if (filter === 'cancelled') show = (st === 'CANCELLED');
             else if (filter === 'return') {
-                // ✅ include refund sub-status flow
+                // Include refund sub-status flow
                 show = (
                         st === 'RETURN_REQUESTED' ||
                         st === 'REFUNDED' ||

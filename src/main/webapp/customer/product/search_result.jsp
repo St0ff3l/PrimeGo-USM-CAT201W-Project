@@ -37,7 +37,7 @@
     ProductDAO productDAO = new ProductDAO();
     List<ProductDTO> productList = productDAO.searchProductsWithFilter(keyword, categoryId, minPrice, maxPrice);
 
-    // ⭐ 新增：过滤逻辑，只保留库存大于 0 的商品
+    // Filter logic: only keep products with stock greater than 0
     List<ProductDTO> displayList = new ArrayList<>();
     if (productList != null) {
         for (ProductDTO p : productList) {
@@ -76,28 +76,28 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { color: #333; position: relative; }
 
-        /* 搜索栏区域 */
+        /* Search bar area */
         .search-bar-container { margin: 140px auto 30px; text-align: center; max-width: 800px; padding: 0 20px; }
         .search-input { width: 70%; padding: 15px 25px; border-radius: 30px; border: none; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); outline: none; font-size: 1rem; }
         .btn-search { padding: 15px 30px; border-radius: 30px; border: none; background: #333; color: white; cursor: pointer; margin-left: 10px; font-weight: 600; }
 
         .main-layout { max-width: 1200px; margin: 0 auto 50px; padding: 0 20px; display: grid; grid-template-columns: 250px 1fr; gap: 30px; align-items: start; }
 
-        /* 侧边栏 */
+        /* Sidebar */
         .sidebar { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.6); }
         .filter-title { font-weight: 700; margin-bottom: 15px; display: block; }
         .filter-option { display: block; margin-bottom: 10px; cursor: pointer; color: #555; text-decoration: none; transition: 0.2s; }
         .filter-option:hover { color: #FF3B30; padding-left: 5px; }
         .filter-option.active { color: #FF3B30; font-weight: 600; }
 
-        /* 商品网格 */
+        /* Product grid */
         .product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 25px;
         }
 
-        /* 修改：确保 a 标签作为卡片容器时的样式 */
+        /* Ensure anchor tag styles when used as a card container */
         .product-card {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
@@ -107,8 +107,8 @@
             transition: transform 0.3s, box-shadow 0.3s;
             display: flex;
             flex-direction: column;
-            text-decoration: none; /* 移除超链接下划线 */
-            color: inherit;       /* 继承文字颜色 */
+            text-decoration: none; /* Remove hyperlink underline */
+            color: inherit;       /* Inherit text color */
             height: 100%;
         }
 
@@ -234,7 +234,7 @@
         <h3 style="margin-bottom:20px; color:#555;"><%= resultTitle %></h3>
 
         <div class="product-grid">
-            <%-- ⭐ 修改：使用 displayList (已过滤库存) 进行判空和遍历 --%>
+            <%-- Check and iterate over displayList (filtered by stock) --%>
             <% if (displayList.isEmpty()) { %>
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
                 <h3>No products found.</h3>
@@ -243,7 +243,7 @@
             <% } else {
                 for (ProductDTO p : displayList) {
             %>
-            <%-- 修改点：将整个 card 包装在指向 product_detail.jsp 的 a 标签中 --%>
+            <%-- Wrap the entire card in an anchor tag pointing to product_detail.jsp --%>
             <a href="product_detail.jsp?id=<%= p.getProductId() %>" class="product-card">
                 <div class="product-img-container">
                     <img src="<%= (p.getPrimaryImageUrl() != null && !p.getPrimaryImageUrl().isEmpty()) ? request.getContextPath() + "/" + p.getPrimaryImageUrl() : request.getContextPath() + "/assets/images/product-placeholder.svg" %>"
@@ -259,7 +259,7 @@
                                 ? p.getProductDescription().substring(0, 50) + "..."
                                 : (p.getProductDescription() != null ? p.getProductDescription() : "") %>
                     </p>
-                    <%-- 注意：为了防止点击按钮也触发卡片的跳转，可以加上 stopPropagation --%>
+                    <%-- Note: stopPropagation is handled or preventDefault used to avoid card click when button is clicked --%>
                     <div onclick="event.preventDefault(); addToCart(<%= p.getProductId() %>);" class="btn-add-cart">
                         Add to Cart
                     </div>

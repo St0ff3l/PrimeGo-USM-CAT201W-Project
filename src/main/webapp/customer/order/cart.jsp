@@ -5,15 +5,15 @@
 <%@ page import="com.primego.user.model.User" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.math.BigDecimal" %>
-<%-- ⭐ 必须添加这行 JSTL 引用，否则 c:if 不起作用 --%>
+<%-- JSTL core taglib (required for conditional rendering with c:if) --%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%
-    // 1. Try to get cart from session
+    // Resolve cart state from the session and (if logged in) refresh from the database
     Cart cart = (Cart) session.getAttribute("cart");
     User user = (User) session.getAttribute("user");
 
-    // 2. If session cart is empty/null but user is logged in, try to fetch from DB
+    // If the user is logged in, refresh the cart from DB to keep it consistent across sessions/devices
     if (user != null) {
         CartDAO cartDAO = new CartDAO();
         // Always refresh from DB for logged-in users to ensure consistency
@@ -45,10 +45,10 @@
         .container { max-width: 1000px; margin: 140px auto 0; padding: 0 20px; }
         .page-title { font-size: 2rem; margin-bottom: 30px; font-weight: 700; color: #2d3436; border-left: 5px solid #FF9500; padding-left: 15px; }
 
-        /* 购物车列表容器 */
+        /* Cart list container */
         .cart-list { display: flex; flex-direction: column; gap: 20px; }
 
-        /* 单个商品卡片 (长条形) */
+        /* Cart item card (horizontal layout) */
         .cart-item {
             background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(20px);
@@ -75,7 +75,7 @@
         .btn-delete { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ddd; background: white; color: #666; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem; line-height: 1; }
         .btn-delete:hover { background: #FF3B30; color: white; border-color: #FF3B30; }
 
-        /* 底部结算栏 */
+        /* Sticky checkout bar */
         .checkout-bar {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 1000px;
@@ -93,7 +93,7 @@
             box-shadow: 0 4px 15px rgba(255, 59, 48, 0.4);
             text-decoration: none;
         }
-        /* 禁用按钮样式 */
+        /* Disabled button styling */
         .btn-checkout:disabled {
             background: #ccc;
             cursor: not-allowed;
@@ -112,7 +112,7 @@
 <div class="container">
     <h1 class="page-title">My Cart <span style="font-size:1rem; color:#666; font-weight:400;">(<%= items.size() %> Items)</span></h1>
 
-    <%-- ⭐ 2. 修正错误提示逻辑：读取 Session 中的 cartError 并在显示后清除 --%>
+    <%-- Read cartError from session and clear it after displaying --%>
     <c:if test="${not empty sessionScope.cartError}">
         <div style="background-color: #ffebee; color: #c62828; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ef9a9a; display: flex; align-items: center; gap: 10px;">
             <i class="ri-error-warning-line" style="font-size: 1.2rem;"></i>
@@ -130,13 +130,13 @@
         </div>
         <% } else {
             for (CartItem item : items) {
-                // ⭐ 获取库存并判断状态
+                // Read stock and determine availability for UI/checkout rules
                 int stock = item.getProduct().getProductStockQuantity();
                 boolean isOutOfStock = (stock <= 0);
         %>
-        <%-- ⭐ 如果缺货，背景变灰 --%>
+        <%-- If out of stock, dim the item row --%>
         <div class="cart-item" style="<%= isOutOfStock ? "opacity: 0.6; background: #f9f9f9;" : "" %>">
-            <%-- ⭐ Checkbox: 如果缺货则禁用 --%>
+            <%-- Checkbox: disabled when out of stock --%>
             <input type="checkbox" class="item-checkbox"
                    value="<%= item.getProduct().getProductId() %>"
                 <%= isOutOfStock ? "disabled" : "checked" %>
@@ -152,7 +152,7 @@
                      alt="No Image">
                 <% } %>
 
-                <%-- ⭐ 图片上的 Sold Out 标记 --%>
+                <%-- Overlay badge when out of stock --%>
                 <% if (isOutOfStock) { %>
                 <div style="position:absolute; background:rgba(0,0,0,0.7); color:white; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px;">Sold Out</div>
                 <% } %>
@@ -170,7 +170,7 @@
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="productId" value="<%= item.getProduct().getProductId() %>">
 
-                            <%-- ⭐ Input: 增加 max 属性，缺货则禁用 --%>
+                            <%-- Quantity input: enforce max stock; disable when out of stock --%>
                             <input type="number" name="quantity" min="1"
                                    max="<%= stock %>"
                                    value="<%= item.getQuantity() %>"
@@ -180,7 +180,7 @@
                         </form>
                     </div>
 
-                    <%-- ⭐ 显示剩余库存提示 --%>
+                    <%-- Stock hint (emphasize low stock) --%>
                     <div style="font-size: 0.85rem; color: <%= stock < 5 ? "#e74c3c" : "#7f8c8d" %>;">
                         <% if (isOutOfStock) { %>
                         <span style="color: #e74c3c; font-weight: bold;">Out of Stock</span>
@@ -214,7 +214,7 @@
         let total = 0;
         document.querySelectorAll('.cart-item').forEach(item => {
             const checkbox = item.querySelector('.item-checkbox');
-            // 只计算被选中的（disabled 的不会被选中）
+            // Only include checked items (disabled items cannot be checked)
             if(checkbox.checked) {
                 const price = parseFloat(item.querySelector('.item-price').dataset.price);
                 total += price;
@@ -223,16 +223,16 @@
         document.getElementById('totalPrice').innerText = "RM " + total.toFixed(2);
     }
 
-    // 初始化时执行一次，以防有默认没选中的情况（虽然JSP里设了默认checked，但disabled的除外）
+    // Initialize once on load so the displayed total always matches the default selections
     window.onload = function() {
         updateTotal();
     };
 
     function proceedToCheckout() {
         const form = document.getElementById('checkoutForm');
-        form.innerHTML = ''; // 清空旧数据
+        form.innerHTML = ''; // Clear any previous selection payload
 
-        // 获取所有被勾选的复选框
+        // Collect all selected items
         const checkboxes = document.querySelectorAll('.item-checkbox:checked');
 
         if (checkboxes.length === 0) {
@@ -240,16 +240,16 @@
             return;
         }
 
-        // 为每个选中的商品创建一个隐藏的 input
+        // Add one hidden input per selected product ID
         checkboxes.forEach(cb => {
             const input = document.createElement('input');
             input.type = 'hidden';
-            input.name = 'selectedProductIds'; // 关键参数名
+            input.name = 'selectedProductIds'; // Must match what the confirmation page expects
             input.value = cb.value;
             form.appendChild(input);
         });
 
-        form.submit(); // 提交到 order_confirmation.jsp
+        form.submit(); // Post to order_confirmation.jsp
     }
 </script>
 
