@@ -17,6 +17,12 @@ import java.util.List;
 
 public class UserDAO {
 
+    /**
+     * Finds a user by their username.
+     *
+     * @param username The username to search for.
+     * @return The User object if found, null otherwise.
+     */
     public User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -38,6 +44,13 @@ public class UserDAO {
         return null;
     }
 
+    /**
+     * Validates user credentials.
+     *
+     * @param username The username.
+     * @param password The raw password.
+     * @return The User object if credentials are valid, null otherwise.
+     */
     public User validateCredentials(String username, String password) {
         System.out.println("[DEBUG] Validating credentials for: " + username);
         User user = findByUsername(username);
@@ -51,6 +64,14 @@ public class UserDAO {
         return null;
     }
 
+    /**
+     * Creates a new user with the specified role (currently defaults to CUSTOMER
+     * logic in profile creation).
+     *
+     * @param user  The user object containing username, password, role, etc.
+     * @param email The email address for the customer profile.
+     * @throws SQLException If a database error occurs.
+     */
     public void createUser(User user, String email) throws SQLException {
         String insertUserSql = "INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, ?)";
         String insertProfileSql = "INSERT INTO customer_profiles (user_id, email, full_name, phone) VALUES (?, ?, ?, '')";
@@ -110,6 +131,13 @@ public class UserDAO {
         }
     }
 
+    /**
+     * Creates a new merchant user and their associated merchant profile.
+     *
+     * @param user    The user object.
+     * @param profile The merchant profile details.
+     * @throws SQLException If a database error occurs.
+     */
     public void createMerchant(User user, MerchantProfile profile) throws SQLException {
         String insertUserSql = "INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, ?)";
         String insertMerchantSql = "INSERT INTO merchant_profiles (user_id, store_name, contact_info) VALUES (?, ?, ?)";
@@ -166,6 +194,11 @@ public class UserDAO {
         }
     }
 
+    /**
+     * Retrieves all users from the database.
+     *
+     * @return A list of all User objects.
+     */
     public List<User> findAllUsers() {
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM users ORDER BY id DESC";
@@ -194,6 +227,13 @@ public class UserDAO {
         return user;
     }
 
+    /**
+     * Updates a user's password.
+     *
+     * @param userId      The ID of the user.
+     * @param newPassword The new raw password (will be hashed).
+     * @return true if the update was successful, false otherwise.
+     */
     public boolean updatePassword(int userId, String newPassword) {
         String sql = "UPDATE users SET password = ? WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -207,6 +247,13 @@ public class UserDAO {
         }
     }
 
+    /**
+     * Updates a user's username.
+     *
+     * @param userId      The ID of the user.
+     * @param newUsername The new username.
+     * @return true if the update was successful, false otherwise.
+     */
     public boolean updateUsername(int userId, String newUsername) {
         String sql = "UPDATE users SET username = ? WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -222,6 +269,11 @@ public class UserDAO {
         }
     }
 
+    /**
+     * Counts the total number of users.
+     *
+     * @return The total count of users.
+     */
     public int countUsers() {
         String sql = "SELECT COUNT(*) FROM users";
         try (Connection conn = DBUtil.getConnection();
@@ -236,6 +288,12 @@ public class UserDAO {
         return 0;
     }
 
+    /**
+     * Counts the number of users with a specific role.
+     *
+     * @param role The role to filter by.
+     * @return The count of users with the specified role.
+     */
     public int countUsersByRole(Role role) {
         String sql = "SELECT COUNT(*) FROM users WHERE role = ?";
         try (Connection conn = DBUtil.getConnection();

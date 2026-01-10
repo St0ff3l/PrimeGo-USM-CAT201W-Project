@@ -1,5 +1,9 @@
 package com.primego.user.model;
 
+/**
+ * Represents the profile of a customer.
+ * Contains personal information, default address, and payment security details.
+ */
 public class CustomerProfile {
     private int userId;
     private String fullName;
@@ -11,6 +15,16 @@ public class CustomerProfile {
     public CustomerProfile() {
     }
 
+    /**
+     * Constructs a new CustomerProfile.
+     *
+     * @param userId         The associated user ID.
+     * @param fullName       The full name of the customer.
+     * @param email          The email address.
+     * @param phone          The phone number.
+     * @param defaultAddress The default shipping address.
+     * @param paymentPin     The hashed payment PIN for secure transactions.
+     */
     public CustomerProfile(int userId, String fullName, String email, String phone, UserAddress defaultAddress,
             String paymentPin) {
         this.userId = userId;
@@ -53,7 +67,12 @@ public class CustomerProfile {
         this.defaultAddress = defaultAddress;
     }
 
-    // Helper to get First Name (everything before the last space)
+    /**
+     * Extracts the first name from the full name.
+     *
+     * @return The substring before the last space, or the full name if no space
+     *         exists.
+     */
     public String getFirstName() {
         if (fullName == null || fullName.isEmpty())
             return "";
@@ -63,7 +82,12 @@ public class CustomerProfile {
         return fullName.substring(0, lastSpace);
     }
 
-    // Helper to get Last Name (everything after the last space)
+    /**
+     * Extracts the last name from the full name.
+     *
+     * @return The substring after the last space, or an empty string if no space
+     *         exists.
+     */
     public String getLastName() {
         if (fullName == null || fullName.isEmpty())
             return "";
@@ -89,7 +113,12 @@ public class CustomerProfile {
         this.phone = phone;
     }
 
-    // Helper to get Area Code
+    /**
+     * Extracts the area code from the phone number.
+     * Assumes format "AreaCode Number".
+     *
+     * @return The area code, or empty string if format is invalid.
+     */
     public String getPhoneAreaCode() {
         if (phone == null || !phone.contains(" "))
             return "";
@@ -104,7 +133,11 @@ public class CustomerProfile {
         return phone.substring(phone.indexOf(" ") + 1);
     }
 
+    // =========================================================================
     // DELEGATION METHODS FOR BACKWARD COMPATIBILITY
+    // Accessing fields directly from the defaultAddress object if available.
+    // =========================================================================
+
     // Accessing fields from defaultAddress
 
     public String getStreet() {
@@ -139,7 +172,11 @@ public class CustomerProfile {
         return "Malaysia"; // Default or not in schema. Schema has no country column.
     }
 
-    // Helper for display
+    /**
+     * Gets a formatted full address string for display.
+     *
+     * @return The full address string, or "No address set".
+     */
     public String getFormattedAddress() {
         if (defaultAddress == null)
             return "No address set";

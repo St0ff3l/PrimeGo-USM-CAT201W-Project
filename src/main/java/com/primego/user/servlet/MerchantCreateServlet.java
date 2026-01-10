@@ -14,11 +14,17 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 
+/**
+ * Servlet for creating new merchant accounts by admin.
+ */
 @WebServlet("/admin/merchant/create")
 public class MerchantCreateServlet extends HttpServlet {
 
     private UserDAO userDAO = new UserDAO();
 
+    /**
+     * Renders the merchant creation form.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
@@ -36,6 +42,9 @@ public class MerchantCreateServlet extends HttpServlet {
         req.getRequestDispatcher("/admin/merchant_create.jsp").forward(req, resp);
     }
 
+    /**
+     * Processes the creation of a new merchant account.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

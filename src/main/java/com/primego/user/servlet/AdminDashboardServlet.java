@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Servlet for the Admin Dashboard.
+ * Aggregates statistics, user management, and system logs for the admin view.
+ */
 @WebServlet("/admin/dashboard")
 public class AdminDashboardServlet extends HttpServlet {
     private UserDAO userDAO = new UserDAO();
@@ -32,6 +36,9 @@ public class AdminDashboardServlet extends HttpServlet {
     private OrderDAO orderDAO = new OrderDAO();
     private LogDAO logDAO = new LogDAO();
 
+    /**
+     * Renders the admin dashboard with real-time statistics and data.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
@@ -104,6 +111,9 @@ public class AdminDashboardServlet extends HttpServlet {
         req.getRequestDispatcher("/admin/admin_dashboard.jsp").forward(req, resp);
     }
 
+    /**
+     * Handles admin profile updates and password changes from the dashboard.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

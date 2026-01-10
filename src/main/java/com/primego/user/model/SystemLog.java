@@ -3,6 +3,10 @@ package com.primego.user.model;
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Represents a system log entry.
+ * Used for tracking administrative actions and system events.
+ */
 public class SystemLog {
     private int id;
     private String level;
@@ -12,6 +16,14 @@ public class SystemLog {
     public SystemLog() {
     }
 
+    /**
+     * Constructs a new SystemLog.
+     *
+     * @param id        The log ID.
+     * @param level     The severity level (e.g., INFO, ERROR).
+     * @param message   The log message.
+     * @param createdAt The timestamp when the log was created.
+     */
     public SystemLog(int id, String level, String message, Timestamp createdAt) {
         this.id = id;
         this.level = level;
@@ -51,7 +63,12 @@ public class SystemLog {
         this.createdAt = createdAt;
     }
 
-    // Helper for JSP to get formatted time string
+    /**
+     * Formats the timestamp into a readable time string (hh:mm a).
+     * Useful for JSP display.
+     *
+     * @return The formatted time string, or empty if null.
+     */
     public String getTime() {
         if (createdAt == null)
             return "";

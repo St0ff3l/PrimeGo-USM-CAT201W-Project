@@ -8,6 +8,9 @@ import java.util.List;
 
 public class LogDAO {
 
+    /**
+     * Initializes the LogDAO and ensures the system logs table exists.
+     */
     public LogDAO() {
         createTableIfNotExists();
     }
@@ -27,6 +30,12 @@ public class LogDAO {
         }
     }
 
+    /**
+     * Adds a new system log entry.
+     *
+     * @param level   The log level (e.g., INFO, ERROR).
+     * @param message The log message content.
+     */
     public void addLog(String level, String message) {
         String sql = "INSERT INTO system_logs (level, message) VALUES (?, ?)";
         try (Connection conn = DBUtil.getConnection();
@@ -39,6 +48,12 @@ public class LogDAO {
         }
     }
 
+    /**
+     * Retrieves the most recent log entries.
+     *
+     * @param limit The maximum number of logs to retrieve.
+     * @return A list of SystemLog objects, ordered by creation time descending.
+     */
     public List<SystemLog> getRecentLogs(int limit) {
         List<SystemLog> logs = new ArrayList<>();
         String sql = "SELECT * FROM system_logs ORDER BY created_at DESC LIMIT ?";

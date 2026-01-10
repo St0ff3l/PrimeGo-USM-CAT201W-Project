@@ -2,6 +2,10 @@ package com.primego.user.model;
 
 import java.sql.Timestamp;
 
+/**
+ * Represents a user's shipping address.
+ * Includes recipient details and full location hierarchy.
+ */
 public class UserAddress {
     private int id;
     private int userId;
@@ -18,6 +22,19 @@ public class UserAddress {
     public UserAddress() {
     }
 
+    /**
+     * Constructs a new UserAddress.
+     *
+     * @param id               The address ID.
+     * @param userId           The ID of the user owning this address.
+     * @param recipientName    The name of the recipient.
+     * @param phone            The contact phone number.
+     * @param province         The state/province.
+     * @param city             The city/municipality.
+     * @param district         The district/area.
+     * @param detail           The detailed address (street, unit, etc.).
+     * @param isDefaultAddress Whether this is the default address.
+     */
     public UserAddress(int id, int userId, String recipientName, String phone, String province, String city,
             String district, String detail, boolean isDefaultAddress) {
         this.id = id;
@@ -120,7 +137,11 @@ public class UserAddress {
         this.updatedAt = updatedAt;
     }
 
-    // Helper to get formatted full address
+    /**
+     * Combines address components into a single formatted string.
+     *
+     * @return The full address string (Detail, District, City, Province).
+     */
     public String getFullAddress() {
         StringBuilder sb = new StringBuilder();
         if (detail != null)

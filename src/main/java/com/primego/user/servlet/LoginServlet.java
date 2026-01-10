@@ -12,18 +12,27 @@ import javax.servlet.http.HttpSession;
 
 import java.io.IOException;
 
+/**
+ * Servlet handling user login.
+ */
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
     private UserDAO userDAO = new UserDAO();
 
+    /**
+     * Serves the login page.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.getRequestDispatcher("/public/login.jsp").forward(req, resp);
     }
 
+    /**
+     * Processes login credentials.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // 1. 设置请求编码，防止中文乱码
+        // 1. Set request encoding to prevent character encoding issues
         req.setCharacterEncoding("UTF-8");
 
         String username = req.getParameter("username");
@@ -46,7 +55,7 @@ public class LoginServlet extends HttpServlet {
             }
 
         } else {
-            // 4. 登录失败
+            // 4. Login failed
             req.setAttribute("error", "Invalid username or password");
             req.getRequestDispatcher("/public/login.jsp").forward(req, resp);
         }

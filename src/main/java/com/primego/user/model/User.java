@@ -2,6 +2,10 @@ package com.primego.user.model;
 
 import java.sql.Timestamp;
 
+/**
+ * Represents a user in the system.
+ * This is the core model for authentication and authorization.
+ */
 public class User {
     private int id;
     private String username;
@@ -11,14 +15,24 @@ public class User {
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
+    /**
+     * Default constructor.
+     */
     public User() {
     }
 
+    /**
+     * Constructs a new User with specified credentials and role.
+     *
+     * @param username The username.
+     * @param password The password (should be hashed before storage).
+     * @param role     The role of the user.
+     */
     public User(String username, String password, Role role) {
         this.username = username;
         this.password = password;
         this.role = role;
-        this.status = 1; // Default active
+        this.status = 1; // Default active status
     }
 
     // Getters and Setters

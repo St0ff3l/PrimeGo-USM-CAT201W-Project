@@ -13,13 +13,20 @@ import javax.servlet.http.HttpSession;
 
 import java.io.IOException;
 
+/**
+ * Servlet handling user profile viewing and updates.
+ * Supports different views for Customer, Merchant, and Admin.
+ */
 @WebServlet("/profile")
 public class ProfileServlet extends HttpServlet {
 
     private ProfileDAO profileDAO = new ProfileDAO();
     private UserDAO userDAO = new UserDAO();
-    // ❌ 已删除 OrderDAO，不再需要处理订单
+    // Removed OrderDAO, no longer needed for order handling
 
+    /**
+     * Renders the user profile page based on role.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
@@ -37,8 +44,8 @@ public class ProfileServlet extends HttpServlet {
                 // Fetch addresses for the Addresses tab
                 req.setAttribute("addresses", new com.primego.user.dao.AddressDAO().getAddressesByUserId(userId));
 
-                // ❌ 已删除：获取订单的逻辑 (Handle Order Filtering)
-                // 现在的订单列表由 CustomerOrderServlet (/customer/orders) 负责处理
+                // Removed: Order retrieval logic (Handle Order Filtering)
+                // Now handled by CustomerOrderServlet (/customer/orders)
 
                 req.getRequestDispatcher("/customer/user/customer_profile.jsp").forward(req, resp);
                 break;
@@ -53,6 +60,9 @@ public class ProfileServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Handles profile updates (info, password, PIN).
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
@@ -64,7 +74,7 @@ public class ProfileServlet extends HttpServlet {
         User user = (User) session.getAttribute("user");
         String action = req.getParameter("action");
 
-        // 1. 更新个人资料
+        // 1. Update personal profile
         if ("updateCustomerProfile".equals(action)) {
             String newUsername = req.getParameter("username");
 
@@ -110,7 +120,7 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("messageType", "error");
             }
         }
-        // 2. 修改密码
+        // 2. Change password
         else if ("changePassword".equals(action)) {
             String oldPassword = req.getParameter("oldPassword");
             String newPassword = req.getParameter("newPassword");
@@ -137,7 +147,7 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("settingsMessageType", "error");
             }
         }
-        // 3. 更新/设置支付 PIN
+        // 3. Update/Set Payment PIN
         else if ("updatePin".equals(action)) {
             String pin1 = req.getParameter("pin1");
             String pin2 = req.getParameter("pin2");
@@ -196,8 +206,8 @@ public class ProfileServlet extends HttpServlet {
             }
         }
 
-        // ❌ 已删除：confirmReceipt (确认收货) 逻辑
-        // 该逻辑已移动至 CustomerOrderServlet
+        // Removed: confirmReceipt logic
+        // Logic moved to CustomerOrderServlet
 
         doGet(req, resp); // Reload page
     }

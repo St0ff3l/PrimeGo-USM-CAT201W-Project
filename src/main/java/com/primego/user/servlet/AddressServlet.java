@@ -13,10 +13,18 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Servlet handling user address management (CRUD).
+ * Supports adding, updating, deleting, and setting default addresses.
+ */
 @WebServlet("/user/address")
 public class AddressServlet extends HttpServlet {
     private AddressDAO addressDAO = new AddressDAO();
 
+    /**
+     * Handles GET requests to list addresses.
+     * Often used via AJAX or internal includes.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
@@ -40,6 +48,9 @@ public class AddressServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Handles POST requests for address actions: add, update, delete, setDefault.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");

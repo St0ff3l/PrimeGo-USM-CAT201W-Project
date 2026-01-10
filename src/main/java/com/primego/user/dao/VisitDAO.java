@@ -6,6 +6,9 @@ import java.time.LocalDate;
 
 public class VisitDAO {
 
+    /**
+     * Initializes the VisitDAO and ensures the daily visits table exists.
+     */
     public VisitDAO() {
         createTableIfNotExists();
     }
@@ -23,6 +26,10 @@ public class VisitDAO {
         }
     }
 
+    /**
+     * Increments the visit count for the current day.
+     * Starts a new count if no entry exists for today.
+     */
     public void incrementVisit() {
         // MySQL-specific syntax for upsert
         String sql = "INSERT INTO daily_visits (visit_date, visit_count) VALUES (?, 1) " +
@@ -36,6 +43,11 @@ public class VisitDAO {
         }
     }
 
+    /**
+     * Retrieves the visit count for the current day.
+     *
+     * @return The number of visits today.
+     */
     public int getTodayVisits() {
         String sql = "SELECT visit_count FROM daily_visits WHERE visit_date = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -52,6 +64,12 @@ public class VisitDAO {
         return 0;
     }
 
+    /**
+     * Retrieves visit counts for the last 7 days.
+     * Automatically fills in missing days with 0 visits.
+     *
+     * @return A map of dates to visit counts, sorted chronologically.
+     */
     public java.util.Map<LocalDate, Integer> getLast7DaysVisits() {
         java.util.Map<LocalDate, Integer> visitsMap = new java.util.HashMap<>();
 

@@ -13,11 +13,20 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
+/**
+ * API Servlet for fetching detailed user information via AJAX.
+ * Used by admin dashboard to show user details in modal.
+ */
 @WebServlet("/admin/api/user-details")
 public class UserDetailsServlet extends HttpServlet {
 
     private ProfileDAO profileDAO = new ProfileDAO();
 
+    /**
+     * Handles GET request to fetch user details.
+     * Expects parameters: userId, role.
+     * Returns JSON.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // 1. Auth Check

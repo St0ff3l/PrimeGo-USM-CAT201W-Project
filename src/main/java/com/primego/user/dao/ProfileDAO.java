@@ -14,6 +14,12 @@ public class ProfileDAO {
 
     private AddressDAO addressDAO = new AddressDAO();
 
+    /**
+     * Retrieves the customer profile for a given user ID.
+     *
+     * @param userId The ID of the user.
+     * @return The CustomerProfile object if found, null otherwise.
+     */
     public CustomerProfile getCustomerProfile(int userId) {
         String sql = "SELECT * FROM customer_profiles WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -37,6 +43,12 @@ public class ProfileDAO {
         return null;
     }
 
+    /**
+     * Updates the customer profile (full name, phone).
+     *
+     * @param profile The CustomerProfile object containing updated info.
+     * @return true if the update was successful, false otherwise.
+     */
     public boolean updateCustomerProfile(CustomerProfile profile) {
         String sql = "UPDATE customer_profiles SET full_name = ?, phone = ? WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -51,6 +63,13 @@ public class ProfileDAO {
         }
     }
 
+    /**
+     * Updates the payment PIN for a user.
+     *
+     * @param userId    The ID of the user.
+     * @param hashedPin The hashed payment PIN.
+     * @return true if the update was successful, false otherwise.
+     */
     public boolean updatePaymentPin(int userId, String hashedPin) {
         String sql = "UPDATE customer_profiles SET payment_pin = ? WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -64,6 +83,12 @@ public class ProfileDAO {
         }
     }
 
+    /**
+     * Retrieves the merchant profile for a given user ID.
+     *
+     * @param userId The ID of the user.
+     * @return The MerchantProfile object if found, null otherwise.
+     */
     public MerchantProfile getMerchantProfile(int userId) {
         String sql = "SELECT * FROM merchant_profiles WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -84,6 +109,12 @@ public class ProfileDAO {
         return null;
     }
 
+    /**
+     * Retrieves the admin profile for a given user ID.
+     *
+     * @param userId The ID of the user.
+     * @return The AdminProfile object if found, null otherwise.
+     */
     public AdminProfile getAdminProfile(int userId) {
         String sql = "SELECT * FROM admin_profiles WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -103,6 +134,12 @@ public class ProfileDAO {
         return null;
     }
 
+    /**
+     * Updates the admin profile details.
+     *
+     * @param profile The AdminProfile object with updated details.
+     * @return true if the update was successful, false otherwise.
+     */
     public boolean updateAdminProfile(AdminProfile profile) {
         String sql = "UPDATE admin_profiles SET department = ? WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();

@@ -9,6 +9,13 @@ import java.util.List;
 
 public class AddressDAO {
 
+    /**
+     * Adds a new address for a user.
+     * Automatically sets it as default if it's the user's first address.
+     *
+     * @param address The UserAddress object containing address details.
+     * @return true if the address was added successfully, false otherwise.
+     */
     public boolean addAddress(UserAddress address) {
         String sql = "INSERT INTO user_addresses (user_id, recipient_name, phone, province, city, district, detail, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -42,6 +49,13 @@ public class AddressDAO {
         }
     }
 
+    /**
+     * Retrieves all addresses associated with a specific user ID.
+     *
+     * @param userId The ID of the user.
+     * @return A list of UserAddress objects, ordered by default status and creation
+     *         date.
+     */
     public List<UserAddress> getAddressesByUserId(int userId) {
         List<UserAddress> addresses = new ArrayList<>();
         String sql = "SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC";
@@ -60,6 +74,12 @@ public class AddressDAO {
         return addresses;
     }
 
+    /**
+     * Retrieves a specific address by its ID.
+     *
+     * @param addressId The ID of the address.
+     * @return The UserAddress object if found, null otherwise.
+     */
     public UserAddress getAddressById(int addressId) {
         String sql = "SELECT * FROM user_addresses WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -76,6 +96,12 @@ public class AddressDAO {
         return null;
     }
 
+    /**
+     * Updates an existing address.
+     *
+     * @param address The UserAddress object with updated details.
+     * @return true if the address was updated successfully, false otherwise.
+     */
     public boolean updateAddress(UserAddress address) {
         String sql = "UPDATE user_addresses SET recipient_name=?, phone=?, province=?, city=?, district=?, detail=?, is_default=? WHERE id=?";
         try (Connection conn = DBUtil.getConnection();
@@ -101,6 +127,12 @@ public class AddressDAO {
         }
     }
 
+    /**
+     * Deletes an address by its ID.
+     *
+     * @param addressId The ID of the address to delete.
+     * @return true if the address was deleted successfully, false otherwise.
+     */
     public boolean deleteAddress(int addressId) {
         String sql = "DELETE FROM user_addresses WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
@@ -113,6 +145,15 @@ public class AddressDAO {
         }
     }
 
+    /**
+     * Sets a specific address as the default logic for a user.
+     * This operation uses a transaction to ensure no two addresses are default
+     * simultaneously.
+     *
+     * @param userId    The ID of the user.
+     * @param addressId The ID of the address to set as default.
+     * @return true if the operation was successful, false otherwise.
+     */
     public boolean setDefaultAddress(int userId, int addressId) {
         // Transaction needed to ensure atomicity
         String resetSql = "UPDATE user_addresses SET is_default = 0 WHERE user_id = ?";
@@ -146,6 +187,12 @@ public class AddressDAO {
     }
 
     // Helper to fetch default address directly
+    /**
+     * Retrieves the default address for a specific user.
+     *
+     * @param userId The ID of the user.
+     * @return The default UserAddress object, or null if none is set.
+     */
     public UserAddress getDefaultAddress(int userId) {
         String sql = "SELECT * FROM user_addresses WHERE user_id = ? AND is_default = 1";
         try (Connection conn = DBUtil.getConnection();
