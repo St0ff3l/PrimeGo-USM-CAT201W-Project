@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/images_uploader.css">
 
     <style>
-        /* ===== 全局样式 ===== */
+        /* ===== Global Styles ===== */
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
         body {
             background: linear-gradient(to bottom, #f0f2f5, #e0e5ec);
@@ -20,7 +20,7 @@
             overflow-x:hidden;
         }
 
-        /* 玻璃面板 */
+        /* Glass Panel */
         .glass-panel {
             background: rgba(255,255,255,0.75);
             backdrop-filter: blur(20px);
@@ -34,7 +34,7 @@
             z-index: 10;
         }
 
-        /* 头部导航 */
+        /* Top Bar Navigation */
         .top-bar { display:flex; align-items:center; margin-bottom:30px; }
         .back-btn {
             display:inline-flex; align-items:center; justify-content:center;
@@ -45,10 +45,10 @@
         .back-btn:hover { background:#fff; transform:scale(1.1); box-shadow:0 4px 10px rgba(0,0,0,0.1); }
         .page-title { margin-left:20px; font-size:1.5rem; font-weight:700; color:#2d3436; }
 
-        /* 布局 Grid */
+        /* Layout Grid */
         .topup-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; }
 
-        /* 左侧：二维码区域 */
+        /* Left Side: QR Code Section */
         .qr-section {
             background: #fff;
             border-radius: 20px; padding: 30px; text-align: center;
@@ -58,7 +58,7 @@
         .qr-title { font-size: 1.1rem; font-weight: 700; color: #2d3436; margin-bottom: 5px; }
         .qr-desc { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
 
-        /* 二维码图片容器 */
+        /* QR Image Container */
         .qr-img-placeholder {
             width: 200px;
             height: 200px;
@@ -70,7 +70,7 @@
         .bank-info { background: #f8f9fa; width: 100%; padding: 10px; border-radius: 10px; font-size: 0.85rem; color: #555; text-align: left; }
         .bank-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
 
-        /* 右侧：上传表单 */
+        /* Right Side: Upload Form */
         .form-section { display: flex; flex-direction: column; justify-content: center; }
         label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; color: #444; }
         .input-group { margin-bottom: 20px; }
@@ -83,7 +83,7 @@
         }
         input[type="number"]:focus { border-color: #0984e3; background: #fff; }
 
-        /* 提交按钮 */
+        /* Submit Button */
         .btn-submit {
             width: 100%;
             padding: 14px; border-radius: 50px; border: none;
@@ -147,33 +147,33 @@
 <jsp:include page="/assets/jsp/global_modal.jsp" />
 <script src="${pageContext.request.contextPath}/assets/js/images_uploader.js"></script>
 <script>
-    // 初始化上传组件
+    // Initialize Upload Component
     new ImagesUploader('#receipt-uploader', {
         inputName: 'receipt'
     });
 
-    // 表单提交前的校验函数
+    // Form Submission Validation
     function handleSubmit(e) {
         const amount = document.getElementById('amount').value;
         const fileInput = document.querySelector('input[name="receipt"]');
 
-        // 1. 校验金额
+        // 1. Validate Amount
         if(!amount) {
             e.preventDefault();
             // showModal(title, message, type)
-            // type 可以是 'error', 'success', 'warning'
+            // type options: 'error', 'success', 'warning'
             showModal("Missing Amount", "Please enter the top-up amount before submitting.", 'error');
             return false;
         }
 
-        // 2. 校验文件
+        // 2. Validate File Upload
         if(!fileInput || !fileInput.files || fileInput.files.length === 0) {
             e.preventDefault();
             showModal("Receipt Missing", "Please upload the payment receipt so we can verify your transaction.", 'error');
             return false;
         }
 
-        // 验证通过
+        // Validation Passed
         return true;
     }
 </script>

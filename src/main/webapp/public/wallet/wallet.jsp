@@ -93,9 +93,19 @@
 
 <div class="glass-panel">
     <div class="back-row">
-        <a href="${pageContext.request.contextPath}/profile" class="back-btn" title="Back to Profile">
-            <span>←</span><span class="back-text">Back Profile</span>
-        </a>
+        <!-- Modified: Merchants go to Dashboard, others go to Profile -->
+        <c:choose>
+            <c:when test="${sessionScope.user.role == 'MERCHANT'}">
+                <a href="${pageContext.request.contextPath}/merchant/merchant_dashboard.jsp" class="back-btn" title="Back to Dashboard">
+                    <span>←</span><span class="back-text">Dashboard</span>
+                </a>
+            </c:when>
+            <c:otherwise>
+                <a href="${pageContext.request.contextPath}/profile" class="back-btn" title="Back to Profile">
+                    <span>←</span><span class="back-text">Back Profile</span>
+                </a>
+            </c:otherwise>
+        </c:choose>
     </div>
 
     <c:if test="${not empty sessionScope.message}">
@@ -138,7 +148,7 @@
         </div>
     </div>
 
-    <!-- 按钮组 -->
+    <!-- Button Group -->
     <c:if test="${sessionScope.user.role != 'ADMIN'}">
         <div class="btn-group">
             <c:choose>
@@ -154,7 +164,7 @@
     </c:if>
 
     <div class="txn-list">
-        <!-- ADMIN 视图 -->
+        <!-- ADMIN View -->
         <c:if test="${sessionScope.user.role == 'ADMIN'}">
             <c:if test="${empty pendingList}">
                 <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No pending requests.</p></div>
@@ -169,7 +179,7 @@
                         <div class="txn-left-sub">
                             User ID: ${txn.userId} • <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
 
-                            <!-- ⭐ 显示图片链接 (直接使用数据库中的相对路径) -->
+                            <!-- Display image link (Using relative path from database) -->
                             <c:if test="${not empty txn.receiptImage}">
                                 <br>
                                 <a href="${pageContext.request.contextPath}/${txn.receiptImage}" target="_blank" style="color:#3498db; text-decoration:none;">
@@ -194,7 +204,7 @@
             </c:forEach>
         </c:if>
 
-        <!-- 普通用户/商家 视图 -->
+        <!-- Customer/Merchant View -->
         <c:if test="${sessionScope.user.role != 'ADMIN'}">
             <c:if test="${empty myTransactions}">
                 <div class="txn-item" style="color: #888; justify-content: center; padding: 40px;"><p>No transaction history found.</p></div>
@@ -218,8 +228,8 @@
                         </div>
                         <div class="txn-left-sub">
                             <fmt:formatDate value="${txn.createdAt}" pattern="yyyy-MM-dd HH:mm"/>
-                            
-                            <!-- 显示管理员备注 -->
+
+                            <!-- Display Admin Remarks -->
                             <c:if test="${not empty txn.remarks}">
                                 <br>
                                 <span style="color: #666; font-style: italic; font-size: 0.85rem;">

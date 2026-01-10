@@ -39,11 +39,11 @@ public class WithdrawServlet extends HttpServlet {
         }
 
         try {
-            // 1. 获取金额
+            // 1. Get amount
             String amountStr = request.getParameter("amount");
             BigDecimal amount = new BigDecimal(amountStr);
 
-            // 2. 检查余额
+            // 2. Check balance
             BigDecimal currentBalance = walletDAO.getBalance(user.getId());
             if (currentBalance.compareTo(amount) < 0) {
                 request.setAttribute("error", "Insufficient balance.");
@@ -51,12 +51,12 @@ public class WithdrawServlet extends HttpServlet {
                 return;
             }
 
-            // 3. 处理图片上传
+            // 3. Handle image upload
             Part filePart = request.getPart("receiptImage");
             String fileName = null;
 
             if (filePart != null && filePart.getSize() > 0) {
-                // 生成唯一文件名
+                // Generate unique filename
                 String originalFileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
                 String fileExt = "";
                 int dotIndex = originalFileName.lastIndexOf(".");
@@ -65,34 +65,34 @@ public class WithdrawServlet extends HttpServlet {
                 }
                 fileName = UUID.randomUUID().toString() + fileExt;
 
-                // ⭐ 修改点：保存到 withdrawphotos 文件夹
-                // 1. 部署目录
+                // Save to withdrawphotos folder
+                // 1. Deployment directory
                 String uploadPath = getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "withdrawphotos";
-                
-                // 2. 源码目录 - 使用 PathUtil
+
+                // 2. Source directory - Use PathUtil
                 String projectPath = PathUtil.getUploadDir(getServletContext(), "withdrawphotos");
 
                 // DEBUG LOGGING
                 System.out.println("[WithdrawServlet] Upload Dir (Runtime): " + uploadPath);
                 System.out.println("[WithdrawServlet] Source Dir (Local): " + projectPath);
 
-                // 自动创建文件夹
+                // Automatically create directories
                 File uploadDir = new File(uploadPath);
                 if (!uploadDir.exists()) uploadDir.mkdirs();
-                
+
                 File sourceDir = new File(projectPath);
                 if (!sourceDir.exists()) sourceDir.mkdirs();
 
-                // 保存文件到部署目录
+                // Save file to deployment directory
                 filePart.write(uploadPath + File.separator + fileName);
-                
-                // 复制到源码目录
+
+                // Copy to source directory
                 if (!new File(uploadPath).getAbsolutePath().equals(new File(projectPath).getAbsolutePath())) {
                     try {
                         java.nio.file.Files.copy(
-                            new File(uploadPath + File.separator + fileName).toPath(),
-                            new File(projectPath + File.separator + fileName).toPath(),
-                            java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                                new File(uploadPath + File.separator + fileName).toPath(),
+                                new File(projectPath + File.separator + fileName).toPath(),
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING
                         );
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -104,16 +104,16 @@ public class WithdrawServlet extends HttpServlet {
                 return;
             }
 
-            // 4. 创建交易对象
+            // 4. Create transaction object
             WalletTransaction transaction = new WalletTransaction();
             transaction.setUserId(user.getId());
             transaction.setAmount(amount);
             transaction.setStatus("PENDING");
             transaction.setTransactionType("WITHDRAW");
-            // 保存相对路径
+            // Save relative path
             transaction.setReceiptImage("assets/images/withdrawphotos/" + fileName);
 
-            // 5. 保存到数据库
+            // 5. Save to database
             boolean success = walletDAO.requestWithdraw(transaction);
 
             if (success) {

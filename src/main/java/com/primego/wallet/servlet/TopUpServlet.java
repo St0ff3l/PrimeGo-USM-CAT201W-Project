@@ -26,7 +26,7 @@ public class TopUpServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. 获取当前用户
+        // 1. Get current user
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("user");
 
@@ -35,59 +35,54 @@ public class TopUpServlet extends HttpServlet {
             return;
         }
 
-        // 2. 获取表单数据
+        // 2. Retrieve form data
         String amountStr = request.getParameter("amount");
         Part filePart = request.getPart("receipt");
 
         try {
             BigDecimal amount = new BigDecimal(amountStr);
 
-            // 3. 处理文件上传
-            // 【修改点】路径改为 assets/images/rechargephotos
-            // 1. 获取部署目录路径 (用于当前运行)
+            // 3. Handle file upload
+            // Get deployment directory path (runtime usage)
             String uploadPath = request.getServletContext().getRealPath("") + File.separator + "assets" + File.separator + "images" + File.separator + "rechargephotos";
-            
-            // 2. 获取源码目录路径 (用于持久化保存) - 使用 PathUtil
+
+            // Get source directory path (for persistence) - using PathUtil
             String projectPath = PathUtil.getUploadDir(request.getServletContext(), "rechargephotos");
 
-            // DEBUG LOGGING
-            System.out.println("[TopUpServlet] Upload Dir (Runtime): " + uploadPath);
-            System.out.println("[TopUpServlet] Source Dir (Local): " + projectPath);
-
             File uploadDir = new File(uploadPath);
-            if (!uploadDir.exists()) uploadDir.mkdirs(); // 如果目录不存在，自动创建
-            
+            if (!uploadDir.exists()) uploadDir.mkdirs(); // Create directory if it doesn't exist
+
             File sourceDir = new File(projectPath);
             if (!sourceDir.exists()) sourceDir.mkdirs();
 
             String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-            // 防止文件名冲突，加个UUID前缀
+            // Prevent filename conflicts by adding a UUID prefix
             String uniqueFileName = UUID.randomUUID().toString() + "_" + fileName;
 
-            // 保存到部署目录
+            // Save to deployment directory
             filePart.write(uploadPath + File.separator + uniqueFileName);
-            
-            // 保存到源码目录 (需要手动复制流，或者再次写入)
-            // 只有当 projectPath 和 uploadPath 不一致时才复制 (防止 PathUtil 回退到运行时目录导致报错)
+
+            // Save to source directory (Sync for local development persistence)
+            // Only copy if the paths differ to prevent errors
             if (!new File(uploadPath).getAbsolutePath().equals(new File(projectPath).getAbsolutePath())) {
                 try {
                     java.nio.file.Files.copy(
-                        new File(uploadPath + File.separator + uniqueFileName).toPath(),
-                        new File(projectPath + File.separator + uniqueFileName).toPath(),
-                        java.nio.file.StandardCopyOption.REPLACE_EXISTING
+                            new File(uploadPath + File.separator + uniqueFileName).toPath(),
+                            new File(projectPath + File.separator + uniqueFileName).toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING
                     );
                 } catch (Exception e) {
-                    e.printStackTrace(); // 忽略源码目录写入失败，不影响主流程
+                    e.printStackTrace(); // Ignore source write failure, does not affect main flow
                 }
             }
 
-            // 4. 保存到数据库
+            // 4. Save to database
             WalletTransaction transaction = new WalletTransaction();
             transaction.setUserId(user.getId());
             transaction.setAmount(amount);
             transaction.setStatus("PENDING");
             transaction.setTransactionType("TOPUP");
-            // 保存相对路径，方便前端引用
+            // Save relative path for frontend reference
             transaction.setReceiptImage("assets/images/rechargephotos/" + uniqueFileName);
 
             WalletDAO dao = new WalletDAO();

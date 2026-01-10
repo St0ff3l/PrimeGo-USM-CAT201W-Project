@@ -3,17 +3,34 @@ package com.primego.wallet.model;
 import java.sql.Timestamp;
 
 public class AdminTransactionLog {
+    // Unique identifier for the log entry
     private int id;
+
+    // The ID of the administrator who performed the action
     private int adminId;
+
+    // The ID of the specific wallet transaction being modified
     private int walletTransactionId;
+
+    // The type of action performed (e.g., "APPROVE", "REJECT", "MODIFY")
     private String actionType;
+
+    // The transaction status before the action was taken
     private String previousStatus;
+
+    // The transaction status after the action was completed
     private String currentStatus;
+
+    // Optional remarks or notes provided by the administrator
     private String remarks;
+
+    // Timestamp when the action was recorded
     private Timestamp createdAt;
-    
-    // Additional fields for display (joined data)
+
+    // Additional fields for display purposes (populated via joins)
     private String adminName;
+
+    // Getters and Setters
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }

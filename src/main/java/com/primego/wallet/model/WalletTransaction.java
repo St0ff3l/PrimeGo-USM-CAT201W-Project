@@ -7,16 +7,16 @@ public class WalletTransaction {
     private int id;
     private int userId;
     private BigDecimal amount;
-    private String status;          // "PENDING", "APPROVED", "REJECTED"
-    private String transactionType; // "TOPUP", "WITHDRAW"
-    private String receiptImage;    // 仅充值时有，提现为null
+    private String status;          // e.g., "PENDING", "APPROVED", "REJECTED"
+    private String transactionType; // e.g., "TOPUP", "WITHDRAW"
+    private String receiptImage;    // Only present for top-ups; null for withdrawals
     private Timestamp createdAt;
-    private String remarks;         // 管理员备注
+    private String remarks;         // Administrator remarks
 
-    // 无参构造器
+    // Default constructor
     public WalletTransaction() {}
 
-    // 充值用的构造器
+    // Constructor for Top-Up requests
     public WalletTransaction(int userId, BigDecimal amount, String receiptImage) {
         this.userId = userId;
         this.amount = amount;

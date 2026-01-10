@@ -62,7 +62,7 @@
         .upload-container {
             width: 100%;
             height: 180px;
-            border: 2px dashed #3498db; /* 蓝色虚线边框 */
+            border: 2px dashed #3498db; /* Blue dashed border */
             border-radius: 20px;
             background: linear-gradient(180deg, rgba(235, 248, 255, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%);
             display: flex;
@@ -98,12 +98,12 @@
             color: #999;
         }
 
-        /* 隐藏原始的文件 input */
+        /* Hide original file input */
         input[type="file"] {
             display: none;
         }
 
-        /* 上传后的文件名显示 */
+        /* Display uploaded file name */
         .file-name-display {
             font-weight: 700;
             color: #2ecc71;
@@ -138,13 +138,13 @@
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (file) {
-                // 隐藏原本的文字提示
+                // Hide original text prompt
                 document.getElementById('upload-placeholder').style.display = 'none';
-                // 显示文件名
+                // Show file name
                 const display = document.getElementById('file-name-display');
                 display.style.display = 'block';
                 display.innerText = "Selected: " + file.name;
-                // 改变图标颜色表示成功
+                // Change icon color to indicate success
                 document.querySelector('.upload-icon').style.color = '#2ecc71';
                 document.querySelector('.upload-icon').className = 'ri-checkbox-circle-line upload-icon';
             }

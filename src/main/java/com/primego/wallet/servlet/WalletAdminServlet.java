@@ -20,11 +20,11 @@ public class WalletAdminServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. 获取当前用户 session
+        // 1. Get current user session
         HttpSession session = request.getSession();
         User user = (User) session.getAttribute("user");
 
-        // 2. 权限检查：确保只有 ADMIN 可以操作
+        // 2. Permission check: Ensure only ADMIN can operate
         String role = (user != null && user.getRole() != null) ? user.getRole().toString() : "";
 
         if (!"ADMIN".equals(role)) {
@@ -32,22 +32,22 @@ public class WalletAdminServlet extends HttpServlet {
             return;
         }
 
-        // 3. 获取前端传来的参数
+        // 3. Get parameters from frontend
         String idStr = request.getParameter("id");
-        String action = request.getParameter("action"); // "approve" 或 "reject"
-        String remarks = request.getParameter("remarks"); // 获取备注
+        String action = request.getParameter("action"); // "approve" or "reject"
+        String remarks = request.getParameter("remarks"); // Get remarks
 
         if (idStr != null && action != null) {
             try {
                 int transactionId = Integer.parseInt(idStr);
                 WalletDAO dao = new WalletDAO();
                 boolean success = false;
-                
-                // 获取旧状态 (为了日志)
+
+                // Get previous status (for logging)
                 WalletTransaction oldTxn = dao.getTransactionById(transactionId);
                 String previousStatus = (oldTxn != null) ? oldTxn.getStatus() : "UNKNOWN";
 
-                // 4. 根据动作更新数据库
+                // 4. Update database based on action
                 String newStatus = "";
                 if ("approve".equalsIgnoreCase(action)) {
                     newStatus = "APPROVED";
@@ -57,7 +57,7 @@ public class WalletAdminServlet extends HttpServlet {
                     success = dao.updateTransactionStatus(transactionId, newStatus);
                 }
 
-                // 5. 记录到 admin_transaction_logs
+                // 5. Record to admin_transaction_logs
                 if (success) {
                     AdminTransactionLog log = new AdminTransactionLog();
                     log.setAdminId(user.getId());
@@ -65,15 +65,15 @@ public class WalletAdminServlet extends HttpServlet {
                     log.setActionType(action.toUpperCase());
                     log.setPreviousStatus(previousStatus);
                     log.setCurrentStatus(newStatus);
-                    
-                    // 使用前端传来的备注，如果为空则使用默认值
+
+                    // Use remarks from frontend, or default if empty
                     if (remarks == null || remarks.trim().isEmpty()) {
                         remarks = "Admin " + action + "d the request.";
                     }
                     log.setRemarks(remarks);
-                    
+
                     dao.addAdminLog(log);
-                    
+
                     session.setAttribute("message", "Transaction " + action + "d successfully.");
                 } else {
                     session.setAttribute("error", "Failed to update transaction in database.");
@@ -90,7 +90,7 @@ public class WalletAdminServlet extends HttpServlet {
             session.setAttribute("error", "Missing parameters.");
         }
 
-        // 6. 重定向回审批页面 (注意：这里改回了 admin_approval.jsp)
+        // 6. Redirect back to approval page
         response.sendRedirect(request.getContextPath() + "/admin/wallet/admin_approval.jsp");
     }
 }
