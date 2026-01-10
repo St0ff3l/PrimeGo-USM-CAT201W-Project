@@ -71,6 +71,7 @@
     <meta charset="UTF-8">
     <title><%= resultTitle %> - PrimeGo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="${pageContext.request.contextPath}/logo.png" type="image/png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { color: #333; position: relative; }

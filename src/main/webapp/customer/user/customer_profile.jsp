@@ -9,6 +9,7 @@
             <title>Customer Profile - PrimeGo</title>
             <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
                 rel="stylesheet">
+            <link rel="icon" href="${pageContext.request.contextPath}/logo.png" type="image/png">
             <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
             <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/customer_profile.css">
             <style>
@@ -586,7 +587,7 @@
                                                     oninput="moveToNext(this, 'old-pin')"
                                                     onkeydown="handleBackspace(event, this, 'old-pin')">
                                             </c:forEach>
-                                        </div>
+                                    </div>
                                     </div>
                                 </c:if>
 
@@ -673,3 +674,4 @@
         </body>
 
         </html>
+

@@ -60,6 +60,7 @@
     <title>Edit Product - PrimeGo</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="${pageContext.request.contextPath}/logo.png" type="image/png">
     <link href="https://cdn.bootcdn.net/ajax/libs/remixicon/3.5.0/remixicon.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/assets/css/images_uploader.css" rel="stylesheet">
 

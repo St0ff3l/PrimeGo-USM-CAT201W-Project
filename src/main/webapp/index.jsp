@@ -51,7 +51,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PrimeGo - Premium B2C E-Commerce</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
+  <link rel="icon" href="${pageContext.request.contextPath}/logo.png" type="image/png">
   <style>
     /* ================= 1. 全局基础样式 ================= */
     body {
